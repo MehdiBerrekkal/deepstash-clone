@@ -53,15 +53,26 @@ export default function ClassicScreen() {
               <Text style={styles.secondaryText}>See the key ideas first</Text>
             </Pressable>
           )}
-          {classic.license ? (
+          {classic.description && <Text style={styles.description}>{classic.description}</Text>}
+          {classic.license && /^public domain$/i.test(classic.license) ? (
             <Text style={styles.note}>
-              © {classic.author}. Shared by the author under the{' '}
+              <Text style={styles.link} onPress={() => classic.licenseUrl && Linking.openURL(classic.licenseUrl)}>
+                Public domain
+              </Text>
+              . Free to read and share.{' '}
+              <Text style={styles.link} onPress={() => classic.homepage && Linking.openURL(classic.homepage)}>
+                Source ↗
+              </Text>
+            </Text>
+          ) : classic.license ? (
+            <Text style={styles.note}>
+              © {classic.author}. Shared under the{' '}
               <Text style={styles.link} onPress={() => classic.licenseUrl && Linking.openURL(classic.licenseUrl)}>
                 {classic.license}
               </Text>{' '}
-              license: free to read and share for non-commercial use, with credit.{' '}
+              license: free to read and share with credit{/NC/.test(classic.license) ? ', for non-commercial use only' : ''}.{' '}
               <Text style={styles.link} onPress={() => classic.homepage && Linking.openURL(classic.homepage)}>
-                Author&apos;s page ↗
+                Source ↗
               </Text>
             </Text>
           ) : (
@@ -100,6 +111,7 @@ const styles = StyleSheet.create({
   secondary: { paddingVertical: 12, borderRadius: 999, alignItems: 'center', backgroundColor: colors.surface },
   secondaryText: { color: colors.text, fontWeight: '700' },
   note: { color: colors.muted, fontSize: 13, lineHeight: 19 },
+  description: { color: colors.text, fontSize: 16, lineHeight: 24 },
   link: { color: colors.accent, fontWeight: '700' },
   heading: { color: colors.text, fontSize: 20, fontWeight: '800', marginTop: 8 },
   row: { flexDirection: 'row', gap: 14, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },

@@ -306,5 +306,20 @@
     "topicId": "creativity",
     "chapters": 12,
     "words": 26357
+  },
+  {
+    "id": "seneca-dialogues",
+    "origin": "books",
+    "title": "Dialogues",
+    "author": "Seneca",
+    "translator": "Aubrey Stewart",
+    "year": 49,
+    "topicId": "philosophy",
+    "description": "Seneca's essays on anger, grief, the shortness of life, peace of mind and the happy life, in Aubrey Stewart's public-domain translation.",
+    "license": "Public domain",
+    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "homepage": "https://standardebooks.org/ebooks/seneca/dialogues/aubrey-stewart",
+    "chapters": 17,
+    "words": 230138
   }
 ]

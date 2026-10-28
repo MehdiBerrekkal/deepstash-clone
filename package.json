@@ -39,6 +39,7 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "seed:sql": "node scripts/gen-seed-sql.js",
+    "books": "node scripts/build-books.js && node scripts/fetch-covers.js",
     "lint": "expo lint"
   },
   "private": true

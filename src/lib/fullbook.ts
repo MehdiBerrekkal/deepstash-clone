@@ -16,7 +16,10 @@ export type Classic = {
   id: string;
   /** Project Gutenberg ebook number, for public-domain books. */
   gutenberg?: number;
-  /** Creative Commons books bundled from the author's own site. */
+  /** Added through the books/ folder (scripts/build-books.js). */
+  origin?: 'books';
+  description?: string;
+  /** "Public domain" or a Creative Commons license, for books not from Gutenberg. */
   license?: string;
   licenseUrl?: string;
   homepage?: string;

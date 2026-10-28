@@ -43,6 +43,8 @@ To add or edit books, change `src/data/library/<topic>.json` and run `npm run se
 
 Full books live in `src/data/classics/`. Each one is a `.txt` asset that holds the chapters as JSON and loads only when it's opened. `metro.config.js` registers the `.txt` extension. To add or rebuild books, edit the list in `scripts/build-classics.js` and run `node scripts/build-classics.js`. Only add books that are public domain or under a license that allows redistribution, and include that license.
 
+To add a free-to-share EPUB (public domain or Creative Commons), put it in `books/` with a small JSON file next to it and run `npm run books`. See [books/README.md](books/README.md).
+
 ## Project layout
 
 ```
