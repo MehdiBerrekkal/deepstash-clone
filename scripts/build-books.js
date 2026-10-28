@@ -79,9 +79,12 @@ function writeAssets(index) {
     const chapters = parsed.chapters;
     const words = chapters.reduce((n, c) => n + c.paragraphs.join(' ').split(/\s+/).length, 0);
     fs.writeFileSync(path.join(outDir, `${id}.txt`), JSON.stringify({ chapters }));
+    // Keep the first import date so "Recently added" and the NEW badge don't reset on every run.
+    const previous = index.find((b) => b.id === id && b.origin === 'books');
     added.push({
       id,
       origin: 'books',
+      addedAt: previous?.addedAt ?? new Date().toISOString(),
       title: meta.title,
       author: meta.author,
       ...(meta.translator ? { translator: meta.translator } : {}),
@@ -102,6 +105,7 @@ function writeAssets(index) {
     fs.rmSync(path.join(outDir, `${old.id}.txt`), { force: true });
     console.log(`removed ${old.id}`);
   }
+  added.sort((a, b) => b.addedAt.localeCompare(a.addedAt));
   const merged = [...index.filter((b) => b.origin !== 'books'), ...added];
   fs.writeFileSync(indexFile, JSON.stringify(merged, null, 2) + '\n');
   writeAssets(merged);

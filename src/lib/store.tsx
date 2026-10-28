@@ -16,7 +16,8 @@ type UserState = {
   stashes: Stash[];
   streak: Streak;
   bookProgress: Record<string, BookProgress>;
-  savedBookIds: string[];
+  /** Favorite books, newest first: "book:<id>" (library), "classic:<id>" (full classic) or "own:<id>" (your file). */
+  favoriteBooks: string[];
   likedIdeaIds: string[];
   /** Most recent first. */
   readIdeaIds: string[];
@@ -47,7 +48,8 @@ type Store = Content &
     markRead: (ideaId: string) => void;
     setBookPosition: (bookId: string, position: number) => void;
     finishBook: (bookId: string) => void;
-    toggleSavedBook: (bookId: string) => void;
+    toggleFavoriteBook: (key: string) => void;
+    isFavoriteBook: (key: string) => boolean;
     setDailyGoal: (goal: number) => void;
     resetProgress: () => void;
     setReaderSettings: (settings: Partial<ReaderSettings>) => void;
@@ -66,7 +68,7 @@ const initialUserState: UserState = {
   stashes: [DEFAULT_STASH],
   streak: { count: 0, lastActiveDate: null },
   bookProgress: {},
-  savedBookIds: [],
+  favoriteBooks: [],
   likedIdeaIds: [],
   readIdeaIds: [],
   dailyGoal: 10,
@@ -131,7 +133,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     (async () => {
       try {
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
-        const saved: UserState = raw ? { ...initialUserState, ...JSON.parse(raw) } : initialUserState;
+        const stored = raw ? JSON.parse(raw) : {};
+        const saved: UserState = { ...initialUserState, ...stored };
+        // Books saved as "Want to read" before favorites existed become favorites.
+        if (!stored.favoriteBooks && Array.isArray(stored.savedBookIds)) saved.favoriteBooks = stored.savedBookIds.map((id: string) => `book:${id}`);
+        delete (saved as Partial<UserState> & { savedBookIds?: string[] }).savedBookIds;
         setUser({ ...saved, streak: bumpStreak(saved.streak) });
       } catch {
         setUser((u) => ({ ...u, streak: bumpStreak(u.streak) }));
@@ -215,10 +221,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const toggleSavedBook = useCallback((bookId: string) => {
+  const toggleFavoriteBook = useCallback((key: string) => {
     setUser((u) => ({
       ...u,
-      savedBookIds: u.savedBookIds.includes(bookId) ? u.savedBookIds.filter((id) => id !== bookId) : [bookId, ...u.savedBookIds],
+      favoriteBooks: u.favoriteBooks.includes(key) ? u.favoriteBooks.filter((k) => k !== key) : [key, ...u.favoriteBooks],
     }));
   }, []);
 
@@ -266,7 +272,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setUser((u) => {
       const { [`own:${id}`]: _progress, ...readerProgress } = u.readerProgress;
       const { [`own:${id}`]: _marks, ...bookmarks } = u.bookmarks;
-      return { ...u, ownBooks: u.ownBooks.filter((b) => b.id !== id), readerProgress, bookmarks };
+      return {
+        ...u,
+        ownBooks: u.ownBooks.filter((b) => b.id !== id),
+        favoriteBooks: u.favoriteBooks.filter((k) => k !== `own:${id}`),
+        readerProgress,
+        bookmarks,
+      };
     });
   }, []);
 
@@ -285,6 +297,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<Store>(() => {
     const savedIds = new Set(user.stashes.flatMap((s) => s.ideaIds));
+    const favoriteSet = new Set(user.favoriteBooks);
     const today = user.today.date === localDate() ? user.today : { date: localDate(), count: 0 };
     return {
       ...content,
@@ -301,7 +314,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       markRead,
       setBookPosition,
       finishBook,
-      toggleSavedBook,
+      toggleFavoriteBook,
+      isFavoriteBook: (key) => favoriteSet.has(key),
       setDailyGoal,
       resetProgress,
       setReaderSettings,
@@ -314,7 +328,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     };
   }, [
     content, user, ready, indexes, setFollowedTopics, createStash, deleteStash, toggleInStash, toggleLike, markRead, setBookPosition,
-    finishBook, toggleSavedBook, setDailyGoal, resetProgress, setReaderSettings, setReaderPosition, toggleBookmark, removeBookmark,
+    finishBook, toggleFavoriteBook, setDailyGoal, resetProgress, setReaderSettings, setReaderPosition, toggleBookmark, removeBookmark,
     saveClip, addOwnBook, removeOwnBook,
   ]);
 

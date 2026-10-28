@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { BookCover } from '@/components/BookCover';
+import { FavoriteButton } from '@/components/FavoriteButton';
 import { classicAsSource } from '@/lib/classicSource';
 import { classicById, classicReaderId, formatYear, loadClassic, readMinutesForWords, type FullBook } from '@/lib/fullbook';
 import { useStore } from '@/lib/store';
@@ -31,7 +32,7 @@ export default function ClassicScreen() {
       <Stack.Screen options={{ title: '' }} />
       <ScrollView contentContainerStyle={styles.container}>
         <View style={[styles.hero, { backgroundColor: topic?.color ?? colors.surface }]}>
-          <BookCover book={classicAsSource(classic)} width={140} onPress={open} fraction={progress?.fraction} />
+          <BookCover book={classicAsSource(classic)} width={140} favoriteKey={null} onPress={open} fraction={progress?.fraction} />
           <Text style={styles.title}>{classic.title}</Text>
           <Text style={styles.author}>
             {classic.author} · {formatYear(classic.year)}
@@ -48,11 +49,14 @@ export default function ClassicScreen() {
               {progress ? `Continue reading · ${Math.round(progress.fraction * 100)}%` : 'Read the full book'}
             </Text>
           </Pressable>
-          {linked && (
-            <Pressable onPress={() => router.push({ pathname: '/book/[id]', params: { id: linked.id } })} style={styles.secondary}>
-              <Text style={styles.secondaryText}>See the key ideas first</Text>
-            </Pressable>
-          )}
+          <View style={styles.secondaryRow}>
+            <FavoriteButton favoriteKey={classicReaderId(classic.id)} title={classic.title} size="large" />
+            {linked && (
+              <Pressable onPress={() => router.push({ pathname: '/book/[id]', params: { id: linked.id } })} style={styles.secondary}>
+                <Text style={styles.secondaryText}>Key ideas</Text>
+              </Pressable>
+            )}
+          </View>
           {classic.description && <Text style={styles.description}>{classic.description}</Text>}
           {classic.license && /^public domain$/i.test(classic.license) ? (
             <Text style={styles.note}>
@@ -108,7 +112,8 @@ const styles = StyleSheet.create({
   section: { paddingHorizontal: 16, gap: 12 },
   primary: { paddingVertical: 16, borderRadius: 999, alignItems: 'center', backgroundColor: colors.accent },
   primaryText: { color: colors.onAccent, fontWeight: '800', fontSize: 16 },
-  secondary: { paddingVertical: 12, borderRadius: 999, alignItems: 'center', backgroundColor: colors.surface },
+  secondaryRow: { flexDirection: 'row', gap: 10 },
+  secondary: { flex: 1, paddingVertical: 12, borderRadius: 999, alignItems: 'center', backgroundColor: colors.surface },
   secondaryText: { color: colors.text, fontWeight: '700' },
   note: { color: colors.muted, fontSize: 13, lineHeight: 19 },
   description: { color: colors.text, fontSize: 16, lineHeight: 24 },

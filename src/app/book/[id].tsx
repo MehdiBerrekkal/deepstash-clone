@@ -2,6 +2,7 @@ import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 
 import { BookCover } from '@/components/BookCover';
+import { FavoriteButton } from '@/components/FavoriteButton';
 import { Shelf } from '@/components/Shelf';
 import { classicBySourceId, classicReaderId } from '@/lib/fullbook';
 import { useStore } from '@/lib/store';
@@ -9,7 +10,7 @@ import { colors, readMinutes, serif, sourceKindLabel } from '@/lib/theme';
 
 export default function BookScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { sourceById, ideasBySource, topicById, bookProgress, savedBookIds, toggleSavedBook, sources, readerProgress } = useStore();
+  const { sourceById, ideasBySource, topicById, bookProgress, sources, readerProgress } = useStore();
   const book = sourceById[id];
 
   if (!book) return <Text style={styles.muted}>Book not found.</Text>;
@@ -17,7 +18,6 @@ export default function BookScreen() {
   const ideas = ideasBySource[book.id] ?? [];
   const topic = topicById[book.topicId];
   const progress = bookProgress[book.id];
-  const saved = savedBookIds.includes(book.id);
   const minutes = readMinutes(ideas.map((i) => `${i.title} ${i.body}`));
   const related = sources.filter((s) => s.topicId === book.topicId && s.id !== book.id);
   const fullText = classicBySourceId[book.id];
@@ -35,7 +35,7 @@ export default function BookScreen() {
       <Stack.Screen options={{ title: '' }} />
       <ScrollView contentContainerStyle={styles.container}>
         <View style={[styles.hero, { backgroundColor: topic?.color ?? colors.surface }]}>
-          <BookCover book={book} width={140} onPress={() => read(progress?.finishedAt ? 0 : progress?.position ?? 0)} />
+          <BookCover book={book} width={140} favoriteKey={null} onPress={() => read(progress?.finishedAt ? 0 : progress?.position ?? 0)} />
           <Text style={styles.title}>{book.title}</Text>
           <Text style={styles.author}>
             {book.author}
@@ -80,9 +80,7 @@ export default function BookScreen() {
             )
           )}
           <View style={styles.secondaryRow}>
-            <Pressable onPress={() => toggleSavedBook(book.id)} style={[styles.secondary, saved && styles.secondaryOn]}>
-              <Text style={styles.secondaryText}>{saved ? '✓ In your library' : '+ Want to read'}</Text>
-            </Pressable>
+            <FavoriteButton favoriteKey={`book:${book.id}`} title={book.title} size="large" />
             <Pressable
               onPress={() => Share.share({ message: `${book.title} by ${book.author}\n\n${book.description}` })}
               style={styles.secondary}>
@@ -146,7 +144,6 @@ const styles = StyleSheet.create({
   freeHint: { color: colors.muted, fontSize: 13, lineHeight: 19 },
   licenseLink: { color: colors.accent, fontWeight: '700' },
   secondary: { flex: 1, paddingVertical: 12, borderRadius: 999, alignItems: 'center', backgroundColor: colors.surface },
-  secondaryOn: { backgroundColor: colors.surfaceRaised, borderWidth: 1, borderColor: colors.accent },
   secondaryText: { color: colors.text, fontWeight: '700' },
   description: { color: colors.text, fontSize: 16, lineHeight: 24, marginTop: 8 },
   topic: { color: colors.accent, fontWeight: '700' },

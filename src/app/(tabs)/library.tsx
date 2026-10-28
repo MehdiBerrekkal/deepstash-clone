@@ -1,9 +1,10 @@
-import { router } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { router, useNavigation } from 'expo-router';
+import { useLayoutEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { BookCover } from '@/components/BookCover';
 import { BookGrid } from '@/components/BookGrid';
+import { FavoriteButton } from '@/components/FavoriteButton';
 import { Shelf } from '@/components/Shelf';
 import { classicAsSource } from '@/lib/classicSource';
 import { classicReaderId, classics } from '@/lib/fullbook';
@@ -12,10 +13,34 @@ import { useStore } from '@/lib/store';
 import { colors } from '@/lib/theme';
 
 export default function LibraryScreen() {
-  const { sources, topics, followedTopicIds, bookProgress, savedBookIds, sourceById, readerProgress, ownBooks, addOwnBook, removeOwnBook } = useStore();
+  const { sources, topics, followedTopicIds, bookProgress, sourceById, readerProgress, ownBooks, addOwnBook, removeOwnBook, favoriteBooks } = useStore();
+  const navigation = useNavigation();
   const [query, setQuery] = useState('');
   const [opening, setOpening] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
+
+  // Heart next to the "Library" title opens Favorites.
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Favorites, ${favoriteBooks.length} books`}
+          onPress={() => router.push('/favorites')}
+          hitSlop={8}
+          style={styles.headerHeart}>
+          <Text style={styles.headerHeartIcon}>{favoriteBooks.length ? '♥' : '♡'}</Text>
+          {favoriteBooks.length > 0 && <Text style={styles.headerHeartCount}>{favoriteBooks.length}</Text>}
+        </Pressable>
+      ),
+    });
+  }, [navigation, favoriteBooks.length]);
+
+  // Books you dropped into books/, newest first.
+  const recentlyAdded = useMemo(
+    () => classics.filter((c) => c.origin === 'books').sort((a, b) => (b.addedAt ?? '').localeCompare(a.addedAt ?? '')),
+    [],
+  );
 
   // Classics you've started come first.
   const sortedClassics = useMemo(
@@ -66,15 +91,14 @@ export default function LibraryScreen() {
     const finished = Object.entries(bookProgress)
       .filter(([id, p]) => p.finishedAt && sourceById[id])
       .map(([id]) => sourceById[id]);
-    const saved = savedBookIds.map((id) => sourceById[id]).filter(Boolean);
     const free = sources.filter((s) => s.free);
     const followed = new Set(followedTopicIds);
     const byTopic = [...topics]
       .sort((a, b) => Number(followed.has(b.id)) - Number(followed.has(a.id)))
       .map((topic) => ({ topic, books: sources.filter((s) => s.topicId === topic.id) }))
       .filter((s) => s.books.length > 0);
-    return { inProgress, finished, saved, free, byTopic };
-  }, [sources, topics, followedTopicIds, bookProgress, savedBookIds, sourceById]);
+    return { inProgress, finished, free, byTopic };
+  }, [sources, topics, followedTopicIds, bookProgress, sourceById]);
 
   const q = query.trim().toLowerCase();
   const results = q ? sources.filter((s) => `${s.title} ${s.author}`.toLowerCase().includes(q)) : [];
@@ -101,6 +125,7 @@ export default function LibraryScreen() {
         </>
       ) : (
         <>
+          {recentlyAdded.length > 0 && <ClassicShelf title="✨ Recently added" items={recentlyAdded} />}
           <Shelf title="Continue reading" books={shelves.inProgress} />
           <ClassicShelf title="📚 Free classics · read the full book" items={sortedClassics} />
           <Shelf title="🎁 Free from the author" books={shelves.free} />
@@ -126,6 +151,9 @@ export default function LibraryScreen() {
                       </Text>
                     </View>
                   </Pressable>
+                  <View style={styles.ownHeart}>
+                    <FavoriteButton favoriteKey={`own:${b.id}`} title={b.title} />
+                  </View>
                   <Pressable accessibilityLabel={`Remove ${b.title}`} onPress={() => remove(b)} style={styles.ownRemove}>
                     <Text style={styles.ownMeta}>✕</Text>
                   </Pressable>
@@ -137,7 +165,6 @@ export default function LibraryScreen() {
               {Platform.OS === 'web' ? ' In the browser, PDFs stay open only until you close the tab.' : ''}
             </Text>
           </View>
-          <Shelf title="Want to read" books={shelves.saved} />
           {shelves.byTopic.map(({ topic, books }) => (
             <Shelf key={topic.id} title={`${topic.emoji} ${topic.name}`} books={books} topicId={topic.id} />
           ))}
@@ -152,6 +179,9 @@ export default function LibraryScreen() {
     </ScrollView>
   );
 }
+
+const NEW_DAYS = 7;
+const isNew = (addedAt?: string) => !!addedAt && Date.now() - new Date(addedAt).getTime() < NEW_DAYS * 24 * 60 * 60 * 1000;
 
 function ClassicShelf({ title, items }: { title: string; items: typeof classics }) {
   const { readerProgress } = useStore();
@@ -172,6 +202,8 @@ function ClassicShelf({ title, items }: { title: string; items: typeof classics 
               width={112}
               caption
               fraction={fraction}
+              favoriteKey={classicReaderId(item.id)}
+              badge={isNew(item.addedAt) ? 'NEW' : undefined}
               subtitle={fraction != null ? `${Math.round(fraction * 100)}% read` : item.author}
               onPress={() => router.push({ pathname: '/classic/[id]', params: { id: item.id } })}
             />
@@ -197,6 +229,10 @@ const styles = StyleSheet.create({
   ownBook: { color: colors.text, fontWeight: '700' },
   ownMeta: { color: colors.muted, fontSize: 12 },
   ownRemove: { padding: 8 },
+  ownHeart: { width: 36, height: 36 },
+  headerHeart: { flexDirection: 'row', alignItems: 'center', gap: 4, marginRight: 16, paddingHorizontal: 4 },
+  headerHeartIcon: { color: '#FF6B81', fontSize: 20 },
+  headerHeartCount: { color: colors.muted, fontSize: 13, fontWeight: '700' },
   container: { flex: 1, backgroundColor: colors.background },
   content: { gap: 28, paddingBottom: 32 },
   search: {

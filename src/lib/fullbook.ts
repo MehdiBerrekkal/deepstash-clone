@@ -18,6 +18,8 @@ export type Classic = {
   gutenberg?: number;
   /** Added through the books/ folder (scripts/build-books.js). */
   origin?: 'books';
+  /** When `npm run books` first imported it (ISO date). */
+  addedAt?: string;
   description?: string;
   /** "Public domain" or a Creative Commons license, for books not from Gutenberg. */
   license?: string;
