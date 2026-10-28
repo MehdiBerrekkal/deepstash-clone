@@ -2,8 +2,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import { bundledContent, type Content } from '@/data/content';
+import type { OwnBook } from '@/lib/ownbooks';
 import { supabase } from '@/lib/supabase';
-import type { BookProgress, CardKind, Idea, Source, Stash, Streak, Topic } from '@/lib/types';
+import type {
+  Bookmark, BookProgress, CardKind, Idea, ReaderPosition, ReaderProgress, ReaderSettings, Source, Stash, Streak, Topic,
+} from '@/lib/types';
 
 const STORAGE_KEY = 'deepstash-clone/user-state/v1';
 const MAX_READ_HISTORY = 5000;
@@ -19,6 +22,13 @@ type UserState = {
   readIdeaIds: string[];
   dailyGoal: number;
   today: { date: string; count: number };
+  readerSettings: ReaderSettings;
+  /** Keyed by reader id: "classic:<id>" or "own:<id>". */
+  readerProgress: Record<string, ReaderProgress>;
+  bookmarks: Record<string, Bookmark[]>;
+  /** Passages saved from the full-book reader, stored as quote cards so stashes can hold them. */
+  clips: Idea[];
+  ownBooks: OwnBook[];
 };
 
 type Store = Content &
@@ -40,6 +50,13 @@ type Store = Content &
     toggleSavedBook: (bookId: string) => void;
     setDailyGoal: (goal: number) => void;
     resetProgress: () => void;
+    setReaderSettings: (settings: Partial<ReaderSettings>) => void;
+    setReaderPosition: (readerId: string, position: ReaderPosition, fraction: number) => void;
+    toggleBookmark: (readerId: string, position: ReaderPosition, label: string) => void;
+    removeBookmark: (readerId: string, bookmarkId: string) => void;
+    saveClip: (clip: Omit<Idea, 'id' | 'kind'>) => Idea;
+    addOwnBook: (book: OwnBook) => void;
+    removeOwnBook: (id: string) => void;
   };
 
 const DEFAULT_STASH: Stash = { id: 'saved', name: 'Saved', ideaIds: [], createdAt: new Date(0).toISOString() };
@@ -54,6 +71,11 @@ const initialUserState: UserState = {
   readIdeaIds: [],
   dailyGoal: 10,
   today: { date: '', count: 0 },
+  readerSettings: { theme: 'sepia', fontSize: 19 },
+  readerProgress: {},
+  bookmarks: {},
+  clips: [],
+  ownBooks: [],
 };
 
 const StoreContext = createContext<Store | null>(null);
@@ -206,6 +228,48 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setUser((u) => ({ ...u, bookProgress: {}, readIdeaIds: [], today: { date: localDate(), count: 0 } }));
   }, []);
 
+  const setReaderSettings = useCallback((settings: Partial<ReaderSettings>) => {
+    setUser((u) => ({ ...u, readerSettings: { ...u.readerSettings, ...settings } }));
+  }, []);
+
+  const setReaderPosition = useCallback((readerId: string, position: ReaderPosition, fraction: number) => {
+    setUser((u) => ({
+      ...u,
+      readerProgress: { ...u.readerProgress, [readerId]: { ...position, fraction, updatedAt: new Date().toISOString() } },
+    }));
+  }, []);
+
+  const toggleBookmark = useCallback((readerId: string, position: ReaderPosition, label: string) => {
+    setUser((u) => {
+      const list = u.bookmarks[readerId] ?? [];
+      const same = (b: Bookmark) => b.chapter === position.chapter && b.para === position.para && b.char === position.char;
+      const next = list.some(same)
+        ? list.filter((b) => !same(b))
+        : [...list, { ...position, id: `${Date.now()}`, label, createdAt: new Date().toISOString() }];
+      return { ...u, bookmarks: { ...u.bookmarks, [readerId]: next } };
+    });
+  }, []);
+
+  const removeBookmark = useCallback((readerId: string, bookmarkId: string) => {
+    setUser((u) => ({ ...u, bookmarks: { ...u.bookmarks, [readerId]: (u.bookmarks[readerId] ?? []).filter((b) => b.id !== bookmarkId) } }));
+  }, []);
+
+  const saveClip = useCallback((clip: Omit<Idea, 'id' | 'kind'>) => {
+    const idea: Idea = { ...clip, id: `clip-${Date.now().toString(36)}`, kind: 'quote' };
+    setUser((u) => ({ ...u, clips: [idea, ...u.clips] }));
+    return idea;
+  }, []);
+
+  const addOwnBook = useCallback((book: OwnBook) => setUser((u) => ({ ...u, ownBooks: [book, ...u.ownBooks] })), []);
+
+  const removeOwnBook = useCallback((id: string) => {
+    setUser((u) => {
+      const { [`own:${id}`]: _progress, ...readerProgress } = u.readerProgress;
+      const { [`own:${id}`]: _marks, ...bookmarks } = u.bookmarks;
+      return { ...u, ownBooks: u.ownBooks.filter((b) => b.id !== id), readerProgress, bookmarks };
+    });
+  }, []);
+
   const indexes = useMemo(() => {
     const ideasBySource: Record<string, Idea[]> = {};
     for (const idea of content.ideas) {
@@ -214,10 +278,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return {
       topicById: toIndex(content.topics),
       sourceById: toIndex(content.sources),
-      ideaById: toIndex(content.ideas),
+      ideaById: toIndex([...content.ideas, ...user.clips]),
       ideasBySource,
     };
-  }, [content]);
+  }, [content, user.clips]);
 
   const value = useMemo<Store>(() => {
     const savedIds = new Set(user.stashes.flatMap((s) => s.ideaIds));
@@ -240,8 +304,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       toggleSavedBook,
       setDailyGoal,
       resetProgress,
+      setReaderSettings,
+      setReaderPosition,
+      toggleBookmark,
+      removeBookmark,
+      saveClip,
+      addOwnBook,
+      removeOwnBook,
     };
-  }, [content, user, ready, indexes, setFollowedTopics, createStash, deleteStash, toggleInStash, toggleLike, markRead, setBookPosition, finishBook, toggleSavedBook, setDailyGoal, resetProgress]);
+  }, [
+    content, user, ready, indexes, setFollowedTopics, createStash, deleteStash, toggleInStash, toggleLike, markRead, setBookPosition,
+    finishBook, toggleSavedBook, setDailyGoal, resetProgress, setReaderSettings, setReaderPosition, toggleBookmark, removeBookmark,
+    saveClip, addOwnBook, removeOwnBook,
+  ]);
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 }

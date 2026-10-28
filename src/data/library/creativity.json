@@ -61,6 +61,17 @@
         ["Be an amateur", "Amateurs share because they love the work and aren't afraid to look foolish. That openness makes them easier to relate to than experts."],
         ["Teach what you know", "Explaining your methods doesn't make you replaceable. It builds trust, and people value those who share."]
       ]
+    },
+    {
+      "id": "free-culture", "title": "Free Culture", "author": "Lawrence Lessig", "kind": "book", "year": 2004,
+      "description": "A law professor argues that ever-longer copyright and big media control are locking up culture that used to be free to build on.",
+      "free": {"url": "https://lessig.org/product/free-culture/", "license": "CC BY-NC 1.0", "licenseUrl": "https://creativecommons.org/licenses/by-nc/1.0/", "note": "Free PDF from the author under a Creative Commons license."},
+      "ideas": [
+        ["Culture builds on culture", "Disney's early films reworked older folk tales and silent films. Creativity has always borrowed; when everything is locked up, there's less to build on."],
+        ["Copyright keeps getting longer", "Copyright in the US started at 14 years, renewable once. It now lasts the author's life plus 70 years. Most works stay locked long after they stop earning anything."],
+        ["Permission culture", "When every use needs a lawyer's approval, only those with money can create freely. Lessig contrasts this with a free culture where building on the past is the norm."],
+        ["Some rights reserved", "Lessig co-founded Creative Commons to let creators choose a middle ground: keep some rights, give others away, like free sharing for non-commercial use."]
+      ]
     }
   ]
 }

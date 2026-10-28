@@ -15,6 +15,11 @@ Built with Expo (React Native + Expo Router), so the same code runs on iOS, Andr
 - **Explore:** search everything (ideas, quotes, poems, books, authors), filter by type, browse topics.
 - **You:** daily reading goal, streak, cards read, books finished, likes and stashes.
 - **Like and share** any card.
+- **Full-book reader:** 28 complete books to read in the app, with page swiping, pinch-to-zoom and text size, light, sepia and dark themes, a table of contents, bookmarks, and resume where you stopped. Long-press a paragraph to save it to a stash.
+  - **Free classics:** 26 public-domain books from Project Gutenberg, such as Meditations, The Art of War, Tao Te Ching, Walden and Pride and Prejudice, all in public-domain translations.
+  - **Free from the author:** two Cory Doctorow novels he released under Creative Commons, bundled with their license. Eight more free books (The Almanack of Naval Ravikant, Pro Git, Shape Up, OpenStax textbooks and others) link to their official pages, because their licenses don't allow copying them into the app.
+- **Your own books:** open a DRM-free EPUB or PDF from your device. EPUBs open in the reader. PDFs open in the system viewer, or in the browser on the web. Files stay on the device and are never uploaded.
+- **Modern books** link to Open Library to find or borrow the full book.
 
 Content: about 370 book and article ideas, 90 quotes, 32 full poems and 66 knowledge cards. Every idea and knowledge card is an original summary. Quotes are short and attributed. All the poems were published before 1929 and are in the public domain.
 
@@ -36,6 +41,8 @@ npx expo start        # press w for web, or scan the QR code with Expo Go
 
 To add or edit books, change `src/data/library/<topic>.json` and run `npm run seed:sql` to regenerate `supabase/seed.sql`. Run `node scripts/fetch-covers.js` to look up covers for new books. Quotes, poems and knowledge cards live in `src/data/quotes.json`, `poems.json` and `facts.json`.
 
+Full books live in `src/data/classics/`. Each one is a `.txt` asset that holds the chapters as JSON and loads only when it's opened. `metro.config.js` registers the `.txt` extension. To add or rebuild books, edit the list in `scripts/build-classics.js` and run `node scripts/build-classics.js`. Only add books that are public domain or under a license that allows redistribution, and include that license.
+
 ## Project layout
 
 ```
@@ -44,12 +51,15 @@ src/app/            screens (Expo Router: each file is a route)
   onboarding.tsx    topic picker
   book/[id].tsx     book page: description, key ideas, start/continue
   read/[id].tsx     swipeable book reader with progress
+  reader/[id].tsx   full-book reader (classics and your own EPUBs)
+  classic/[id].tsx  full classic: details, contents, license
+  pdf/[id].tsx      web PDF viewer for your own files
   topic/[id].tsx    books and cards in one topic
   idea/[id].tsx     card detail + add to stash
   stash/[id].tsx    cards in one stash
 src/components/     IdeaCard, CardBody, BookCover, Shelf, BookGrid, KindFilter, IdeaRow, TopicChip
-src/lib/            store (state + persistence), Supabase client, types, theme
-src/data/           library/ (books by topic), quotes, poems, facts, covers, content.ts (loader)
+src/lib/            store, pagination, EPUB parser, own-file storage, full-book loader, Supabase client, types, theme
+src/data/           library/ (books by topic), classics/ (full books), quotes, poems, facts, covers, content.ts (loader)
 scripts/            seed SQL generator, Open Library cover lookup
 supabase/           database schema and seed
 ```

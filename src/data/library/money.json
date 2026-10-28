@@ -63,6 +63,18 @@
         ["Conscious spending plan", "A simple split: fixed costs, investments, savings goals and guilt-free spending. If the fixed costs are reasonable, the rest takes care of itself."],
         ["Focus on big wins", "Negotiating your salary or rent saves more than a lifetime of skipped coffees. Spend your energy on the few decisions that move the needle."]
       ]
+    },
+    {
+      "id": "almanack-of-naval", "title": "The Almanack of Naval Ravikant", "author": "Eric Jorgenson", "kind": "book", "year": 2020,
+      "description": "Naval Ravikant's ideas on building wealth and finding happiness, collected from his tweets, podcasts and essays.",
+      "free": {"url": "https://www.navalmanack.com/", "note": "Free PDF and EPUB from the official site. Not licensed for redistribution, so download it there."},
+      "ideas": [
+        ["Seek wealth, not money or status", "Wealth is assets that earn while you sleep: businesses, code, media, equity. Money is how we move time and wealth around. Status is a zero-sum ranking game. Building wealth can be positive-sum; chasing status rarely is."],
+        ["Specific knowledge", "The skills that make you hard to replace usually can't be taught in a classroom. They come from following your genuine curiosity, so they feel like play to you and look like work to others."],
+        ["Leverage multiplies judgment", "Labour and capital need permission. Code and media don't: a program or a video can work for millions of people at once at almost no extra cost. Combine good judgment with that kind of leverage."],
+        ["Play long-term games with long-term people", "The returns in relationships, skills and reputation compound. Pick people you'd want to work with for decades and keep showing up."],
+        ["Happiness is a skill", "Happiness, in this view, is less something you find than a habit you train: lowering desires, meditating, exercising, and noticing that a desire is a contract you make to be unhappy until you get what you want."]
+      ]
     }
   ]
 }

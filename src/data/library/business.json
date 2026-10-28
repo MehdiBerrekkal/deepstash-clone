@@ -63,6 +63,30 @@
         ["Meetings are toxic", "A one-hour meeting with ten people costs ten hours of work. Hold fewer, shorter ones, with a clear agenda."],
         ["Say no by default", "Each yes adds complexity. Saying no to most feature requests keeps a product focused."]
       ]
+    },
+    {
+      "id": "shape-up", "title": "Shape Up", "author": "Ryan Singer", "kind": "book", "year": 2019,
+      "description": "How Basecamp plans and builds software in six-week cycles without endless backlogs.",
+      "free": {"url": "https://basecamp.com/shapeup", "note": "Free to read on the publisher's site. All rights reserved, so it's read there, not copied into the app."},
+      "ideas": [
+        ["Fixed time, variable scope", "Instead of estimating how long a feature takes, decide how much time it's worth, an appetite, and shape the solution to fit that budget."],
+        ["Shape before you build", "Senior people first sketch the problem, the rough solution and the risks at the right level of detail: concrete enough to act on, loose enough to leave room for the builders."],
+        ["Bets, not backlogs", "Rather than an ever-growing backlog, leaders review a few shaped pitches each cycle and bet on some. Ideas that aren't chosen can come back later if they still matter."],
+        ["Six-week cycles and cool-down", "Teams work uninterrupted for six weeks, then take two weeks of cool-down to fix bugs and explore. The rhythm protects focus and prevents burnout."],
+        ["Hill charts", "Work has an uphill phase of figuring things out and a downhill phase of execution. Showing where each piece sits reveals real progress better than task counts."]
+      ]
+    },
+    {
+      "id": "getting-real", "title": "Getting Real", "author": "37signals", "kind": "book", "year": 2006,
+      "description": "The small, fast, less-is-more approach to building web software that 37signals used to make Basecamp.",
+      "free": {"url": "https://basecamp.com/gettingreal", "note": "Free to read on the publisher's site. All rights reserved, so it's read there, not copied into the app."},
+      "ideas": [
+        ["Build less", "Do less than your competitors on purpose. Fewer features mean less to maintain, easier products and a clearer message."],
+        ["Embrace constraints", "Limited time, money and people force focus and creativity. Constraints are often an advantage, not a handicap."],
+        ["Start with the interface", "Design the screens people will actually use before writing the code. It's cheaper to change a sketch than a finished system."],
+        ["Launch, then iterate", "Real usage teaches more than plans. Get a simple version out, listen to customers, and keep improving in small steps."],
+        ["Say no by default", "Every feature request sounds reasonable alone. Saying no to most keeps the product coherent; the important ones keep coming back."]
+      ]
     }
   ]
 }

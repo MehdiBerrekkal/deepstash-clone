@@ -21,6 +21,9 @@ export default function RootLayout() {
         <Stack.Screen name="book/[id]" options={{ title: '' }} />
         <Stack.Screen name="read/[id]" options={{ title: 'Reading' }} />
         <Stack.Screen name="topic/[id]" options={{ title: 'Topic' }} />
+        <Stack.Screen name="classic/[id]" options={{ title: '' }} />
+        <Stack.Screen name="reader/[id]" options={{ headerShown: false }} />
+        <Stack.Screen name="pdf/[id]" options={{ title: 'PDF' }} />
       </Stack>
     </StoreProvider>
   );

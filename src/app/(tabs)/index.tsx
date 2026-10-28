@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useState } from 'react';
+import { useLayoutEffect, useState } from 'react';
 import { FlatList, StyleSheet, Text, View, type LayoutChangeEvent, type ListViewToken } from 'react-native';
 import { useNavigation } from 'expo-router';
 
@@ -28,12 +28,10 @@ export default function FeedScreen() {
     });
   }, [navigation, streak.count, today.count, dailyGoal]);
 
-  const onViewable = useCallback(
-    ({ viewableItems }: { viewableItems: ListViewToken[] }) => {
-      for (const v of viewableItems) if (v.isViewable && v.item) markRead((v.item as Idea).id);
-    },
-    [markRead],
-  );
+  // FlatList doesn't allow this callback to change after mount; markRead is stable.
+  const [onViewable] = useState(() => ({ viewableItems }: { viewableItems: ListViewToken[] }) => {
+    for (const v of viewableItems) if (v.isViewable && v.item) markRead((v.item as Idea).id);
+  });
 
   const onLayout = (e: LayoutChangeEvent) => setHeight(e.nativeEvent.layout.height);
 

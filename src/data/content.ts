@@ -1,4 +1,4 @@
-import type { Idea, Source, SourceKind, Topic } from '@/lib/types';
+import type { FreeOffer, Idea, Source, SourceKind, Topic } from '@/lib/types';
 
 import business from './library/business.json';
 import career from './library/career.json';
@@ -28,6 +28,7 @@ type LibraryFile = {
     kind: string;
     year?: number;
     description: string;
+    free?: FreeOffer;
     /** [title, body] or [title, body, id] when the idea needs a stable legacy id. */
     ideas: string[][];
   }[];
@@ -68,6 +69,7 @@ function build(): Content {
         description: book.description,
         year: book.year,
         coverId: coverIds[book.id],
+        free: book.free,
       });
       book.ideas.forEach(([title, body, id], i) => {
         ideas.push({ id: id ?? `${book.id}-${i + 1}`, kind: 'idea', topicId: topic.id, sourceId: book.id, title, body });

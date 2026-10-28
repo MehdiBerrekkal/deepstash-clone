@@ -66,6 +66,17 @@
         ["The tripartite soul", "Plato saw the soul as reason, spirit and appetite, like a charioteer steering two horses. A just person lets reason guide, with spirit as its ally and appetite kept in check."],
         ["Philosopher kings", "Plato argued that cities would be best ruled by those who love wisdom and don't want power. The people who seek power most eagerly are often the least fit to hold it."]
       ]
+    },
+    {
+      "id": "openstax-intro-philosophy", "title": "Introduction to Philosophy", "author": "Nathan Smith et al. (OpenStax)", "kind": "book", "year": 2022,
+      "description": "A free, peer-reviewed university textbook covering the big questions of philosophy, from logic and ethics to the mind and society.",
+      "free": {"url": "https://openstax.org/details/books/introduction-philosophy", "license": "CC BY 4.0", "licenseUrl": "https://creativecommons.org/licenses/by/4.0/", "note": "Free from OpenStax at Rice University, online and as a PDF."},
+      "ideas": [
+        ["Philosophy starts with questions", "Philosophy examines assumptions most people never question: what is real, what we can know, what makes an action right. Asking clearly is half the work."],
+        ["Arguments have structure", "An argument is a set of premises that support a conclusion. A valid argument with true premises guarantees its conclusion, which is why philosophers check both."],
+        ["Three big approaches to ethics", "Consequentialism judges actions by their results, deontology by duties and rules, and virtue ethics by the character they express. Each captures something the others miss."],
+        ["Philosophy is global", "Alongside Greek thinkers, the book covers traditions from China, India, Africa and the Americas, showing how different cultures tackled the same deep questions."]
+      ]
     }
   ]
 }

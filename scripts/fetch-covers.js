@@ -13,6 +13,12 @@ const books = fs
   .flatMap((f) => JSON.parse(fs.readFileSync(path.join(libraryDir, f), 'utf8')).books)
   .filter((b) => b.kind === 'book');
 
+// Full public-domain classics get covers too, keyed "classic:<id>".
+const classicsIndex = path.join(__dirname, '..', 'src', 'data', 'classics', 'index.json');
+if (fs.existsSync(classicsIndex)) {
+  for (const c of JSON.parse(fs.readFileSync(classicsIndex, 'utf8'))) books.push({ ...c, id: `classic:${c.id}`, kind: 'book' });
+}
+
 const existing = fs.existsSync(outFile) ? JSON.parse(fs.readFileSync(outFile, 'utf8')) : {};
 
 async function search(book, language) {

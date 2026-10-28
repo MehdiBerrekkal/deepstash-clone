@@ -12,17 +12,21 @@ type Props = {
   /** Show title and progress under the cover. */
   caption?: boolean;
   onPress?: () => void;
+  /** Reading progress 0–1, when it isn't the key-ideas progress (e.g. a full classic). */
+  fraction?: number;
+  /** Replaces the author line under the cover. */
+  subtitle?: string;
 };
 
 /** A typographic cover in the topic's colour, with the Open Library cover on top once it loads. */
-export function BookCover({ book, width, caption = false, onPress }: Props) {
+export function BookCover({ book, width, caption = false, onPress, fraction: fractionOverride, subtitle }: Props) {
   const { topicById, bookProgress, ideasBySource } = useStore();
   const [failed, setFailed] = useState(false);
   const topic = topicById[book.topicId];
   const height = width * 1.5;
   const progress = bookProgress[book.id];
   const total = ideasBySource[book.id]?.length ?? 0;
-  const fraction = progress?.finishedAt ? 1 : progress && total ? progress.position / total : 0;
+  const fraction = fractionOverride ?? (progress?.finishedAt ? 1 : progress && total ? progress.position / total : 0);
 
   return (
     <Pressable
@@ -58,7 +62,7 @@ export function BookCover({ book, width, caption = false, onPress }: Props) {
             {book.title}
           </Text>
           <Text style={styles.captionAuthor} numberOfLines={1}>
-            {progress?.finishedAt ? '✓ Finished' : book.author}
+            {subtitle ?? (progress?.finishedAt ? '✓ Finished' : book.author)}
           </Text>
         </View>
       )}

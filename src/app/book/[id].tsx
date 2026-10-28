@@ -1,14 +1,15 @@
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 
 import { BookCover } from '@/components/BookCover';
 import { Shelf } from '@/components/Shelf';
+import { classicBySourceId, classicReaderId } from '@/lib/fullbook';
 import { useStore } from '@/lib/store';
 import { colors, readMinutes, serif, sourceKindLabel } from '@/lib/theme';
 
 export default function BookScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { sourceById, ideasBySource, topicById, bookProgress, savedBookIds, toggleSavedBook, sources } = useStore();
+  const { sourceById, ideasBySource, topicById, bookProgress, savedBookIds, toggleSavedBook, sources, readerProgress } = useStore();
   const book = sourceById[id];
 
   if (!book) return <Text style={styles.muted}>Book not found.</Text>;
@@ -19,6 +20,8 @@ export default function BookScreen() {
   const saved = savedBookIds.includes(book.id);
   const minutes = readMinutes(ideas.map((i) => `${i.title} ${i.body}`));
   const related = sources.filter((s) => s.topicId === book.topicId && s.id !== book.id);
+  const fullText = classicBySourceId[book.id];
+  const fullProgress = fullText ? readerProgress[classicReaderId(fullText.id)] : undefined;
 
   const read = (start: number) => router.push({ pathname: '/read/[id]', params: { id: book.id, start: String(start) } });
   const primaryLabel = progress?.finishedAt
@@ -50,6 +53,32 @@ export default function BookScreen() {
             style={styles.primary}>
             <Text style={styles.primaryText}>{primaryLabel}</Text>
           </Pressable>
+          {fullText ? (
+            <Pressable
+              onPress={() => router.push({ pathname: '/reader/[id]', params: { id: fullText.id, kind: 'classic' } })}
+              style={styles.fullBook}>
+              <Text style={styles.fullBookText}>
+                📚 {fullProgress ? `Continue the full book · ${Math.round(fullProgress.fraction * 100)}%` : 'Read the full book · free'}
+              </Text>
+            </Pressable>
+          ) : book.free ? (
+            <>
+              <Pressable onPress={() => Linking.openURL(book.free!.url)} style={styles.fullBook}>
+                <Text style={styles.fullBookText}>🎁 Download free from the author ↗</Text>
+              </Pressable>
+              <Text style={styles.freeHint}>
+                Got the EPUB or PDF? Open it in Library → Your books → “Open your own book” to read it here.
+              </Text>
+            </>
+          ) : (
+            book.kind === 'book' && (
+              <Pressable
+                onPress={() => Linking.openURL(`https://openlibrary.org/search?q=${encodeURIComponent(`${book.title} ${book.author}`)}`)}
+                style={styles.fullBook}>
+                <Text style={styles.fullBookText}>Get the full book on Open Library ↗</Text>
+              </Pressable>
+            )
+          )}
           <View style={styles.secondaryRow}>
             <Pressable onPress={() => toggleSavedBook(book.id)} style={[styles.secondary, saved && styles.secondaryOn]}>
               <Text style={styles.secondaryText}>{saved ? '✓ In your library' : '+ Want to read'}</Text>
@@ -62,6 +91,20 @@ export default function BookScreen() {
           </View>
 
           <Text style={styles.description}>{book.description}</Text>
+          {book.free && (
+            <Text style={styles.freeHint}>
+              {book.free.note}
+              {book.free.license && (
+                <>
+                  {' '}License:{' '}
+                  <Text style={styles.licenseLink} onPress={() => book.free?.licenseUrl && Linking.openURL(book.free.licenseUrl)}>
+                    {book.free.license}
+                  </Text>
+                  , © {book.author}.
+                </>
+              )}
+            </Text>
+          )}
           {topic && (
             <Pressable onPress={() => router.push({ pathname: '/topic/[id]', params: { id: topic.id } })}>
               <Text style={styles.topic}>
@@ -98,6 +141,10 @@ const styles = StyleSheet.create({
   primary: { paddingVertical: 16, borderRadius: 999, alignItems: 'center', backgroundColor: colors.accent },
   primaryText: { color: colors.onAccent, fontWeight: '800', fontSize: 16 },
   secondaryRow: { flexDirection: 'row', gap: 10 },
+  fullBook: { paddingVertical: 14, borderRadius: 999, alignItems: 'center', borderWidth: 1, borderColor: colors.accent },
+  fullBookText: { color: colors.accent, fontWeight: '800', fontSize: 15 },
+  freeHint: { color: colors.muted, fontSize: 13, lineHeight: 19 },
+  licenseLink: { color: colors.accent, fontWeight: '700' },
   secondary: { flex: 1, paddingVertical: 12, borderRadius: 999, alignItems: 'center', backgroundColor: colors.surface },
   secondaryOn: { backgroundColor: colors.surfaceRaised, borderWidth: 1, borderColor: colors.accent },
   secondaryText: { color: colors.text, fontWeight: '700' },

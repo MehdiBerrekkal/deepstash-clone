@@ -51,6 +51,29 @@
         ["Interest comes first", "Passion usually starts with a spark of interest, then grows through practice and finding purpose."],
         ["Hope as a habit", "Gritty people expect their efforts to improve their future. That optimism keeps them trying after failures."]
       ]
+    },
+    {
+      "id": "pro-git", "title": "Pro Git", "author": "Scott Chacon & Ben Straub", "kind": "book", "year": 2014,
+      "description": "The standard guide to Git, the version-control system almost every software team uses.",
+      "free": {"url": "https://git-scm.com/book/en/v2", "license": "CC BY-NC-SA 3.0", "licenseUrl": "https://creativecommons.org/licenses/by-nc-sa/3.0/", "note": "Free online, plus PDF and EPUB downloads from the official site."},
+      "ideas": [
+        ["Snapshots, not differences", "Git stores each commit as a snapshot of your whole project, saving space by reusing unchanged files. That's why switching between versions is fast."],
+        ["Three states", "Files are modified in your working folder, staged when you choose what goes into the next commit, and committed once saved to history. Staging lets you make clean, focused commits."],
+        ["Branches are cheap", "A branch is just a pointer to a commit. Because creating one costs almost nothing, you can try ideas on their own branch and merge only what works."],
+        ["Everything is local", "Almost every Git operation works on your own machine with the full history, so you can commit, compare and browse history offline."],
+        ["Rewrite only unpublished history", "Tools like rebase can tidy up commits, but rewriting history other people already have causes painful conflicts. Clean up locally before you share."]
+      ]
+    },
+    {
+      "id": "think-python", "title": "Think Python", "author": "Allen B. Downey", "kind": "book", "year": 2015,
+      "description": "A friendly introduction to programming and computational thinking, using Python.",
+      "free": {"url": "https://greenteapress.com/wp/think-python-2e/", "license": "CC BY-NC 3.0", "licenseUrl": "https://creativecommons.org/licenses/by-nc/3.0/", "note": "Free PDF and HTML from the publisher under a Creative Commons license."},
+      "ideas": [
+        ["Programming is problem solving", "The core skill isn't memorizing syntax; it's breaking a problem into small steps a computer can follow, then checking each step works."],
+        ["Debugging is experimentation", "Treat a bug like a science experiment: form a hypothesis, change one thing, observe. Read error messages carefully; they usually point near the real problem."],
+        ["Functions tame complexity", "Wrapping a few lines into a named function lets you reuse them, test them on their own and think about the program at a higher level."],
+        ["Incremental development", "Write a little code, run it, then add a little more. Small working steps make it obvious where a new error came from."]
+      ]
     }
   ]
 }

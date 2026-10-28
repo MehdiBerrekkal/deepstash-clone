@@ -69,6 +69,18 @@
         ["The IKEA effect", "We overvalue things we built ourselves, even badly. Effort creates attachment, which is why a little customer involvement makes products feel more valuable."],
         ["Keeping doors open", "We waste effort keeping options alive even when they have little value. Closing some doors on purpose frees energy for the ones that matter."]
       ]
+    },
+    {
+      "id": "openstax-psychology", "title": "Psychology 2e", "author": "Rose M. Spielman et al. (OpenStax)", "kind": "book", "year": 2020,
+      "description": "A free, peer-reviewed introductory psychology textbook covering the brain, learning, memory, emotion, personality and mental health.",
+      "free": {"url": "https://openstax.org/details/books/psychology-2e", "license": "CC BY 4.0", "licenseUrl": "https://creativecommons.org/licenses/by/4.0/", "note": "Free from OpenStax at Rice University, online and as a PDF."},
+      "ideas": [
+        ["Psychology is a science", "Psychologists test ideas with experiments and careful observation rather than intuition. Correlation alone doesn't show cause; controlled experiments can."],
+        ["Memory is reconstructive", "We don't replay memories like videos; we rebuild them each time, which is why confident memories can still be wrong and can be shaped by later information."],
+        ["Learning through consequences", "Behaviours followed by rewards tend to be repeated, and those followed by unpleasant results tend to fade. This operant conditioning shapes habits in people and animals."],
+        ["Nature and nurture interact", "Genes set ranges and tendencies, and environment determines how they are expressed. Almost no trait comes purely from one or the other."],
+        ["Stress affects the whole body", "Long-term stress keeps the body's alarm system active, which can weaken immunity and health. Social support and coping skills reduce its impact."]
+      ]
     }
   ]
 }

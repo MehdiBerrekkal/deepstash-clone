@@ -61,6 +61,29 @@
         ["Anomalies pile up", "Results that don't fit accumulate until the old paradigm can't absorb them, and a crisis begins."],
         ["Paradigm shifts", "Eventually a new framework replaces the old one, as when Copernicus moved the Sun to the centre. Afterwards, scientists see the world differently."]
       ]
+    },
+    {
+      "id": "little-brother", "title": "Little Brother", "author": "Cory Doctorow", "kind": "book", "year": 2008,
+      "description": "A teenage hacker fights back after a terror attack turns San Francisco into a surveillance state. A novel about privacy, technology and civil liberties.",
+      "free": {"url": "https://craphound.com/littlebrother/download/", "license": "CC BY-NC-SA 3.0", "licenseUrl": "https://creativecommons.org/licenses/by-nc-sa/3.0/", "note": "Released by the author under a Creative Commons license, so the full novel is included."},
+      "ideas": [
+        ["Surveillance changes behaviour", "In the novel, constant monitoring doesn't just catch wrongdoers; it makes ordinary people afraid to act normally. Being watched all the time shrinks everyone's freedom, guilty or not."],
+        ["Security theatre versus real security", "Many measures look tough but don't make anyone safer, while they inconvenience millions. The book asks readers to judge security by results, not by how dramatic it looks."],
+        ["The false-positive problem", "When you hunt for something very rare in a huge population, even a 99% accurate test flags mostly innocent people. Mass screening drowns investigators in false alarms."],
+        ["Privacy is not about hiding wrongdoing", "Everyone does private things, like using the bathroom, that aren't wrong. Privacy protects the space where people think, explore and grow without an audience."],
+        ["Understand the tools to stay free", "The main character survives because he understands how the technology works: encryption, networks and their weak points. Technical literacy becomes a form of civic power."]
+      ]
+    },
+    {
+      "id": "down-and-out", "title": "Down and Out in the Magic Kingdom", "author": "Cory Doctorow", "kind": "book", "year": 2003,
+      "description": "In a post-scarcity future where death is cured and money is replaced by reputation, a man fights to keep his favourite Disney World ride from being changed.",
+      "free": {"url": "https://craphound.com/down/download/", "license": "CC BY-NC-SA 1.0", "licenseUrl": "https://creativecommons.org/licenses/by-nc-sa/1.0/", "note": "Released by the author under a Creative Commons license, so the full novel is included."},
+      "ideas": [
+        ["Reputation as currency", "The book imagines \"Whuffie\", a live score of how much others respect you, replacing money. It shows how a reputation economy could be just as unequal and anxious as a cash one."],
+        ["Abundance doesn't end conflict", "Even when food, health and housing are free, people still compete for attention, status and control over things they care about."],
+        ["Immortality changes ambition", "When backups and new bodies make death optional, characters lose urgency. The story asks whether limits are part of what gives choices meaning."],
+        ["Free distribution as strategy", "Doctorow released this, his first novel, free online and argued that giving it away helped it find readers and sales. Obscurity, not piracy, is the bigger threat to most creators."]
+      ]
     }
   ]
 }
