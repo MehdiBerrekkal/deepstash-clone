@@ -54,6 +54,22 @@
       ]
     },
     {
+      "id": "leading-change", "title": "Leading Change", "author": "John P. Kotter", "kind": "book", "year": 1996,
+      "description": "A Harvard professor's eight-stage process for leading change in organizations, and the common mistakes that make transformations fail.",
+      "ideas": [
+        ["Most change efforts fail for predictable reasons", "Kotter studied many companies trying to transform and saw the same mistakes again and again: complacency, weak leadership teams, unclear visions, poor communication and declaring victory too soon. Knowing the traps is half of avoiding them."],
+        ["Create a sense of urgency", "People won't change while they believe things are fine. The first step is helping enough of them see, with real evidence, why staying the same is more dangerous than moving. Without urgency, everything else stalls."],
+        ["Build a guiding coalition", "No single leader can drive major change alone. Form a team with enough authority, expertise, credibility and leadership skill, and make sure its members trust each other and share the goal."],
+        ["Develop a clear vision and strategy", "A good vision describes a future people can picture and want, and it fits in a few sentences. If you can't explain it in five minutes and get interest, it isn't clear enough yet."],
+        ["Communicate the vision constantly", "Leaders usually under-communicate by a factor of ten or more. Repeat the vision in every channel, use simple language and examples, and above all, show it through your own behaviour."],
+        ["Remove obstacles and empower action", "Rigid structures, outdated systems and managers who resist can block people who want to help. Clear those barriers so employees can act on the vision."],
+        ["Generate short-term wins", "Big changes take years, and people lose faith without proof along the way. Plan visible, unambiguous wins within the first months to reward the effort and quiet the critics."],
+        ["Don't declare victory too soon", "Celebrating early wins is fine, but announcing the job is done lets resistance creep back. Use the credibility of early wins to tackle bigger problems."],
+        ["Anchor change in the culture", "New ways of working only last when they become \"the way we do things here\". Show people how the new behaviours improved results, and make sure the next generation of leaders embodies them."],
+        ["Leadership versus management", "Management keeps a complex system running smoothly through planning, budgeting and control. Leadership sets direction, aligns people and inspires them. Successful change is mostly leadership, and organizations usually have too little of it."]
+      ]
+    },
+    {
       "id": "the-art-of-war", "title": "The Art of War", "author": "Sun Tzu", "kind": "book", "year": -500,
       "description": "An ancient Chinese treatise on strategy that is still read by leaders far beyond the military.",
       "ideas": [
