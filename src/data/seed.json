@@ -1,0 +1,167 @@
+{
+  "topics": [
+    { "id": "productivity", "name": "Productivity", "emoji": "⚡", "color": "#2F5D50" },
+    { "id": "psychology", "name": "Psychology", "emoji": "🧠", "color": "#4B3F72" },
+    { "id": "philosophy", "name": "Philosophy", "emoji": "🏛️", "color": "#5C4033" },
+    { "id": "mindfulness", "name": "Mindfulness", "emoji": "🌿", "color": "#2E5266" },
+    { "id": "money", "name": "Money", "emoji": "💰", "color": "#6B4E16" },
+    { "id": "health", "name": "Health", "emoji": "💪", "color": "#7A2E3A" },
+    { "id": "creativity", "name": "Creativity", "emoji": "🎨", "color": "#3D5A80" },
+    { "id": "leadership", "name": "Leadership", "emoji": "🧭", "color": "#40513B" }
+  ],
+  "sources": [
+    { "id": "gtd", "title": "Getting Things Done", "author": "David Allen", "kind": "book" },
+    { "id": "eat-that-frog", "title": "Eat That Frog!", "author": "Brian Tracy", "kind": "book" },
+    { "id": "parkinsons-law", "title": "Parkinson's Law", "author": "C. Northcote Parkinson", "kind": "article" },
+    { "id": "deep-work", "title": "Deep Work", "author": "Cal Newport", "kind": "book" },
+    { "id": "atomic-habits", "title": "Atomic Habits", "author": "James Clear", "kind": "book" },
+    { "id": "thinking-fast-slow", "title": "Thinking, Fast and Slow", "author": "Daniel Kahneman", "kind": "book" },
+    { "id": "enchiridion", "title": "Enchiridion", "author": "Epictetus", "kind": "book" },
+    { "id": "meditations", "title": "Meditations", "author": "Marcus Aurelius", "kind": "book" },
+    { "id": "affect-labeling", "title": "Putting Feelings Into Words", "author": "Lieberman et al.", "kind": "article" },
+    { "id": "zen-mind", "title": "Zen Mind, Beginner's Mind", "author": "Shunryu Suzuki", "kind": "book" },
+    { "id": "babylon", "title": "The Richest Man in Babylon", "author": "George S. Clason", "kind": "book" },
+    { "id": "psychology-of-money", "title": "The Psychology of Money", "author": "Morgan Housel", "kind": "book" },
+    { "id": "why-we-sleep", "title": "Why We Sleep", "author": "Matthew Walker", "kind": "book" },
+    { "id": "walking-study", "title": "Give Your Ideas Some Legs", "author": "Oppezzo & Schwartz", "kind": "article" },
+    { "id": "steal-like-an-artist", "title": "Steal Like an Artist", "author": "Austin Kleon", "kind": "book" },
+    { "id": "war-of-art", "title": "The War of Art", "author": "Steven Pressfield", "kind": "book" },
+    { "id": "start-with-why", "title": "Start With Why", "author": "Simon Sinek", "kind": "book" },
+    { "id": "extreme-ownership", "title": "Extreme Ownership", "author": "Jocko Willink & Leif Babin", "kind": "book" }
+  ],
+  "ideas": [
+    {
+      "id": "two-minute-rule",
+      "topicId": "productivity",
+      "sourceId": "gtd",
+      "title": "The two-minute rule",
+      "body": "If a task takes less than two minutes, do it now. Writing it down, tracking it and coming back to it later costs more attention than simply finishing it. Small tasks left undone pile up into a background hum of stress."
+    },
+    {
+      "id": "eat-the-frog",
+      "topicId": "productivity",
+      "sourceId": "eat-that-frog",
+      "title": "Eat the frog first",
+      "body": "Start your day with the hardest, most important task, the one you are most likely to put off. Once it is done, everything else feels lighter, and you have already won the day before distractions arrive."
+    },
+    {
+      "id": "parkinsons-law",
+      "topicId": "productivity",
+      "sourceId": "parkinsons-law",
+      "title": "Work expands to fill the time",
+      "body": "A task given a week will take a week; the same task given an afternoon often gets done in an afternoon. Setting tighter, deliberate deadlines forces you to focus on what actually matters and skip the polishing nobody asked for."
+    },
+    {
+      "id": "deep-work",
+      "topicId": "productivity",
+      "sourceId": "deep-work",
+      "title": "Protect blocks of deep work",
+      "body": "Valuable work, like learning hard things or creating something new, needs long stretches of undistracted focus. Schedule those blocks like meetings, close the inbox and silence the phone. Shallow busywork can fill the gaps around them."
+    },
+    {
+      "id": "habit-stacking",
+      "topicId": "psychology",
+      "sourceId": "atomic-habits",
+      "title": "Stack new habits on old ones",
+      "body": "Attach a habit you want to an existing routine: \"After I pour my morning coffee, I will write one sentence in my journal.\" The old habit becomes a reliable cue, so you no longer depend on remembering or on motivation."
+    },
+    {
+      "id": "one-percent",
+      "topicId": "psychology",
+      "sourceId": "atomic-habits",
+      "title": "Tiny gains compound",
+      "body": "Getting 1% better each day barely shows at first, but small improvements compound like interest. Focus on the system you follow every day rather than the goal; results are a lagging measure of your habits."
+    },
+    {
+      "id": "system-1-2",
+      "topicId": "psychology",
+      "sourceId": "thinking-fast-slow",
+      "title": "Two systems of thinking",
+      "body": "System 1 is fast, automatic and intuitive. System 2 is slow, effortful and logical. Most errors happen when System 1 answers a question that needed System 2. For decisions that matter, slow down and check your first impression."
+    },
+    {
+      "id": "dichotomy-of-control",
+      "topicId": "philosophy",
+      "sourceId": "enchiridion",
+      "title": "Separate what you control",
+      "body": "Some things are up to us, our judgments, choices and efforts, and some are not, like other people's opinions or the weather. Peace comes from putting your energy into the first group and accepting the second."
+    },
+    {
+      "id": "memento-mori",
+      "topicId": "philosophy",
+      "sourceId": "meditations",
+      "title": "Remember that you will die",
+      "body": "The Stoics reminded themselves daily that life is short. Not to be gloomy, but to sharpen priorities: if today were among your last, would petty grudges or endless scrolling still feel worth it?"
+    },
+    {
+      "id": "name-the-emotion",
+      "topicId": "mindfulness",
+      "sourceId": "affect-labeling",
+      "title": "Name it to tame it",
+      "body": "Simply putting a feeling into words, \"I feel anxious\", reduces activity in the brain's alarm system. Labeling an emotion creates a little distance between you and it, which gives you room to choose a response."
+    },
+    {
+      "id": "beginners-mind",
+      "topicId": "mindfulness",
+      "sourceId": "zen-mind",
+      "title": "Keep a beginner's mind",
+      "body": "In the beginner's mind there are many possibilities; in the expert's mind there are few. Approach familiar things with curiosity, as if seeing them for the first time, and you will notice what habit hides."
+    },
+    {
+      "id": "pay-yourself-first",
+      "topicId": "money",
+      "sourceId": "babylon",
+      "title": "Pay yourself first",
+      "body": "Before paying anyone else, set aside a fixed part of everything you earn, even a tenth. Treat it as a bill owed to your future self. Saving what is left at the end of the month rarely works, because little is ever left."
+    },
+    {
+      "id": "compounding-time",
+      "topicId": "money",
+      "sourceId": "psychology-of-money",
+      "title": "Compounding needs time, not genius",
+      "body": "Most long-term wealth comes from earning decent returns for a very long time without interruption. Avoiding ruin and staying invested through bad years matters more than finding the highest return."
+    },
+    {
+      "id": "sleep-performance",
+      "topicId": "health",
+      "sourceId": "why-we-sleep",
+      "title": "Sleep is a performance tool",
+      "body": "Sleep is when the brain files memories and clears waste. Regularly sleeping six hours or less hurts focus, mood and immunity, often without you noticing. Keeping a consistent wake time is one of the simplest health upgrades."
+    },
+    {
+      "id": "walk-to-think",
+      "topicId": "health",
+      "sourceId": "walking-study",
+      "title": "Walk to think better",
+      "body": "In Stanford experiments, people came up with more creative ideas while walking than while sitting, and the boost lasted shortly after they sat back down. Stuck on a problem? Take it for a walk."
+    },
+    {
+      "id": "steal-like-an-artist",
+      "topicId": "creativity",
+      "sourceId": "steal-like-an-artist",
+      "title": "Nothing is completely original",
+      "body": "Every creative work builds on what came before. Collect influences, study them, remix them and add your own twist. Copying one source is plagiarism; combining many and transforming them is how style is born."
+    },
+    {
+      "id": "resistance",
+      "topicId": "creativity",
+      "sourceId": "war-of-art",
+      "title": "Beat Resistance by showing up",
+      "body": "The force that keeps you from your creative work, procrastination, self-doubt, sudden urges to do chores, is strongest right before something important. Professionals don't wait for inspiration; they sit down every day and do the work."
+    },
+    {
+      "id": "start-with-why",
+      "topicId": "leadership",
+      "sourceId": "start-with-why",
+      "title": "Start with why",
+      "body": "Most organizations explain what they do and how they do it. Inspiring leaders start with why: the purpose or belief behind the work. People don't just buy what you do; they buy into why you do it."
+    },
+    {
+      "id": "extreme-ownership",
+      "topicId": "leadership",
+      "sourceId": "extreme-ownership",
+      "title": "Own everything in your world",
+      "body": "When something goes wrong, a good leader doesn't blame the team, the plan or bad luck. They take responsibility, find what they could have done better and fix it. That ownership spreads through the whole team."
+    }
+  ]
+}
