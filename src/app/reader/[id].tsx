@@ -1,11 +1,12 @@
 import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator, FlatList, Modal, PanResponder, Platform, Pressable, ScrollView, StyleSheet, Text, View,
-  type LayoutChangeEvent, type ListViewToken,
+  ActivityIndicator, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions, type LayoutChangeEvent,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { PageFlip, type PageFlipHandle } from '@/components/PageFlip';
 import { classicById, loadClassic, type FullBook } from '@/lib/fullbook';
 import { loadOwnBook } from '@/lib/ownbooks';
 import { findPage, pageStart, paginate, type Page } from '@/lib/paginate';
@@ -13,15 +14,20 @@ import { useStore } from '@/lib/store';
 import { colors, serif } from '@/lib/theme';
 import type { Idea, ReaderPosition, ReaderTheme } from '@/lib/types';
 
-const THEMES: Record<ReaderTheme, { bg: string; text: string; muted: string; bar: string; label: string }> = {
-  light: { bg: '#FFFFFF', text: '#1E1E1E', muted: '#707070', bar: '#F2F2F2', label: 'Light' },
-  sepia: { bg: '#F4ECD8', text: '#3B2F1E', muted: '#7A6A55', bar: '#EADFC6', label: 'Sepia' },
-  dark: { bg: '#121212', text: '#E6E1D6', muted: '#8F8A80', bar: '#1E1E1E', label: 'Dark' },
+/** paper: the page itself; desk: behind an open book; shade: page-turn and fold shadows. */
+const THEMES: Record<ReaderTheme, { bg: string; paper: string; desk: string; shade: string; text: string; muted: string; bar: string; label: string }> = {
+  light: { bg: '#FFFFFF', paper: '#FFFFFF', desk: '#D9D6CF', shade: 'rgba(0,0,0,0.22)', text: '#1E1E1E', muted: '#707070', bar: '#F2F2F2', label: 'Light' },
+  sepia: { bg: '#F4ECD8', paper: '#F4ECD8', desk: '#B9A47C', shade: 'rgba(60,40,10,0.28)', text: '#3B2F1E', muted: '#7A6A55', bar: '#EADFC6', label: 'Sepia' },
+  dark: { bg: '#121212', paper: '#1A1A1A', desk: '#050505', shade: 'rgba(0,0,0,0.6)', text: '#E6E1D6', muted: '#8F8A80', bar: '#1E1E1E', label: 'Dark' },
 };
 const MIN_FONT = 13;
 const MAX_FONT = 34;
 const PAD_X = 24;
 const PAD_Y = 20;
+/** Room at the bottom of each page for its number. */
+const FOOTER = 22;
+/** Open-book view when the reading area is landscape and wide enough for two pages. */
+const SPREAD_MIN_WIDTH = 700;
 
 /** Paginated full-book reader for bundled classics (kind=classic) and the user's own EPUBs (kind=own). */
 export default function FullReaderScreen() {
@@ -46,11 +52,10 @@ function Reader({ id, kind }: { id: string; kind?: 'classic' | 'own' }) {
   const [book, setBook] = useState<FullBook | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
-  const [current, setCurrent] = useState(0);
   const [panel, setPanel] = useState<null | 'settings' | 'contents'>(null);
   const [clip, setClip] = useState<{ text: string; position: ReaderPosition } | null>(null);
-  const [pinch, setPinch] = useState(1);
-  const list = useRef<FlatList<Page>>(null);
+  const flip = useRef<PageFlipHandle>(null);
+  const window = useWindowDimensions();
   // The position survives re-pagination, so changing the text size keeps your place.
   const [anchor, setAnchor] = useState<ReaderPosition | null>(() => readerProgress[readerId] ?? null);
 
@@ -73,15 +78,22 @@ function Reader({ id, kind }: { id: string; kind?: 'classic' | 'own' }) {
     };
   }, [id, kind]);
 
+  const spread = size.width > size.height && size.width >= SPREAD_MIN_WIDTH;
+  const pageWidth = spread ? size.width / 2 : size.width;
+  const padX = spread ? PAD_X + 12 : PAD_X;
+
   const pages = useMemo(
-    () => (book && size.width > 0 ? paginate(book, { width: size.width - PAD_X * 2, height: size.height - PAD_Y * 2, fontSize, lineHeight }) : []),
-    [book, size.width, size.height, fontSize, lineHeight],
+    () =>
+      book && size.width > 0
+        ? paginate(book, { width: pageWidth - padX * 2, height: size.height - PAD_Y * 2 - FOOTER, fontSize, lineHeight })
+        : [],
+    [book, size.width, size.height, pageWidth, padX, fontSize, lineHeight],
   );
-  const pagesRef = useRef(pages);
-  useEffect(() => {
-    pagesRef.current = pages;
-  }, [pages]);
-  const startIndex = pages.length && anchor ? findPage(pages, anchor) : 0;
+
+  // The page shown is derived from a text position, so rotating or resizing the text keeps your place.
+  const anchorPage = pages.length && anchor ? findPage(pages, anchor) : 0;
+  const leaf = spread ? Math.floor(anchorPage / 2) : anchorPage;
+  const current = spread ? leaf * 2 : leaf;
 
   const chapterStarts = useMemo(() => {
     const starts: number[] = [];
@@ -91,26 +103,20 @@ function Reader({ id, kind }: { id: string; kind?: 'classic' | 'own' }) {
     return starts;
   }, [pages]);
 
-  // FlatList doesn't allow this callback to change after mount, so it's created once and reads pages from a ref.
-  const [onViewable] = useState(() => ({ viewableItems }: { viewableItems: ListViewToken[] }) => {
-    const index = viewableItems.find((v) => v.isViewable)?.index;
-    const all = pagesRef.current;
-    if (index == null || !all[index]) return;
-    const start = pageStart(all[index]);
-    setCurrent(index);
-    setAnchor(start);
-    setReaderPosition(readerId, start, all.length > 1 ? index / (all.length - 1) : 1);
-  });
-
+  /** Jump straight to a page (contents, bookmarks) without the turn animation. */
   const goTo = useCallback(
     (index: number) => {
-      if (index < 0 || index >= pages.length) return;
-      list.current?.scrollToIndex({ index, animated: Math.abs(index - current) < 3 });
+      const target = pages[Math.min(Math.max(index, 0), pages.length - 1)];
+      if (!target) return;
+      const start = pageStart(target);
+      setAnchor(start);
+      setReaderPosition(readerId, start, pages.length > 1 ? index / (pages.length - 1) : 1);
     },
-    [pages.length, current],
+    [pages, readerId, setReaderPosition],
   );
 
-  const step = useCallback((delta: number) => goTo(current + delta), [goTo, current]);
+  const onLeafChange = useCallback((next: number) => goTo(spread ? next * 2 : next), [goTo, spread]);
+  const step = useCallback((dir: 1 | -1) => flip.current?.turn(dir), []);
 
   const changeFont = useCallback(
     (next: number) => setReaderSettings({ fontSize: Math.min(MAX_FONT, Math.max(MIN_FONT, Math.round(next))) }),
@@ -119,76 +125,51 @@ function Reader({ id, kind }: { id: string; kind?: 'classic' | 'own' }) {
 
   // Arrow keys turn pages on the web.
   useEffect(() => {
-    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+    if (Platform.OS !== 'web' || typeof globalThis.addEventListener !== 'function') return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'ArrowRight' || e.key === 'PageDown') step(1);
       if (e.key === 'ArrowLeft' || e.key === 'PageUp') step(-1);
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    globalThis.addEventListener('keydown', onKey);
+    return () => globalThis.removeEventListener('keydown', onKey);
   }, [step]);
-
-  // Two-finger pinch scales the text; the new size applies when the fingers lift.
-  const pinchStart = useRef(0);
-  const pinchScale = useRef(1);
-  const fontRef = useRef(fontSize);
-  useEffect(() => {
-    fontRef.current = fontSize;
-  }, [fontSize]);
-  const responder = useMemo(() => {
-    const distance = (touches: readonly { pageX: number; pageY: number }[]) =>
-      Math.hypot(touches[0].pageX - touches[1].pageX, touches[0].pageY - touches[1].pageY);
-    // The refs below are only read inside gesture callbacks, never while rendering.
-    // eslint-disable-next-line react-hooks/refs
-    return PanResponder.create({
-      onStartShouldSetPanResponderCapture: (e) => e.nativeEvent.touches.length === 2,
-      onMoveShouldSetPanResponderCapture: (e) => e.nativeEvent.touches.length === 2,
-      onPanResponderGrant: (e) => {
-        const t = e.nativeEvent.touches;
-        pinchStart.current = t.length === 2 ? distance(t) : 0;
-        pinchScale.current = 1;
-      },
-      onPanResponderMove: (e) => {
-        const t = e.nativeEvent.touches;
-        if (t.length !== 2) return;
-        if (!pinchStart.current) pinchStart.current = distance(t);
-        pinchScale.current = Math.min(2, Math.max(0.6, distance(t) / pinchStart.current));
-        setPinch(pinchScale.current);
-      },
-      onPanResponderRelease: () => {
-        if (Math.abs(pinchScale.current - 1) > 0.05) changeFont(fontRef.current * pinchScale.current);
-        pinchStart.current = 0;
-        pinchScale.current = 1;
-        setPinch(1);
-      },
-      onPanResponderTerminate: () => setPinch(1),
-    });
-  }, [changeFont]);
 
   const marks = bookmarks[readerId] ?? [];
   const page = pages[current];
-  const markedHere = page ? marks.find((b) => findPage(pages, b) === current) : undefined;
+  const visible = spread ? [current, current + 1] : [current];
+  const markedHere = page ? marks.find((b) => visible.includes(findPage(pages, b))) : undefined;
   const chapterTitle = page && book ? book.chapters[page.chapter]?.title : '';
   const percent = pages.length > 1 ? Math.round((current / (pages.length - 1)) * 100) : 100;
+  const pageLabel = spread && current + 1 < pages.length ? `Pages ${current + 1}–${current + 2}` : `Page ${current + 1}`;
 
   const onLayout = (e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
     if (Math.abs(width - size.width) > 1 || Math.abs(height - size.height) > 1) setSize({ width, height });
   };
 
-  // Tapping the left or right edge of the page turns it, like an e-reader.
+  // Tapping the left or right edge of the screen turns the page, like an e-reader.
   const tapTurn = (pageX: number) => {
-    if (pageX < size.width * 0.28) step(-1);
-    else if (pageX > size.width * 0.72) step(1);
+    if (pageX < window.width * 0.22) step(-1);
+    else if (pageX > window.width * 0.78) step(1);
   };
 
-  const renderPage = ({ item, index }: { item: Page; index: number }) => {
+  const renderPage = (index: number, width: number) => {
+    const item: Page = pages[index];
     const chapter = book!.chapters[item.chapter];
+    const isLeft = spread && index % 2 === 0;
     return (
       <Pressable
         accessible={false}
         onPress={(e) => tapTurn(e.nativeEvent.pageX)}
-        style={[styles.page, { width: size.width, height: size.height, backgroundColor: theme.bg }]}>
+        style={[styles.page, { width, height: size.height, backgroundColor: theme.paper, paddingHorizontal: padX }]}>
+        {/* Slight shading toward the outer edge, like the curve of a real page. */}
+        <LinearGradient
+          pointerEvents="none"
+          colors={isLeft ? [theme.shade, 'transparent'] : ['transparent', theme.shade]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={[styles.edge, isLeft ? { left: 0 } : { right: 0 }, { opacity: spread ? 0.35 : 0.18 }]}
+        />
         {item.chapterTitle && (
           <Text style={[styles.chapterTitle, { color: theme.text, fontSize: fontSize * 1.3, lineHeight: lineHeight * 1.3 }]}>
             {item.chapterTitle}
@@ -210,12 +191,19 @@ function Reader({ id, kind }: { id: string; kind?: 'classic' | 'own' }) {
             </Pressable>
           );
         })}
+        <Text
+          style={[
+            styles.pageNumber,
+            { color: theme.muted, left: padX, right: padX, textAlign: spread ? (isLeft ? 'left' : 'right') : 'center' },
+          ]}>
+          {index + 1}
+        </Text>
       </Pressable>
     );
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.bg }]} edges={['top', 'bottom']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: spread ? theme.desk : theme.bg }]} edges={['top', 'bottom', 'left', 'right']}>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={[styles.topBar, { backgroundColor: theme.bar }]}>
         <Pressable accessibilityLabel="Close book" onPress={() => (router.canGoBack() ? router.back() : router.replace('/library'))} style={styles.iconButton}>
@@ -235,7 +223,7 @@ function Reader({ id, kind }: { id: string; kind?: 'classic' | 'own' }) {
         <Pressable
           accessibilityLabel={markedHere ? 'Remove bookmark' : 'Bookmark this page'}
           disabled={!page}
-          onPress={() => page && toggleBookmark(readerId, markedHere ?? pageStart(page), `${chapterTitle} · page ${current + 1}`)}
+          onPress={() => page && toggleBookmark(readerId, markedHere ?? pageStart(page), `${chapterTitle} · ${pageLabel.toLowerCase()}`)}
           style={styles.iconButton}>
           <Text style={[styles.icon, { color: markedHere ? colors.accent : theme.text }]}>{markedHere ? '★' : '☆'}</Text>
         </Pressable>
@@ -244,7 +232,7 @@ function Reader({ id, kind }: { id: string; kind?: 'classic' | 'own' }) {
         </Pressable>
       </View>
 
-      <View style={styles.list} onLayout={onLayout} {...responder.panHandlers}>
+      <View style={styles.list} onLayout={onLayout}>
         {error ? (
           <View style={styles.center}>
             <Text style={[styles.message, { color: theme.text }]}>{error}</Text>
@@ -255,25 +243,18 @@ function Reader({ id, kind }: { id: string; kind?: 'classic' | 'own' }) {
             <Text style={[styles.message, { color: theme.muted }]}>Opening book…</Text>
           </View>
         ) : (
-          <View style={{ flex: 1, transform: [{ scale: pinch }] }}>
-            <FlatList
-              key={`${fontSize}-${size.width}-${size.height}`}
-              ref={list}
-              horizontal
-              pagingEnabled
-              data={pages}
-              renderItem={renderPage}
-              keyExtractor={(_, i) => String(i)}
-              initialScrollIndex={startIndex}
-              getItemLayout={(_, index) => ({ length: size.width, offset: size.width * index, index })}
-              initialNumToRender={2}
-              windowSize={5}
-              maxToRenderPerBatch={3}
-              showsHorizontalScrollIndicator={false}
-              onViewableItemsChanged={onViewable}
-              viewabilityConfig={{ itemVisiblePercentThreshold: 60 }}
-            />
-          </View>
+          <PageFlip
+            ref={flip}
+            width={size.width}
+            height={size.height}
+            spread={spread}
+            pageCount={pages.length}
+            index={leaf}
+            onIndexChange={onLeafChange}
+            renderPage={renderPage}
+            shade={theme.shade}
+            onPinchEnd={(scale) => changeFont(fontSize * scale)}
+          />
         )}
       </View>
 
@@ -286,7 +267,7 @@ function Reader({ id, kind }: { id: string; kind?: 'classic' | 'own' }) {
             <View style={[styles.fill, { width: `${percent}%` }]} />
           </View>
           <Text style={[styles.pageLabel, { color: theme.muted }]}>
-            {pages.length ? `Page ${current + 1} of ${pages.length} · ${percent}%` : ' '}
+            {pages.length ? `${pageLabel} of ${pages.length} · ${percent}%` : ' '}
           </Text>
         </View>
         <Pressable accessibilityLabel="Next page" onPress={() => step(1)} style={styles.navButton}>
@@ -308,8 +289,8 @@ function Reader({ id, kind }: { id: string; kind?: 'classic' | 'own' }) {
               </Pressable>
             </View>
             <Text style={[styles.hint, { color: theme.muted }]}>
-              Tips: pinch with two fingers to zoom, tap the page edges or use the arrow keys to turn pages, and long-press a
-              paragraph to save it to a stash.
+              Tips: drag a page to turn it, or tap the edges or use the arrow keys. Pinch with two fingers to zoom. Turn
+              your phone sideways to see two pages like an open book. Long-press a paragraph to save it to a stash.
             </Text>
             <Text style={[styles.sheetTitle, { color: theme.text }]}>Theme</Text>
             <View style={styles.row}>
@@ -459,7 +440,9 @@ const styles = StyleSheet.create({
   bookTitle: { fontSize: 15, fontWeight: '700' },
   chapterLabel: { fontSize: 12 },
   list: { flex: 1, overflow: 'hidden' },
-  page: { paddingHorizontal: PAD_X, paddingVertical: PAD_Y, overflow: 'hidden' },
+  page: { paddingVertical: PAD_Y, overflow: 'hidden' },
+  edge: { position: 'absolute', top: 0, bottom: 0, width: 18 },
+  pageNumber: { position: 'absolute', bottom: 10, fontSize: 12 },
   chapterTitle: { fontFamily: serif, fontWeight: '800', marginBottom: 16 },
   paragraph: { fontFamily: serif },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 },

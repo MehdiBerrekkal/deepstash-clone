@@ -15,7 +15,7 @@ Built with Expo (React Native + Expo Router), so the same code runs on iOS, Andr
 - **Explore:** search everything (ideas, quotes, poems, books, authors), filter by type, browse topics.
 - **You:** daily reading goal, streak, cards read, books finished, likes and stashes.
 - **Like and share** any card.
-- **Full-book reader:** 28 complete books to read in the app, with page swiping, pinch-to-zoom and text size, light, sepia and dark themes, a table of contents, bookmarks, and resume where you stopped. Long-press a paragraph to save it to a stash.
+- **Full-book reader:** 28 complete books to read in the app. Pages turn like paper (drag to turn, tap the edges or use the arrow keys), and turning the phone sideways shows two pages like an open book with a fold down the middle. It also has pinch-to-zoom and text size, light, sepia and dark themes, a table of contents, bookmarks, and resume where you stopped. Long-press a paragraph to save it to a stash.
   - **Free classics:** 26 public-domain books from Project Gutenberg, such as Meditations, The Art of War, Tao Te Ching, Walden and Pride and Prejudice, all in public-domain translations.
   - **Free from the author:** two Cory Doctorow novels he released under Creative Commons, bundled with their license. Eight more free books (The Almanack of Naval Ravikant, Pro Git, Shape Up, OpenStax textbooks and others) link to their official pages, because their licenses don't allow copying them into the app.
 - **Your own books:** open a DRM-free EPUB or PDF from your device. EPUBs open in the reader. PDFs open in the system viewer, or in the browser on the web. Files stay on the device and are never uploaded.
@@ -57,7 +57,7 @@ src/app/            screens (Expo Router: each file is a route)
   topic/[id].tsx    books and cards in one topic
   idea/[id].tsx     card detail + add to stash
   stash/[id].tsx    cards in one stash
-src/components/     IdeaCard, CardBody, BookCover, Shelf, BookGrid, KindFilter, IdeaRow, TopicChip
+src/components/     PageFlip (page-turn animation and open-book spread), IdeaCard, CardBody, BookCover, Shelf, BookGrid, KindFilter, IdeaRow, TopicChip
 src/lib/            store, pagination, EPUB parser, own-file storage, full-book loader, Supabase client, types, theme
 src/data/           library/ (books by topic), classics/ (full books), quotes, poems, facts, covers, content.ts (loader)
 scripts/            seed SQL generator, Open Library cover lookup

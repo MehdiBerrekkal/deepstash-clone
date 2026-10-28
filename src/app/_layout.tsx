@@ -1,11 +1,13 @@
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { StoreProvider } from '@/lib/store';
 import { colors } from '@/lib/theme';
 
 export default function RootLayout() {
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
     <StoreProvider>
       <StatusBar style="light" />
       <Stack
@@ -26,5 +28,6 @@ export default function RootLayout() {
         <Stack.Screen name="pdf/[id]" options={{ title: 'PDF' }} />
       </Stack>
     </StoreProvider>
+    </GestureHandlerRootView>
   );
 }
