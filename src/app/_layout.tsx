@@ -16,8 +16,11 @@ export default function RootLayout() {
         }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-        <Stack.Screen name="idea/[id]" options={{ title: 'Idea', presentation: 'modal' }} />
+        <Stack.Screen name="idea/[id]" options={{ title: 'Card', presentation: 'modal' }} />
         <Stack.Screen name="stash/[id]" options={{ title: 'Stash' }} />
+        <Stack.Screen name="book/[id]" options={{ title: '' }} />
+        <Stack.Screen name="read/[id]" options={{ title: 'Reading' }} />
+        <Stack.Screen name="topic/[id]" options={{ title: 'Topic' }} />
       </Stack>
     </StoreProvider>
   );

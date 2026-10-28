@@ -1,0 +1,68 @@
+{
+  "topic": { "id": "business", "name": "Business", "emoji": "🚀", "color": "#7A4A1E" },
+  "books": [
+    {
+      "id": "the-lean-startup", "title": "The Lean Startup", "author": "Eric Ries", "kind": "book", "year": 2011,
+      "description": "How to build companies under extreme uncertainty by learning fast from real customers.",
+      "ideas": [
+        ["Build, measure, learn", "Treat every product idea as an experiment. Build the smallest thing that tests it, measure how people actually respond, and learn whether to keep going or change course."],
+        ["The minimum viable product", "An MVP isn't a cheap version of the final product; it's the quickest way to start learning. Sometimes it's just a landing page or a manual service behind the scenes."],
+        ["Pivot or persevere", "At regular points, look at the evidence and decide honestly: is this working, or should we change a fundamental part of the strategy?"],
+        ["Vanity metrics", "Total sign-ups and page views can rise while the business fails. Track numbers that show real behaviour, like how many users come back."],
+        ["Validated learning", "Progress in a startup isn't lines of code or features shipped. It's evidence about what customers truly want."]
+      ]
+    },
+    {
+      "id": "zero-to-one", "title": "Zero to One", "author": "Peter Thiel & Blake Masters", "kind": "book", "year": 2014,
+      "description": "Notes on startups and how to build companies that create something genuinely new.",
+      "ideas": [
+        ["Zero to one versus one to n", "Copying what works takes the world from one to n. Creating something new takes it from zero to one. The biggest value comes from the latter."],
+        ["The contrarian question", "Ask: what important truth do very few people agree with you on? Good businesses are often built on a secret others have missed."],
+        ["Start small and monopolize", "Dominate a small, specific market first, then expand. Competing in a huge crowded market from day one is a fast way to make no profit."],
+        ["Competition erodes profit", "In perfect competition, profits get competed away. Lasting businesses have something unique, like proprietary technology or network effects."]
+      ]
+    },
+    {
+      "id": "good-to-great", "title": "Good to Great", "author": "Jim Collins", "kind": "book", "year": 2001,
+      "description": "A research study into why some companies make the leap to lasting greatness and others don't.",
+      "ideas": [
+        ["First who, then what", "Great companies first got the right people on the bus and the wrong people off, and only then figured out where to drive it."],
+        ["Level 5 leadership", "The leaders behind great companies combined deep personal humility with fierce determination. They gave credit away and took blame themselves."],
+        ["The hedgehog concept", "Find the intersection of three circles: what you can be the best in the world at, what drives your economic engine, and what you're deeply passionate about."],
+        ["The flywheel", "Greatness rarely arrives in one dramatic moment. It's built by consistent pushes on a heavy wheel until momentum carries it."],
+        ["Confront the brutal facts", "Keep unwavering faith that you'll succeed, while honestly facing the harsh reality of your current situation."]
+      ]
+    },
+    {
+      "id": "the-innovators-dilemma", "title": "The Innovator's Dilemma", "author": "Clayton M. Christensen", "kind": "book", "year": 1997,
+      "description": "Why well-run companies can do everything right and still be overtaken by new technologies.",
+      "ideas": [
+        ["Disruptive innovation", "Disruptors often start with a simpler, cheaper product that seems worse to existing customers. They win overlooked buyers first, then improve until they take the main market."],
+        ["Listening to customers can mislead", "Big companies focus on their best customers' requests, which pushes them upmarket and leaves the low end open to newcomers."],
+        ["Small markets don't excite big companies", "A new market worth a few million can't move the needle for a giant, so it gets ignored until it's too late."],
+        ["Create a separate unit", "Successful incumbents often handle disruption by setting up an independent team with its own goals and cost structure."]
+      ]
+    },
+    {
+      "id": "the-hard-thing", "title": "The Hard Thing About Hard Things", "author": "Ben Horowitz", "kind": "book", "year": 2014,
+      "description": "A frank guide to the problems no business book prepares you for, from layoffs to near-bankruptcy.",
+      "ideas": [
+        ["There's no recipe", "Management books describe how to avoid problems. Hard things are the situations with no clean answer, where you have to choose the least bad option."],
+        ["The struggle", "Every founder goes through periods when nothing works and quitting looks sensible. Getting through them is part of the job, not a sign you've failed."],
+        ["Take care of people, products and profits, in that order", "Without good people, you won't build good products, and without good products the profits won't come."],
+        ["Tell it like it is", "When things go badly, being open with your team builds trust. Hiding bad news makes the hard thing harder."]
+      ]
+    },
+    {
+      "id": "rework", "title": "Rework", "author": "Jason Fried & David Heinemeier Hansson", "kind": "book", "year": 2010,
+      "description": "Short essays challenging conventional business wisdom about growth, planning and work.",
+      "ideas": [
+        ["Planning is guessing", "Long-term business plans pretend you can predict the future. Decide what you'll do this week instead, and adjust as you learn."],
+        ["Small is fine", "Not every company needs to grow huge. Staying small and profitable can mean more freedom and less stress."],
+        ["Build half a product, not a half-assed product", "Cut features ruthlessly and do what's left really well."],
+        ["Meetings are toxic", "A one-hour meeting with ten people costs ten hours of work. Hold fewer, shorter ones, with a clear agenda."],
+        ["Say no by default", "Each yes adds complexity. Saying no to most feature requests keeps a product focused."]
+      ]
+    }
+  ]
+}

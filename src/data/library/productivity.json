@@ -1,0 +1,97 @@
+{
+  "topic": { "id": "productivity", "name": "Productivity", "emoji": "⚡", "color": "#2F5D50" },
+  "books": [
+    {
+      "id": "gtd", "title": "Getting Things Done", "author": "David Allen", "kind": "book", "year": 2001,
+      "description": "A complete system for capturing every commitment outside your head so your mind is free to focus on the work in front of you.",
+      "ideas": [
+        ["The two-minute rule", "If a task takes less than two minutes, do it now. Writing it down, tracking it and coming back to it later costs more attention than simply finishing it. Small tasks left undone pile up into a background hum of stress.", "two-minute-rule"],
+        ["Your mind is for having ideas", "Your brain is a poor filing cabinet. Every open loop you try to remember keeps nagging you at the wrong moments. Capture everything in a trusted inbox outside your head and your attention is freed for actual thinking."],
+        ["Define the next physical action", "\"Plan the party\" is not a task, it's a project. The next action is something visible you can do right now, like \"text Sara to ask about Saturday\". Vague items get avoided; concrete actions get done."],
+        ["Projects are anything with two steps", "Any outcome that takes more than one action is a project. Keep a list of them so none silently stall, and make sure each one always has at least one next action attached."],
+        ["Do a weekly review", "Once a week, empty your inboxes, look over every project and calendar, and decide what's next. The review is what keeps the system trustworthy; without it, lists go stale and your head takes over again."],
+        ["Organize by context", "Group actions by where or with what you can do them: at the computer, on the phone, errands, at home. When you're in that context, you pick from a short relevant list instead of scanning everything."]
+      ]
+    },
+    {
+      "id": "eat-that-frog", "title": "Eat That Frog!", "author": "Brian Tracy", "kind": "book", "year": 2001,
+      "description": "Short, practical rules for beating procrastination by tackling your most important task first.",
+      "ideas": [
+        ["Eat the frog first", "Start your day with the hardest, most important task, the one you are most likely to put off. Once it is done, everything else feels lighter, and you have already won the day before distractions arrive.", "eat-the-frog"],
+        ["Plan every day in advance", "Spending ten minutes planning the night before saves far more time during the day. You wake up knowing exactly what to start with, and your subconscious keeps working on the plan while you sleep."],
+        ["Apply the 80/20 rule", "Roughly 20% of your tasks produce 80% of your results. Before starting, ask which items on your list are in that vital few, and give them your best hours."],
+        ["Think about consequences", "The most important tasks are the ones with the biggest long-term consequences, good or bad, depending on whether you do them. Use that test to rank what really deserves your attention."],
+        ["Slice the task", "Big tasks feel overwhelming, so cut them into thin slices and finish just one. Completing a slice builds momentum, and you often keep going long after you meant to stop."],
+        ["Single-handle each task", "Once you start an important task, keep at it until it's done. Stopping and restarting costs time and energy each time you have to get back into it."]
+      ]
+    },
+    {
+      "id": "parkinsons-law", "title": "Parkinson's Law", "author": "C. Northcote Parkinson", "kind": "article", "year": 1955,
+      "description": "A satirical essay on bureaucracy that gave us one of the most quoted rules about time and work.",
+      "ideas": [
+        ["Work expands to fill the time", "A task given a week will take a week; the same task given an afternoon often gets done in an afternoon. Setting tighter, deliberate deadlines forces you to focus on what actually matters and skip the polishing nobody asked for.", "parkinsons-law"],
+        ["Organizations grow regardless of work", "Parkinson noticed that the number of officials tends to grow whether the workload rises, falls or disappears. Managers multiply subordinates, not rivals, and those people then create work for each other."],
+        ["The law of triviality", "Committees spend the most time on the items they understand best, not the ones that matter most. A bike shed gets an hour of debate; a nuclear reactor gets approved in minutes because few dare to discuss it."],
+        ["Use artificial deadlines", "Because effort stretches to fit the time available, giving yourself a short, visible deadline is one of the cheapest productivity tools. Timebox a task and stop when the box ends."]
+      ]
+    },
+    {
+      "id": "deep-work", "title": "Deep Work", "author": "Cal Newport", "kind": "book", "year": 2016,
+      "description": "Why the ability to focus without distraction is becoming rare and valuable, and how to train it.",
+      "ideas": [
+        ["Protect blocks of deep work", "Valuable work, like learning hard things or creating something new, needs long stretches of undistracted focus. Schedule those blocks like meetings, close the inbox and silence the phone. Shallow busywork can fill the gaps around them.", "deep-work"],
+        ["Attention residue", "When you switch from task A to task B, part of your attention stays stuck on A. Quick email checks leave a residue that lowers your performance for a while afterwards. Batch distractions instead of sprinkling them."],
+        ["Embrace boredom", "If you reach for your phone every time you're bored, your brain loses the ability to tolerate a lack of novelty, and deep focus becomes impossible. Practice waiting in line without a screen."],
+        ["Choose a depth philosophy", "Some people go monastic and cut almost all shallow work. Others use a rhythm, like two deep hours every morning. Pick the style that fits your job instead of hoping focus will just happen."],
+        ["Have a shutdown ritual", "End the workday with a fixed routine: review open tasks, plan tomorrow, then say a phrase like \"shutdown complete\". It tells your mind it's safe to stop thinking about work, which restores energy for the next day."],
+        ["Quit low-value networks", "Judge each tool by whether its benefits clearly outweigh its costs to your most important goals, not just whether it has some benefit. Most apps pass the weak test and fail the strong one."]
+      ]
+    },
+    {
+      "id": "essentialism", "title": "Essentialism", "author": "Greg McKeown", "kind": "book", "year": 2014,
+      "description": "The disciplined pursuit of less: doing fewer things, but doing the right ones much better.",
+      "ideas": [
+        ["Less but better", "Trying to do everything spreads you a millimetre deep in a thousand directions. An essentialist asks what is truly vital and gives that full energy, accepting that saying no to good things is the price."],
+        ["If it isn't a clear yes, it's a no", "When deciding whether to take something on, score it from 0 to 100. Anything under 90 becomes a zero. This feels extreme, but it keeps room for the rare opportunities that really matter."],
+        ["You always have a choice", "Phrases like \"I have to\" hide the fact that you are choosing. Once you admit that you choose how you spend your time, others stop deciding it for you by default."],
+        ["Create a buffer", "Things almost always take longer than planned. Add a 50% buffer to estimates and you stop living in a constant state of being late and stressed."],
+        ["Remove obstacles", "Instead of pushing harder, ask what is slowing the work down and remove it. Taking away a single constraint can speed everything up more than extra effort ever could."],
+        ["Protect your sleep", "Essentialists see sleep as an asset, not a luxury. Losing an hour of sleep to gain an hour of work usually costs more in judgment and creativity than it gains."]
+      ]
+    },
+    {
+      "id": "make-time", "title": "Make Time", "author": "Jake Knapp & John Zeratsky", "kind": "book", "year": 2018,
+      "description": "Two former Google designers share a daily framework for focusing on what matters amid busy work and endless screens.",
+      "ideas": [
+        ["Pick a daily highlight", "Each morning choose one thing you want to make time for today: a task, a moment with family, a run. It doesn't replace your to-do list, it gives the day a centre so it doesn't vanish into busywork."],
+        ["Laser mode", "Make distraction harder: log out of social apps, remove email from your phone, keep the phone in another room. Willpower fails; friction works."],
+        ["Busy Bandwagon and Infinity Pools", "Two forces steal your time: the culture of constant busyness, and apps with endless content. Recognize them as defaults you can opt out of, not laws of nature."],
+        ["Energize with movement and real food", "Focus depends on energy. Short walks, regular meals with real food, enough water and some daylight are basic fuel for attention, not extras."],
+        ["Reflect each night", "Before bed, jot down whether you made time for your highlight and what helped or hurt. Small experiments plus honest notes turn into a routine that actually fits you."]
+      ]
+    },
+    {
+      "id": "four-thousand-weeks", "title": "Four Thousand Weeks", "author": "Oliver Burkeman", "kind": "book", "year": 2021,
+      "description": "Time management for mortals: accepting that you will never get everything done, and choosing what matters anyway.",
+      "ideas": [
+        ["You will never clear the list", "An average life is about four thousand weeks. There will always be more to do than time to do it. Accepting this is a relief: the goal becomes choosing well, not finishing everything."],
+        ["The efficiency trap", "The faster you process email, the more email you get. Getting more efficient often just fills your life with more stuff. Decide what to neglect on purpose."],
+        ["Pay yourself first, in time", "If you wait until other obligations are done to work on what matters, that time never comes. Give the important project the first hour of the day, before the rest of the world gets it."],
+        ["Limit work in progress", "Fix a small number of projects you're actively working on, maybe three. Nothing new starts until one finishes. This forces you to face trade-offs instead of keeping everything half-done."],
+        ["Cosmic insignificance therapy", "In the grand scheme your life is tiny, and that's freeing. You don't need to do something world-changing; ordinary moments done with attention are already worthwhile."],
+        ["Practice doing nothing", "Sitting still for a few minutes, resisting the urge to fix or improve anything, trains you to tolerate discomfort. That tolerance is the real skill behind focus."]
+      ]
+    },
+    {
+      "id": "the-one-thing", "title": "The ONE Thing", "author": "Gary Keller & Jay Papasan", "kind": "book", "year": 2013,
+      "description": "Extraordinary results come from narrowing your focus to the single most important task.",
+      "ideas": [
+        ["The focusing question", "Ask: \"What's the one thing I can do such that by doing it everything else will be easier or unnecessary?\" Use it for the day, the week and your life. It cuts any to-do list down to its lead domino."],
+        ["The domino effect", "A domino can knock over another one 50% bigger. Line up the right small wins in sequence and they topple into huge results. Success is built one right thing at a time."],
+        ["Multitasking is a lie", "You can do two things at once, but you can't focus on two things at once. Each switch costs time and quality. Give your one thing your full attention."],
+        ["Time block your one thing", "Block out about four hours a day for your most important work and defend it like an appointment with your boss. Everything else gets fitted around it."],
+        ["Willpower is a battery", "Willpower drains as the day goes on. Do your most important work early, before decisions and temptations have used up your reserve."]
+      ]
+    }
+  ]
+}

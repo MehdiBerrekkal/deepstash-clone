@@ -1,0 +1,65 @@
+{
+  "topic": { "id": "mindfulness", "name": "Mindfulness", "emoji": "🌿", "color": "#2E5266" },
+  "books": [
+    {
+      "id": "affect-labeling", "title": "Putting Feelings Into Words", "author": "Lieberman et al.", "kind": "article", "year": 2007,
+      "description": "A brain-imaging study showing that naming an emotion helps calm it.",
+      "ideas": [
+        ["Name it to tame it", "Simply putting a feeling into words, \"I feel anxious\", reduces activity in the brain's alarm system. Labeling an emotion creates a little distance between you and it, which gives you room to choose a response.", "name-the-emotion"],
+        ["Be specific with emotion words", "\"Bad\" is vague. \"Disappointed\", \"embarrassed\" or \"lonely\" are precise. The more exactly you can name a feeling, the easier it becomes to understand what it needs."],
+        ["Write it down", "Spending a few minutes writing about a stressful event, in plain words, has been linked to lower stress and better wellbeing. Words on paper turn a swirl into something you can look at."]
+      ]
+    },
+    {
+      "id": "zen-mind", "title": "Zen Mind, Beginner's Mind", "author": "Shunryu Suzuki", "kind": "book", "year": 1970,
+      "description": "Informal talks by a Zen teacher on meditation practice and keeping a fresh, open mind.",
+      "ideas": [
+        ["Keep a beginner's mind", "In the beginner's mind there are many possibilities; in the expert's mind there are few. Approach familiar things with curiosity, as if seeing them for the first time, and you will notice what habit hides.", "beginners-mind"],
+        ["Don't try to stop thoughts", "In meditation, thoughts will come. Let them come and go like guests you don't invite to stay. Fighting them only gives them more energy."],
+        ["Practice without gaining ideas", "If you meditate to get something, you turn it into another task to succeed at. Just sit. The benefits come when you stop chasing them."],
+        ["Give your sheep a large meadow", "To control a sheep, give it a big meadow. Likewise, to calm the mind, don't fence it in; let it be, and simply watch."]
+      ]
+    },
+    {
+      "id": "power-of-now", "title": "The Power of Now", "author": "Eckhart Tolle", "kind": "book", "year": 1997,
+      "description": "A guide to stepping out of constant thinking and into presence in the current moment.",
+      "ideas": [
+        ["You are not your thoughts", "There's the voice in your head, and there's the awareness that hears it. Noticing the voice, rather than being swept away by it, is the first step to inner calm."],
+        ["The present is all you ever have", "The past exists as memory and the future as imagination; you only ever live now. Much anxiety comes from living in a future that doesn't exist yet."],
+        ["Accept, then act", "Resisting what already is creates suffering. Accept the present moment fully, then, if action is needed, act from clarity instead of frustration."],
+        ["Watch the pain-body", "Old emotional pain can flare up and take over your reactions. Observing it as it rises, without feeding it with stories, weakens its grip."]
+      ]
+    },
+    {
+      "id": "wherever-you-go", "title": "Wherever You Go, There You Are", "author": "Jon Kabat-Zinn", "kind": "book", "year": 1994,
+      "description": "Simple guidance on mindfulness meditation in everyday life from the creator of MBSR.",
+      "ideas": [
+        ["Mindfulness defined", "Mindfulness means paying attention on purpose, in the present moment, without judging. It's not about emptying your mind but noticing what's actually there."],
+        ["You can't escape yourself", "Moving city or changing job won't fix a restless mind, because you bring it with you. Changing your relationship with your mind travels better."],
+        ["Informal practice", "You don't need a cushion. Wash dishes, walk or drink tea with full attention. Ordinary moments become practice when you're actually there for them."],
+        ["Non-doing", "Sometimes the wisest action is to stop and do nothing for a moment. Pausing breaks the chain of automatic reactions."],
+        ["Patience", "Things unfold in their own time. A butterfly can't be helped out of its cocoon early. Patience is wisdom about timing."]
+      ]
+    },
+    {
+      "id": "the-miracle-of-mindfulness", "title": "The Miracle of Mindfulness", "author": "Thich Nhat Hanh", "kind": "book", "year": 1975,
+      "description": "A Vietnamese Zen monk's gentle manual for bringing awareness into every activity.",
+      "ideas": [
+        ["Wash the dishes to wash the dishes", "If you wash dishes only to get them done, rushing to the next thing, you aren't alive during that time. Do each task as if it were the most important thing in the world."],
+        ["Return to the breath", "Your breath is always with you. When you're scattered, a few conscious breaths bring body and mind back together."],
+        ["A day of mindfulness", "Set aside one day a week, or even a morning, to do everything slowly and with full awareness. It recharges you for the busier days."],
+        ["Smile to relax", "A gentle half-smile relaxes the muscles of the face and calms the mind. It's a tiny practice you can use in traffic, queues or stressful meetings."]
+      ]
+    },
+    {
+      "id": "radical-acceptance", "title": "Radical Acceptance", "author": "Tara Brach", "kind": "book", "year": 2003,
+      "description": "A psychologist and meditation teacher on meeting our own feelings with kindness instead of judgment.",
+      "ideas": [
+        ["The trance of unworthiness", "Many of us live with a quiet sense that we're not good enough and must keep proving ourselves. Seeing this as a trance, not a truth, is the start of freedom."],
+        ["RAIN", "When a hard feeling arises: Recognize what's happening, Allow it to be there, Investigate it with kindness, and Nurture yourself. Four steps from reactivity to care."],
+        ["The sacred pause", "Between a trigger and your reaction, pause and notice. Even a few seconds of stopping can change what happens next."],
+        ["Acceptance is not resignation", "Accepting a feeling doesn't mean liking it or giving up. It means seeing clearly what's here, which is the only place real change can start."]
+      ]
+    }
+  ]
+}

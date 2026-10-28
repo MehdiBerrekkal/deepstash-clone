@@ -1,0 +1,66 @@
+{
+  "topic": { "id": "creativity", "name": "Creativity", "emoji": "🎨", "color": "#3D5A80" },
+  "books": [
+    {
+      "id": "steal-like-an-artist", "title": "Steal Like an Artist", "author": "Austin Kleon", "kind": "book", "year": 2012,
+      "description": "Ten short lessons on being creative in a world where everything builds on something else.",
+      "ideas": [
+        ["Nothing is completely original", "Every creative work builds on what came before. Collect influences, study them, remix them and add your own twist. Copying one source is plagiarism; combining many and transforming them is how style is born.", "steal-like-an-artist"],
+        ["Don't wait until you know who you are", "If you waited until you fully understood yourself before making things, you'd never start. You figure out who you are by making things."],
+        ["Write the book you want to read", "Instead of writing what you know, make the thing you wish existed. Your taste is your guide."],
+        ["Use your hands", "Step away from the screen. Paper, scissors and whiteboards wake up a different part of your thinking than typing does."],
+        ["Be boring", "Creative work needs energy. A steady routine, enough sleep and a sensible budget give you the stability to take risks in your work."]
+      ]
+    },
+    {
+      "id": "war-of-art", "title": "The War of Art", "author": "Steven Pressfield", "kind": "book", "year": 2002,
+      "description": "A short, punchy book about the inner force that stops us from doing our creative work.",
+      "ideas": [
+        ["Beat Resistance by showing up", "The force that keeps you from your creative work, procrastination, self-doubt, sudden urges to do chores, is strongest right before something important. Professionals don't wait for inspiration; they sit down every day and do the work.", "resistance"],
+        ["Resistance points to what matters", "The more important a calling is to your growth, the more Resistance you'll feel toward it. Fear is a compass pointing at the work you should be doing."],
+        ["Turn pro", "Amateurs work when they feel like it. Professionals show up every day, no matter what, and treat creative work as a job."],
+        ["The muse rewards commitment", "When you commit to the work daily, help seems to appear: ideas arrive, connections form. Inspiration follows effort, not the other way round."]
+      ]
+    },
+    {
+      "id": "big-magic", "title": "Big Magic", "author": "Elizabeth Gilbert", "kind": "book", "year": 2015,
+      "description": "A warm, encouraging take on living a creative life beyond fear.",
+      "ideas": [
+        ["Let fear ride along, not drive", "Fear will always come with you on creative journeys. Give it a seat in the car, but never let it pick the music or touch the steering wheel."],
+        ["Ideas look for collaborators", "Gilbert imagines ideas as visitors searching for someone to bring them to life. If you ignore one long enough, it may move on to someone else."],
+        ["Done is better than good", "Perfectionism is often fear in disguise. Finishing imperfect work teaches you more than polishing forever."],
+        ["Follow curiosity, not passion", "If you can't find your passion, follow small sparks of curiosity. They're easier to act on and often lead somewhere surprising."]
+      ]
+    },
+    {
+      "id": "creativity-inc", "title": "Creativity, Inc.", "author": "Ed Catmull", "kind": "book", "year": 2014,
+      "description": "Pixar's co-founder on building a culture where creative people do their best work.",
+      "ideas": [
+        ["Every film starts ugly", "Early versions of Pixar movies were, in Catmull's words, terrible. Great work comes from protecting fragile ideas while improving them over many rounds."],
+        ["The Braintrust", "Pixar's directors show work in progress to a group of peers who give candid notes but have no authority. Honest feedback without power keeps it useful."],
+        ["Candour is essential", "If people hold back in meetings, problems stay hidden until it's too late. Leaders must make it safe to say what's not working."],
+        ["Failure is part of the process", "If you're not failing, you're not trying anything new. Make early mistakes cheap and fast."]
+      ]
+    },
+    {
+      "id": "the-artists-way", "title": "The Artist's Way", "author": "Julia Cameron", "kind": "book", "year": 1992,
+      "description": "A twelve-week course for recovering creative confidence.",
+      "ideas": [
+        ["Morning pages", "Each morning, write three pages by hand of whatever comes to mind. Not art, just a brain dump. It clears mental clutter and quiets the inner critic."],
+        ["The artist date", "Once a week, take yourself alone on a small adventure: a museum, a market, a walk somewhere new. It refills the creative well."],
+        ["Fill the well", "Creativity draws on images and experiences. If you only output and never take in, you run dry."],
+        ["Quiet the censor", "The inner critic is loudest at the start. Treat its comments as noise, not truth, and keep going."]
+      ]
+    },
+    {
+      "id": "show-your-work", "title": "Show Your Work!", "author": "Austin Kleon", "kind": "book", "year": 2014,
+      "description": "How sharing your process, not just finished products, helps you get discovered.",
+      "ideas": [
+        ["Share something small every day", "Post a sketch, a note or a work-in-progress daily. Over time, these small shares add up to a body of work people can follow."],
+        ["Think process, not product", "Audiences love seeing how something is made. Behind-the-scenes glimpses build connection long before the final piece is ready."],
+        ["Be an amateur", "Amateurs share because they love the work and aren't afraid to look foolish. That openness makes them easier to relate to than experts."],
+        ["Teach what you know", "Explaining your methods doesn't make you replaceable. It builds trust, and people value those who share."]
+      ]
+    }
+  ]
+}

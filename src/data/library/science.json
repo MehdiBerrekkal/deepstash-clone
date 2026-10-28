@@ -1,0 +1,66 @@
+{
+  "topic": { "id": "science", "name": "Science", "emoji": "🔭", "color": "#234E70" },
+  "books": [
+    {
+      "id": "a-brief-history-of-time", "title": "A Brief History of Time", "author": "Stephen Hawking", "kind": "book", "year": 1988,
+      "description": "The physicist's best-selling tour of the universe, from the Big Bang to black holes.",
+      "ideas": [
+        ["The universe had a beginning", "Observations show galaxies moving away from each other. Run the film backwards and everything converges to a hot, dense starting point: the Big Bang."],
+        ["Black holes", "When a massive star collapses, gravity can become so strong that not even light escapes. The boundary of no return is called the event horizon."],
+        ["Hawking radiation", "Hawking showed that black holes aren't entirely black: quantum effects let them slowly emit radiation and, over immense times, evaporate."],
+        ["Space and time are one", "Einstein's relativity joined space and time into spacetime, which mass and energy bend. Gravity is the effect of that bending."]
+      ]
+    },
+    {
+      "id": "cosmos", "title": "Cosmos", "author": "Carl Sagan", "kind": "book", "year": 1980,
+      "description": "A poetic journey through the history of science and our place in the universe.",
+      "ideas": [
+        ["We are made of star stuff", "The carbon, oxygen and iron in our bodies were forged inside stars that exploded long ago. We are, quite literally, a way for the cosmos to know itself."],
+        ["Science as a candle in the dark", "Science is a method for not fooling ourselves: test ideas against evidence, and change your mind when the evidence demands it."],
+        ["The cosmic calendar", "Squeeze the universe's history into one year and all of recorded human history fits into the last few seconds of December 31st."],
+        ["Eratosthenes measured the Earth", "Over two thousand years ago, by comparing shadows in two Egyptian cities, Eratosthenes estimated Earth's circumference with remarkable accuracy."]
+      ]
+    },
+    {
+      "id": "the-selfish-gene", "title": "The Selfish Gene", "author": "Richard Dawkins", "kind": "book", "year": 1976,
+      "description": "A gene's-eye view of evolution that changed how we think about natural selection.",
+      "ideas": [
+        ["Genes as the unit of selection", "Dawkins argues that evolution is best seen from the gene's point of view: bodies are vehicles built by genes that happened to copy themselves successfully."],
+        ["Selfish genes can make kind animals", "Genes that lead to helping relatives or cooperating can spread, because relatives share copies of those genes. \"Selfish\" genes don't mean selfish behaviour."],
+        ["Memes", "Dawkins coined the word meme for ideas, tunes or habits that spread from mind to mind, competing and evolving a bit like genes."],
+        ["Tit for tat", "In repeated games, a simple strategy of cooperating first, then copying what the other did last time, does remarkably well. Cooperation can evolve from self-interest."]
+      ]
+    },
+    {
+      "id": "the-gene", "title": "The Gene", "author": "Siddhartha Mukherjee", "kind": "book", "year": 2016,
+      "description": "The story of the gene, from Mendel's peas to gene editing.",
+      "ideas": [
+        ["Mendel's peas", "A monk crossing pea plants in a monastery garden discovered that traits pass down in discrete units, which we now call genes."],
+        ["DNA's double helix", "DNA is two strands twisted together, with bases pairing A with T and C with G. Each strand can serve as a template to copy the other."],
+        ["Genes are recipes, not destinies", "Most traits come from many genes interacting with environment and chance. Having a gene variant changes probabilities, not certainties."],
+        ["The power and danger of editing", "Tools like CRISPR let scientists change DNA precisely. They could cure diseases, but also raise deep ethical questions about changing future generations."]
+      ]
+    },
+    {
+      "id": "sapiens", "title": "Sapiens", "author": "Yuval Noah Harari", "kind": "book", "year": 2011,
+      "description": "A brief history of humankind, from foragers to the scientific revolution.",
+      "ideas": [
+        ["The cognitive revolution", "Around 70,000 years ago, humans began to speak about things that don't physically exist. Shared stories let large groups of strangers cooperate."],
+        ["Shared fictions", "Nations, money and companies exist because many people believe in them together. These shared myths are humanity's superpower."],
+        ["The agricultural trap", "Farming fed more people but often meant harder work, worse diets and more disease for individuals. Wheat, Harari jokes, domesticated humans."],
+        ["Money is trust", "Money works because everyone believes everyone else will accept it. It's the most universal system of mutual trust ever created."],
+        ["The scientific revolution began with ignorance", "Modern science started when people admitted they didn't know important things, and set out to find out."]
+      ]
+    },
+    {
+      "id": "the-structure-of-scientific-revolutions", "title": "The Structure of Scientific Revolutions", "author": "Thomas S. Kuhn", "kind": "book", "year": 1962,
+      "description": "How science really changes: not steadily, but through revolutionary shifts in worldview.",
+      "ideas": [
+        ["Paradigms", "Scientists work inside a shared framework of assumptions, methods and examples. Kuhn called it a paradigm."],
+        ["Normal science", "Most research is puzzle-solving within the paradigm, filling in details rather than questioning the foundations."],
+        ["Anomalies pile up", "Results that don't fit accumulate until the old paradigm can't absorb them, and a crisis begins."],
+        ["Paradigm shifts", "Eventually a new framework replaces the old one, as when Copernicus moved the Sun to the centre. Afterwards, scientists see the world differently."]
+      ]
+    }
+  ]
+}

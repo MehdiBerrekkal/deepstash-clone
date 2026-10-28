@@ -1,0 +1,71 @@
+{
+  "topic": { "id": "philosophy", "name": "Philosophy", "emoji": "🏛️", "color": "#5C4033" },
+  "books": [
+    {
+      "id": "enchiridion", "title": "Enchiridion", "author": "Epictetus", "kind": "book", "year": 125,
+      "description": "A short Stoic handbook compiled by a student of Epictetus, a former slave who became one of Rome's great teachers.",
+      "ideas": [
+        ["Separate what you control", "Some things are up to us, our judgments, choices and efforts, and some are not, like other people's opinions or the weather. Peace comes from putting your energy into the first group and accepting the second.", "dichotomy-of-control"],
+        ["It's our judgments that disturb us", "Events themselves don't upset us; our opinions about them do. When you feel hurt, look for the judgment behind the feeling and ask whether it's true."],
+        ["Want things as they are", "Don't demand that events happen as you wish. Wish for them to happen as they do, and life will go smoothly. This isn't passivity; it's refusing to fight what has already happened."],
+        ["Remember what things are", "If you love a cup, remind yourself that it is only a cup, so you won't be crushed when it breaks. Holding things lightly lets you enjoy them without dread."],
+        ["Act your part well", "Life is like a play: you didn't choose your role, but you can choose to play it well. Focus on doing your part with skill rather than envying someone else's."]
+      ]
+    },
+    {
+      "id": "meditations", "title": "Meditations", "author": "Marcus Aurelius", "kind": "book", "year": 180,
+      "description": "Private notes a Roman emperor wrote to himself on how to live with virtue, calm and purpose.",
+      "ideas": [
+        ["Remember that you will die", "The Stoics reminded themselves daily that life is short. Not to be gloomy, but to sharpen priorities: if today were among your last, would petty grudges or endless scrolling still feel worth it?", "memento-mori"],
+        ["Prepare for difficult people", "Marcus began some days by expecting to meet rude, ungrateful people. Not out of cynicism: anticipating it meant he could respond with patience instead of surprise and anger."],
+        ["The obstacle becomes the way", "What stands in the way of an action can itself become the material for a new action. A setback is a chance to practise patience, courage or creativity."],
+        ["Retreat into yourself", "People seek peace in the country or by the sea, but you can find it at any moment by turning inward. A calm mind is a retreat you carry everywhere."],
+        ["Do the work of a human being", "On mornings when he didn't want to get up, Marcus reminded himself that he was made to work with others, not to lie under blankets. Purpose is a better alarm than pleasure."],
+        ["Everything is change", "Nature loves to turn things into other things. Mountains erode, empires fall, people age. Seeing change as the normal order makes loss easier to accept."]
+      ]
+    },
+    {
+      "id": "letters-from-a-stoic", "title": "Letters from a Stoic", "author": "Seneca", "kind": "book", "year": 65,
+      "description": "Seneca's letters to his friend Lucilius, full of practical advice on time, friendship, fear and wealth.",
+      "ideas": [
+        ["Life is long if you know how to use it", "We don't have too little time; we waste a lot of it. Seneca urges guarding your hours as carefully as money, since time is the one thing you can't earn back."],
+        ["Rehearse poverty", "Set aside a few days to live on very little, eat plain food and wear rough clothes, then ask: is this what I feared? Practising hardship removes its power over you."],
+        ["We suffer more in imagination", "Most of what we fear never happens, and what does happen is rarely as bad as we pictured. Deal with real problems, not imagined ones."],
+        ["Choose friends carefully", "Spend time with people who make you better, and whom you can make better. Habits and values are contagious."],
+        ["Read deeply, not widely", "Skipping between many books leaves nothing behind. Stay with a few great minds, and each day take one idea to digest."]
+      ]
+    },
+    {
+      "id": "nicomachean-ethics", "title": "Nicomachean Ethics", "author": "Aristotle", "kind": "book", "year": -340,
+      "description": "Aristotle's foundational work on happiness, virtue and what it means to live a good life.",
+      "ideas": [
+        ["Happiness is an activity", "For Aristotle, happiness (eudaimonia) isn't a passing mood but living well over a whole life: using your abilities fully and acting with virtue."],
+        ["The golden mean", "Each virtue sits between two extremes. Courage lies between cowardice and recklessness; generosity between stinginess and waste. Wisdom is finding the right amount for the situation."],
+        ["We become what we repeatedly do", "We become just by doing just acts and brave by doing brave acts. Character isn't something you're born with; it's built by practice until it becomes second nature."],
+        ["Three kinds of friendship", "Some friendships are based on usefulness, some on pleasure, and the rarest on admiring each other's character. Only the last kind survives changing circumstances."],
+        ["Practical wisdom", "Knowing general rules isn't enough. Practical wisdom is the skill of seeing what a particular situation calls for, and it grows with experience."]
+      ]
+    },
+    {
+      "id": "tao-te-ching", "title": "Tao Te Ching", "author": "Lao Tzu", "kind": "book", "year": -400,
+      "description": "A brief, poetic classic of Chinese philosophy about living in harmony with the natural way of things.",
+      "ideas": [
+        ["Be like water", "Water is soft and yields to everything, yet it wears down the hardest stone. Gentleness and persistence often overcome force."],
+        ["Wu wei: effortless action", "Wu wei means acting without forcing, like a skilled craftsman whose work flows. Don't push against the grain of situations; find where they naturally lead."],
+        ["The usefulness of emptiness", "A bowl is useful because of its empty centre; a room because of its open space. What isn't there can matter as much as what is."],
+        ["Knowing when enough is enough", "Those who know they have enough are rich. Endless wanting is a kind of poverty no amount of wealth can cure."],
+        ["The best leaders are barely noticed", "When the best leader's work is done, the people say, \"We did it ourselves.\" Great leadership empowers rather than commands."]
+      ]
+    },
+    {
+      "id": "the-republic", "title": "The Republic", "author": "Plato", "kind": "book", "year": -375,
+      "description": "Plato's dialogue on justice, the ideal city and the nature of knowledge, featuring Socrates.",
+      "ideas": [
+        ["The allegory of the cave", "Prisoners chained in a cave see only shadows and think they're reality. One escapes, sees the sun and returns, but the others mock him. Education is turning toward the light, and it can be uncomfortable."],
+        ["The ring of Gyges", "If you had a ring that made you invisible, would you still act justly? Plato uses this question to ask whether people are good only because they fear getting caught."],
+        ["The tripartite soul", "Plato saw the soul as reason, spirit and appetite, like a charioteer steering two horses. A just person lets reason guide, with spirit as its ally and appetite kept in check."],
+        ["Philosopher kings", "Plato argued that cities would be best ruled by those who love wisdom and don't want power. The people who seek power most eagerly are often the least fit to hold it."]
+      ]
+    }
+  ]
+}

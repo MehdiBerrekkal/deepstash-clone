@@ -1,0 +1,67 @@
+{
+  "topic": { "id": "health", "name": "Health", "emoji": "💪", "color": "#7A2E3A" },
+  "books": [
+    {
+      "id": "why-we-sleep", "title": "Why We Sleep", "author": "Matthew Walker", "kind": "book", "year": 2017,
+      "description": "A sleep scientist explains what sleep does for the brain and body, and what happens when we skimp on it.",
+      "ideas": [
+        ["Sleep is a performance tool", "Sleep is when the brain files memories and clears waste. Regularly sleeping six hours or less hurts focus, mood and immunity, often without you noticing. Keeping a consistent wake time is one of the simplest health upgrades.", "sleep-performance"],
+        ["Sleep before and after learning", "Sleep before learning prepares the brain to absorb new information; sleep after learning locks it in. Pulling an all-nighter before an exam undermines both."],
+        ["Caffeine lingers", "Caffeine has a half-life of around five to six hours. A coffee at 4pm can still be partly active at bedtime, making sleep lighter even if you fall asleep fine."],
+        ["Keep the bedroom cool and dark", "Your body needs to drop its core temperature to fall asleep. A cool, dark room and dimmer lights in the evening help signal that it's night."],
+        ["Dreams as overnight therapy", "During REM sleep, the brain revisits emotional memories in a calmer chemical state. That's part of why things often feel less raw after a good night's sleep."]
+      ]
+    },
+    {
+      "id": "walking-study", "title": "Give Your Ideas Some Legs", "author": "Oppezzo & Schwartz", "kind": "article", "year": 2014,
+      "description": "Stanford experiments on how walking affects creative thinking.",
+      "ideas": [
+        ["Walk to think better", "In Stanford experiments, people came up with more creative ideas while walking than while sitting, and the boost lasted shortly after they sat back down. Stuck on a problem? Take it for a walk.", "walk-to-think"],
+        ["Indoors works too", "The creativity boost showed up even when people walked on a treadmill facing a blank wall. It's the movement itself, not just the scenery, that helps."],
+        ["Walking meetings", "For brainstorming conversations, swap the meeting room for a walk. Side by side movement often makes talking easier and ideas looser."]
+      ]
+    },
+    {
+      "id": "outlive", "title": "Outlive", "author": "Peter Attia", "kind": "book", "year": 2023,
+      "description": "A physician's approach to extending not just lifespan but healthspan: the years you live in good health.",
+      "ideas": [
+        ["Healthspan over lifespan", "Living longer is only half the goal. The other half is staying physically and mentally capable in your last decades, so those years are worth living."],
+        ["Exercise is the strongest medicine", "Cardiorespiratory fitness and muscle strength are among the strongest predictors of how long and how well people live. Few drugs come close."],
+        ["Train for your centenarian decathlon", "List what you want to be able to do at 90, like carrying groceries or picking up a grandchild, and train now for the strength and fitness those tasks will need."],
+        ["Zone 2 cardio", "Steady exercise at a pace where you can still talk, but with effort, builds the aerobic base and metabolic health. Several hours a week pays off over decades."],
+        ["Prevention starts early", "Chronic diseases like heart disease develop over decades. Acting in your thirties and forties is far more effective than reacting at sixty."]
+      ]
+    },
+    {
+      "id": "in-defense-of-food", "title": "In Defense of Food", "author": "Michael Pollan", "kind": "book", "year": 2008,
+      "description": "A clear argument for simple eating rules in a world of confusing nutrition advice.",
+      "ideas": [
+        ["Eat food. Not too much. Mostly plants.", "Pollan's whole philosophy in seven words: choose real food, keep portions moderate and make plants the bulk of your plate."],
+        ["Beware of health claims", "Products that shout about being healthy are usually processed. Fresh vegetables rarely need a label telling you they're good for you."],
+        ["Your great-grandmother test", "Don't eat anything your great-grandmother wouldn't recognize as food. Long ingredient lists full of unfamiliar words are a warning sign."],
+        ["Shop the edges", "In most supermarkets, fresh produce, meat and dairy sit around the walls, while processed foods fill the middle aisles."],
+        ["Eat slowly, at a table", "Eating with others, at regular meals and without screens helps you notice when you're full and enjoy food more."]
+      ]
+    },
+    {
+      "id": "breath", "title": "Breath", "author": "James Nestor", "kind": "book", "year": 2020,
+      "description": "A journalist explores how the way we breathe affects health, sleep and performance.",
+      "ideas": [
+        ["Breathe through your nose", "Nasal breathing filters, warms and humidifies air and helps the body take in oxygen efficiently. Mouth breathing, especially at night, is linked to snoring and poorer sleep."],
+        ["Slow down your breathing", "Breathing around six breaths a minute, roughly five seconds in and five out, has a calming effect on the nervous system and heart rate."],
+        ["Exhale longer to relax", "A longer out-breath than in-breath activates the body's rest response. It's a quick tool before a stressful conversation."],
+        ["Breathe less, not more", "Many people breathe more than they need. Lighter, quieter breathing can improve how efficiently oxygen reaches your tissues."]
+      ]
+    },
+    {
+      "id": "the-body-keeps-the-score", "title": "The Body Keeps the Score", "author": "Bessel van der Kolk", "kind": "book", "year": 2014,
+      "description": "A psychiatrist on how trauma lives in the body, and the approaches that help people heal.",
+      "ideas": [
+        ["Trauma is stored in the body", "Traumatic stress isn't only a memory; it can keep the body's alarm system switched on, showing up as tension, fatigue or sudden reactions long after the event."],
+        ["Talking isn't always enough", "Because trauma affects brain areas below language, healing often involves the body too: movement, breathing, yoga and other ways of feeling safe again."],
+        ["Safety comes from connection", "Feeling seen and supported by other people is one of the most powerful protections against the lasting effects of trauma."],
+        ["Reclaiming the body", "Learning to notice bodily sensations without being overwhelmed helps people feel at home in themselves again."]
+      ]
+    }
+  ]
+}

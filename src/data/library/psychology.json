@@ -1,0 +1,74 @@
+{
+  "topic": { "id": "psychology", "name": "Psychology", "emoji": "🧠", "color": "#4B3F72" },
+  "books": [
+    {
+      "id": "atomic-habits", "title": "Atomic Habits", "author": "James Clear", "kind": "book", "year": 2018,
+      "description": "How tiny changes in behaviour compound into remarkable results, with a simple four-step model of how habits work.",
+      "ideas": [
+        ["Stack new habits on old ones", "Attach a habit you want to an existing routine: \"After I pour my morning coffee, I will write one sentence in my journal.\" The old habit becomes a reliable cue, so you no longer depend on remembering or on motivation.", "habit-stacking"],
+        ["Tiny gains compound", "Getting 1% better each day barely shows at first, but small improvements compound like interest. Focus on the system you follow every day rather than the goal; results are a lagging measure of your habits.", "one-percent"],
+        ["The four laws of behaviour change", "To build a habit, make it obvious, attractive, easy and satisfying. To break one, flip each law: make it invisible, unattractive, difficult and unsatisfying."],
+        ["Identity-based habits", "Instead of \"I want to run a marathon\", think \"I am a runner\". Every action is a vote for the type of person you want to become. Habits stick when they match your identity."],
+        ["The two-minute version", "Scale any new habit down until it takes two minutes: \"read before bed\" becomes \"read one page\". Master showing up first; you can't improve a habit that doesn't exist."],
+        ["Design your environment", "Make good choices the path of least resistance. Put the guitar in the middle of the room, keep fruit on the counter, hide the snacks. Environment beats motivation over time."]
+      ]
+    },
+    {
+      "id": "thinking-fast-slow", "title": "Thinking, Fast and Slow", "author": "Daniel Kahneman", "kind": "book", "year": 2011,
+      "description": "A Nobel-winning psychologist explains the two systems that drive how we think, and the biases that trip us up.",
+      "ideas": [
+        ["Two systems of thinking", "System 1 is fast, automatic and intuitive. System 2 is slow, effortful and logical. Most errors happen when System 1 answers a question that needed System 2. For decisions that matter, slow down and check your first impression.", "system-1-2"],
+        ["Anchoring", "The first number you hear pulls your estimate towards it, even when it's random. Negotiators who name a price first often set the frame for the whole conversation."],
+        ["Losses loom larger than gains", "Losing $100 feels roughly twice as bad as winning $100 feels good. This loss aversion makes us cling to bad investments and avoid sensible risks."],
+        ["What you see is all there is", "Your mind builds a confident story from whatever information is in front of it and rarely asks what's missing. Before judging, ask what you don't know."],
+        ["The planning fallacy", "We estimate projects based on the best-case scenario and ignore how long similar projects actually took. Look at the base rate of comparable cases before you commit to a deadline."],
+        ["The experiencing and remembering self", "We judge experiences mostly by their peak and their ending, not their length. A holiday with a great last day is remembered more fondly than a longer one that ended badly."]
+      ]
+    },
+    {
+      "id": "influence", "title": "Influence", "author": "Robert Cialdini", "kind": "book", "year": 1984,
+      "description": "The classic study of the psychology of persuasion and the six principles that make people say yes.",
+      "ideas": [
+        ["Reciprocity", "People feel obliged to return favours. A free sample, a small gift or a bit of help first makes others far more likely to agree to a request later."],
+        ["Commitment and consistency", "Once we take a stand, even a small one, we feel pressure to act consistently with it. Getting someone to agree to a tiny request makes a bigger one easier."],
+        ["Social proof", "When unsure, we look at what others are doing. Reviews, crowds and \"most people choose this\" messages work because copying the group is usually a safe shortcut."],
+        ["Liking", "We say yes to people we like: those who are similar to us, who compliment us, or who cooperate with us toward a shared goal."],
+        ["Authority", "Titles, uniforms and confident expertise trigger automatic deference. Useful when the authority is real; dangerous when it's only a costume."],
+        ["Scarcity", "Things seem more valuable when they're rare or about to disappear. \"Only 3 left\" and \"offer ends tonight\" exploit our fear of missing out."]
+      ]
+    },
+    {
+      "id": "mindset", "title": "Mindset", "author": "Carol S. Dweck", "kind": "book", "year": 2006,
+      "description": "How believing that abilities can grow, rather than being fixed, changes how we learn, work and relate to others.",
+      "ideas": [
+        ["Fixed versus growth mindset", "With a fixed mindset you believe talent is set at birth, so every challenge is a test you might fail. With a growth mindset you see ability as something you build, so challenges become ways to improve."],
+        ["Praise effort, not intelligence", "Children praised for being smart tend to avoid hard tasks to protect that label. Children praised for effort and strategy choose harder problems and keep trying after failure."],
+        ["The power of \"yet\"", "\"I can't do this\" becomes \"I can't do this yet\". One small word turns a verdict into a stage of learning."],
+        ["Failure as information", "In a growth mindset, a setback tells you what to work on next, not who you are. People who see it this way recover faster and learn more."],
+        ["Mindsets can be mixed", "Nobody is pure growth mindset. You might feel growth-minded about work and fixed about art. Notice what triggers your fixed voice and talk back to it."]
+      ]
+    },
+    {
+      "id": "mans-search-for-meaning", "title": "Man's Search for Meaning", "author": "Viktor E. Frankl", "kind": "book", "year": 1946,
+      "description": "A psychiatrist's account of surviving Nazi concentration camps, and the therapy he built around finding meaning.",
+      "ideas": [
+        ["The last human freedom", "Frankl saw that even when everything is taken away, a person keeps one freedom: to choose their attitude toward the circumstances. That inner choice can't be confiscated."],
+        ["Meaning makes suffering bearable", "Prisoners who held on to a reason to live, a loved one to see again, work to finish, endured more than those who lost hope. Suffering without meaning crushes; suffering with meaning can be carried."],
+        ["Three sources of meaning", "We find meaning by creating a work or doing a deed, by experiencing something or loving someone, and by the attitude we take toward unavoidable suffering."],
+        ["Life asks the questions", "Stop asking what you expect from life and ask what life expects from you. Meaning is found by responding to concrete situations, not by thinking about it in the abstract."],
+        ["Success as a side effect", "Happiness and success can't be pursued directly; they follow from dedicating yourself to something larger than yourself."]
+      ]
+    },
+    {
+      "id": "predictably-irrational", "title": "Predictably Irrational", "author": "Dan Ariely", "kind": "book", "year": 2008,
+      "description": "Experiments showing our irrational choices aren't random: they follow patterns we can learn to spot.",
+      "ideas": [
+        ["The decoy effect", "Add a clearly worse option next to one of two choices and people flock to the one it resembles. A pricey \"print only\" subscription makes \"print + web\" at the same price look like a bargain."],
+        ["The power of free", "Zero is not just another price. People will choose a free item over a much better deal that costs a few cents, because free feels like there's no downside."],
+        ["Social norms versus market norms", "Ask a friend to help you move and they'll gladly do it. Offer them $10 and it feels insulting. Mixing money into social relationships changes the rules, often for the worse."],
+        ["The IKEA effect", "We overvalue things we built ourselves, even badly. Effort creates attachment, which is why a little customer involvement makes products feel more valuable."],
+        ["Keeping doors open", "We waste effort keeping options alive even when they have little value. Closing some doors on purpose frees energy for the ones that matter."]
+      ]
+    }
+  ]
+}

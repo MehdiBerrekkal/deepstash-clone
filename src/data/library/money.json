@@ -1,0 +1,68 @@
+{
+  "topic": { "id": "money", "name": "Money", "emoji": "💰", "color": "#6B4E16" },
+  "books": [
+    {
+      "id": "babylon", "title": "The Richest Man in Babylon", "author": "George S. Clason", "kind": "book", "year": 1926,
+      "description": "Timeless money lessons told as parables set in ancient Babylon.",
+      "ideas": [
+        ["Pay yourself first", "Before paying anyone else, set aside a fixed part of everything you earn, even a tenth. Treat it as a bill owed to your future self. Saving what is left at the end of the month rarely works, because little is ever left.", "pay-yourself-first"],
+        ["Make your gold work", "Saved money should be put to work so it earns more money, which in turn earns more. Each coin becomes a worker that brings in others."],
+        ["Control your expenses", "What we call necessary expenses grow to match our income unless we push back. Budget on purpose so desires don't swallow everything you earn."],
+        ["Guard against loss", "Before chasing high returns, protect your principal. Seek advice from people experienced with money, not from those who have never managed it."],
+        ["Increase your ability to earn", "The more you learn and the better you get at your work, the more you can earn. Investing in your own skills is part of building wealth."]
+      ]
+    },
+    {
+      "id": "psychology-of-money", "title": "The Psychology of Money", "author": "Morgan Housel", "kind": "book", "year": 2020,
+      "description": "Short stories about how people actually think about money, and why behaviour matters more than knowledge.",
+      "ideas": [
+        ["Compounding needs time, not genius", "Most long-term wealth comes from earning decent returns for a very long time without interruption. Avoiding ruin and staying invested through bad years matters more than finding the highest return.", "compounding-time"],
+        ["Wealth is what you don't see", "Wealth is the nice car not bought and the money left in the account. Spending to look rich is the fastest way to have less money."],
+        ["Enough", "The hardest financial skill is getting the goalpost to stop moving. If expectations rise with every gain, no amount will ever feel like enough."],
+        ["Room for error", "Plans fail. A cash buffer and modest assumptions let you survive bad luck long enough for good luck to arrive."],
+        ["Freedom is the highest dividend", "The greatest value of money is control over your time: being able to do what you want, when you want, with whom you want."],
+        ["Reasonable beats rational", "A strategy you can stick with through panic is better than a theoretically perfect one you'll abandon at the worst moment."]
+      ]
+    },
+    {
+      "id": "rich-dad-poor-dad", "title": "Rich Dad Poor Dad", "author": "Robert T. Kiyosaki", "kind": "book", "year": 1997,
+      "description": "A contrast between two father figures and their beliefs about money, work and assets.",
+      "ideas": [
+        ["Assets versus liabilities", "Kiyosaki's simple definition: an asset puts money in your pocket, a liability takes money out. Many things people call assets, like a big house, mostly drain cash."],
+        ["The rat race", "Earn more, spend more, need to earn more. Escaping means building income that doesn't depend on trading every hour for pay."],
+        ["Financial literacy", "Schools rarely teach how money works. Learning to read a balance sheet and understand cash flow matters more than a high salary."],
+        ["Ask how you can afford it", "Saying \"I can't afford it\" shuts down thinking. Asking \"How can I afford it?\" pushes you to look for solutions."]
+      ]
+    },
+    {
+      "id": "your-money-or-your-life", "title": "Your Money or Your Life", "author": "Vicki Robin & Joe Dominguez", "kind": "book", "year": 1992,
+      "description": "A nine-step programme for transforming your relationship with money and reaching financial independence.",
+      "ideas": [
+        ["Money is life energy", "Every purchase costs the hours of your life spent earning it. Work out your real hourly wage after commuting and work costs, and prices start to look different."],
+        ["Track every cent", "For a month, record every penny that comes in and goes out. Awareness alone changes spending, without any strict budget."],
+        ["Fulfilment curve", "Spending brings more happiness up to a point: survival, comforts, a few luxuries. Beyond \"enough\", more stuff brings clutter, not joy."],
+        ["The crossover point", "Financial independence arrives when monthly investment income exceeds monthly expenses. Lower spending gets you there faster than higher income."]
+      ]
+    },
+    {
+      "id": "little-book-common-sense-investing", "title": "The Little Book of Common Sense Investing", "author": "John C. Bogle", "kind": "book", "year": 2007,
+      "description": "The founder of Vanguard makes the case for low-cost index funds.",
+      "ideas": [
+        ["Own the whole market", "Instead of searching for the needle, buy the haystack. A broad index fund owns every company and captures the market's return at very low cost."],
+        ["Costs matter enormously", "A 1% yearly fee sounds small, but over decades it can eat a large share of your final wealth. In investing, you get what you don't pay for."],
+        ["Most active funds lose", "After fees, the majority of actively managed funds trail their index over long periods. Picking which few will win in advance is nearly impossible."],
+        ["Don't just do something, stand there", "Frequent trading adds costs and mistakes. The winning strategy is usually to buy, hold and leave it alone."]
+      ]
+    },
+    {
+      "id": "i-will-teach-you-to-be-rich", "title": "I Will Teach You to Be Rich", "author": "Ramit Sethi", "kind": "book", "year": 2009,
+      "description": "A practical six-week programme for automating your finances and spending guilt-free on what you love.",
+      "ideas": [
+        ["Automate your money", "Set up automatic transfers on payday for savings, investments and bills. When good decisions happen without you, you stop relying on willpower."],
+        ["Spend extravagantly on what you love", "Cut mercilessly on things you don't care about so you can spend freely on what you do. Frugality isn't about spending less on everything."],
+        ["Conscious spending plan", "A simple split: fixed costs, investments, savings goals and guilt-free spending. If the fixed costs are reasonable, the rest takes care of itself."],
+        ["Focus on big wins", "Negotiating your salary or rent saves more than a lifetime of skipped coffees. Spend your energy on the few decisions that move the needle."]
+      ]
+    }
+  ]
+}

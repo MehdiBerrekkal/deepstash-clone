@@ -1,0 +1,67 @@
+{
+  "topic": { "id": "leadership", "name": "Leadership", "emoji": "🧭", "color": "#40513B" },
+  "books": [
+    {
+      "id": "start-with-why", "title": "Start With Why", "author": "Simon Sinek", "kind": "book", "year": 2009,
+      "description": "Why some leaders inspire action while others don't, built around the idea of the Golden Circle.",
+      "ideas": [
+        ["Start with why", "Most organizations explain what they do and how they do it. Inspiring leaders start with why: the purpose or belief behind the work. People don't just buy what you do; they buy into why you do it.", "start-with-why"],
+        ["The Golden Circle", "Picture three rings: why at the centre, how around it and what on the outside. Inspiring communication moves from the inside out."],
+        ["Manipulation versus inspiration", "Discounts, fear and peer pressure can drive a sale, but they don't build loyalty. Shared belief does."],
+        ["Trust comes from consistency", "When what you say and what you do line up with your why, people trust you. Clarity, discipline and consistency keep the circle balanced."]
+      ]
+    },
+    {
+      "id": "extreme-ownership", "title": "Extreme Ownership", "author": "Jocko Willink & Leif Babin", "kind": "book", "year": 2015,
+      "description": "Two former Navy SEAL officers apply battlefield leadership lessons to business and life.",
+      "ideas": [
+        ["Own everything in your world", "When something goes wrong, a good leader doesn't blame the team, the plan or bad luck. They take responsibility, find what they could have done better and fix it. That ownership spreads through the whole team.", "extreme-ownership"],
+        ["No bad teams, only bad leaders", "The same team can fail or succeed depending on who leads it. Standards are what the leader tolerates."],
+        ["Prioritize and execute", "When overwhelmed, step back, pick the single highest-priority problem, solve it, then move to the next. Trying to fix everything at once fixes nothing."],
+        ["Simple plans win", "Complex plans fall apart under pressure. If everyone can't understand the plan, it's too complicated."],
+        ["Decentralized command", "Leaders explain the intent, then let people closest to the action make decisions. Teams move faster when they don't wait for approval."]
+      ]
+    },
+    {
+      "id": "leaders-eat-last", "title": "Leaders Eat Last", "author": "Simon Sinek", "kind": "book", "year": 2014,
+      "description": "Why the best teams feel safe, and how leaders create that circle of safety.",
+      "ideas": [
+        ["The circle of safety", "When people feel protected by their leader from threats inside the organization, they focus their energy on outside challenges instead of on watching their backs."],
+        ["Leadership is a choice", "Rank doesn't make someone a leader. Choosing to look after the people around you does."],
+        ["Leaders take the hit", "In the military, officers traditionally eat after their troops. Good leaders give up some of their own comfort for the people they're responsible for."],
+        ["People are not numbers", "When leaders treat people as costs on a spreadsheet, trust collapses. Seeing them as humans builds loyalty that money can't buy."]
+      ]
+    },
+    {
+      "id": "dare-to-lead", "title": "Dare to Lead", "author": "Brené Brown", "kind": "book", "year": 2018,
+      "description": "A researcher on vulnerability explains the courage-building skills behind brave leadership.",
+      "ideas": [
+        ["Clear is kind", "Being vague to avoid an awkward conversation is unkind. Clear expectations and honest feedback, delivered with respect, help people succeed."],
+        ["Vulnerability is courage", "Saying \"I don't know\" or \"I was wrong\" takes courage. Leaders who can be vulnerable make it safe for others to take risks."],
+        ["Armoured versus daring leadership", "Perfectionism, cynicism and needing to be right are armour. They protect the leader but stop the team from learning."],
+        ["Name your values", "Choose two core values and define what they look like in action. Values only count when they guide hard decisions."]
+      ]
+    },
+    {
+      "id": "the-five-dysfunctions", "title": "The Five Dysfunctions of a Team", "author": "Patrick Lencioni", "kind": "book", "year": 2002,
+      "description": "A leadership fable about the five problems that keep teams from working together.",
+      "ideas": [
+        ["Absence of trust", "When team members can't admit mistakes or weaknesses, everyone wastes energy protecting themselves. Trust is the foundation of every other team skill."],
+        ["Fear of conflict", "Teams without trust avoid open debate. Artificial harmony leads to poor decisions because real concerns are never voiced."],
+        ["Lack of commitment", "If people haven't had a chance to weigh in, they won't truly buy in, even if they nod in the meeting."],
+        ["Avoidance of accountability", "When commitment is fuzzy, peers hesitate to call each other out. Standards slip quietly."],
+        ["Inattention to results", "When individuals care more about their status or department than team goals, collective results suffer."]
+      ]
+    },
+    {
+      "id": "the-art-of-war", "title": "The Art of War", "author": "Sun Tzu", "kind": "book", "year": -500,
+      "description": "An ancient Chinese treatise on strategy that is still read by leaders far beyond the military.",
+      "ideas": [
+        ["Know yourself and your opponent", "If you know both yourself and the other side, you need not fear the outcome of a hundred battles. Most failures come from ignoring one of the two."],
+        ["Win without fighting", "The highest skill is to achieve your goal without open conflict, by outmanoeuvring, persuading or making the fight unnecessary."],
+        ["Attack weakness, avoid strength", "Like water flowing downhill, strategy should flow around strong points and toward weak ones."],
+        ["Speed and preparation", "Victory usually goes to whoever prepared more thoroughly beforehand. Battles are won before they begin."]
+      ]
+    }
+  ]
+}

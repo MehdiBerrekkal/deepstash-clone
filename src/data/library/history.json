@@ -1,0 +1,55 @@
+{
+  "topic": { "id": "history", "name": "History", "emoji": "📜", "color": "#6E4C2B" },
+  "books": [
+    {
+      "id": "guns-germs-and-steel", "title": "Guns, Germs, and Steel", "author": "Jared Diamond", "kind": "book", "year": 1997,
+      "description": "Why some societies came to dominate others, explained through geography rather than biology.",
+      "ideas": [
+        ["Geography shaped history", "Diamond argues that the advantages some civilizations gained came from their environment, like which plants and animals could be domesticated, not from any innate superiority."],
+        ["The east-west axis", "Eurasia stretches east to west, so crops and ideas could spread across similar climates. The Americas and Africa run north to south, which made spreading harder."],
+        ["Germs were decisive", "Societies that lived closely with livestock developed immunity to many diseases. When Europeans reached the Americas, those germs killed far more people than weapons did."],
+        ["Food surpluses created specialists", "Farming produced extra food, which supported people who didn't farm: soldiers, scribes, inventors and rulers."]
+      ]
+    },
+    {
+      "id": "the-histories", "title": "The Histories", "author": "Herodotus", "kind": "book", "year": -430,
+      "description": "The first great work of history in the Western tradition, covering the Greek-Persian wars.",
+      "ideas": [
+        ["The father of history", "Herodotus set out to record great deeds so they wouldn't be forgotten, and to explain why Greeks and Persians went to war. Asking why became the heart of history."],
+        ["Call no one happy until they die", "In a famous story, the sage Solon tells a rich king that fortune can change at any time, so a life can only be judged as a whole."],
+        ["Customs differ", "Herodotus described how different peoples saw their own customs as best. Recognizing this was an early lesson in cultural humility."],
+        ["Thermopylae", "A small force of Greeks held a narrow pass against a vast Persian army for days. Their stand became a lasting symbol of courage."]
+      ]
+    },
+    {
+      "id": "the-wright-brothers", "title": "The Wright Brothers", "author": "David McCullough", "kind": "book", "year": 2015,
+      "description": "How two bicycle makers from Ohio taught the world to fly.",
+      "ideas": [
+        ["Outsiders solved it", "With no college degrees or funding, Wilbur and Orville Wright beat well-financed experts by studying carefully and testing relentlessly."],
+        ["Control was the key", "Others focused on engines and lift. The Wrights realized the real problem was balance and steering, and solved it by twisting the wings, inspired by birds."],
+        ["Build your own data", "When existing tables on wing lift proved wrong, they built a wind tunnel and measured hundreds of wing shapes themselves."],
+        ["Persistence through failure", "Crashes, mockery and setbacks didn't stop them. On 17 December 1903, their flyer made the first powered, controlled flights."]
+      ]
+    },
+    {
+      "id": "team-of-rivals", "title": "Team of Rivals", "author": "Doris Kearns Goodwin", "kind": "book", "year": 2005,
+      "description": "How Abraham Lincoln brought his political opponents into his cabinet and led the nation through civil war.",
+      "ideas": [
+        ["Hire your rivals", "Lincoln appointed the men who had competed against him for the nomination. He valued their talents more than his own ego."],
+        ["Emotional intelligence in leadership", "Lincoln shared credit, took blame, and controlled his anger by writing letters he never sent."],
+        ["Learn from defeat", "Lincoln lost many elections before winning the presidency. Each setback deepened his understanding of people and politics."],
+        ["Timing matters", "Lincoln waited for the right moment to issue the Emancipation Proclamation, when public opinion and the military situation could support it."]
+      ]
+    },
+    {
+      "id": "the-silk-roads", "title": "The Silk Roads", "author": "Peter Frankopan", "kind": "book", "year": 2015,
+      "description": "World history retold from the centre: the networks linking East and West.",
+      "ideas": [
+        ["The world's crossroads", "For most of history, the region between Europe and China was the centre of the world, where goods, ideas and religions met."],
+        ["More than silk", "The routes carried spices, horses, paper, technologies and also diseases like the plague."],
+        ["Ideas travelled too", "Buddhism, Christianity and Islam spread along these trade routes, as did mathematics and astronomy."],
+        ["The pivot returns", "Frankopan argues that power is shifting back toward these regions, making their history vital for understanding the present."]
+      ]
+    }
+  ]
+}

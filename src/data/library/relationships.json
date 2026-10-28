@@ -1,0 +1,56 @@
+{
+  "topic": { "id": "relationships", "name": "Relationships", "emoji": "❤️", "color": "#7A3E5E" },
+  "books": [
+    {
+      "id": "the-five-love-languages", "title": "The 5 Love Languages", "author": "Gary Chapman", "kind": "book", "year": 1992,
+      "description": "A simple framework for understanding how different people give and receive love.",
+      "ideas": [
+        ["People feel love differently", "The five love languages are words of affirmation, quality time, gifts, acts of service and physical touch. Most of us have one or two that matter most."],
+        ["Speak their language, not yours", "We tend to show love in the way we want to receive it. If your partner values acts of service, a heartfelt card might not land as much as doing the dishes."],
+        ["Keep the love tank full", "When people feel loved in their own language, they handle stress and conflict better. Small daily gestures add up."],
+        ["Love is a choice", "Early infatuation fades. Lasting love comes from choosing to care for someone in ways that matter to them."]
+      ]
+    },
+    {
+      "id": "attached", "title": "Attached", "author": "Amir Levine & Rachel Heller", "kind": "book", "year": 2010,
+      "description": "How attachment theory explains the way we behave in romantic relationships.",
+      "ideas": [
+        ["Three attachment styles", "Secure people are comfortable with closeness. Anxious people crave it and fear losing it. Avoidant people value independence and pull away when things get close."],
+        ["Needing others isn't weakness", "Depending on a partner is part of being human. Secure relationships let both people be more independent, not less."],
+        ["The anxious-avoidant trap", "Anxious and avoidant partners often attract each other, then trigger each other's fears in a painful cycle."],
+        ["Effective communication", "Saying what you need clearly and calmly shows you who can meet those needs, and helps a good partner do so."]
+      ]
+    },
+    {
+      "id": "seven-principles-marriage", "title": "The Seven Principles for Making Marriage Work", "author": "John M. Gottman & Nan Silver", "kind": "book", "year": 1999,
+      "description": "A relationship researcher's evidence-based guide to what makes couples last.",
+      "ideas": [
+        ["The four horsemen", "Criticism, contempt, defensiveness and stonewalling predict break-ups. Contempt, treating your partner as beneath you, is the most damaging."],
+        ["Turn toward bids", "Partners constantly make small bids for attention: \"Look at that bird.\" Responding with interest, even briefly, builds connection over time."],
+        ["Love maps", "Strong couples know each other's worlds: worries, friends, dreams. Keep updating your map by asking questions."],
+        ["Five to one", "Stable couples have roughly five positive interactions for every negative one during conflict. Kindness doesn't need to be grand, just frequent."],
+        ["Some problems are permanent", "Many disagreements never fully go away. Successful couples learn to talk about them with humour and acceptance instead of gridlock."]
+      ]
+    },
+    {
+      "id": "the-art-of-loving", "title": "The Art of Loving", "author": "Erich Fromm", "kind": "book", "year": 1956,
+      "description": "A psychologist argues that love is a skill to be learned, not a feeling we fall into.",
+      "ideas": [
+        ["Love is an art", "Like music or painting, love requires knowledge, practice and effort. We focus on being lovable, and neglect learning to love."],
+        ["Love is active", "Love is giving, not just receiving: care, responsibility, respect and knowledge of the other person."],
+        ["Mature love keeps two people whole", "Immature love says, \"I love you because I need you.\" Mature love says, \"I need you because I love you.\""],
+        ["Self-love isn't selfishness", "Respecting and caring for yourself is the ground from which you can love others well."]
+      ]
+    },
+    {
+      "id": "the-good-life", "title": "The Good Life", "author": "Robert Waldinger & Marc Schulz", "kind": "book", "year": 2023,
+      "description": "Lessons from the Harvard Study of Adult Development, which has followed lives for over 80 years.",
+      "ideas": [
+        ["Relationships keep us healthy", "In the longest study of adult life, the quality of people's relationships predicted their health and happiness in old age better than wealth or fame."],
+        ["Loneliness is a health risk", "Chronic loneliness is linked to poorer health and shorter lives. Social connection is as important as diet and exercise."],
+        ["Social fitness", "Relationships need regular exercise too. Reach out, check in and make time, or connections slowly weaken."],
+        ["Small moments matter", "A chat with a neighbour or barista counts. Brief, warm interactions boost mood and sense of belonging."]
+      ]
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "topic": { "id": "career", "name": "Career", "emoji": "💼", "color": "#3F4A5C" },
+  "books": [
+    {
+      "id": "so-good-they-cant-ignore-you", "title": "So Good They Can't Ignore You", "author": "Cal Newport", "kind": "book", "year": 2012,
+      "description": "Why \"follow your passion\" is bad career advice, and what works instead.",
+      "ideas": [
+        ["Passion follows mastery", "Most people don't discover a pre-existing passion. They become passionate about work they've become very good at."],
+        ["Career capital", "Rare and valuable skills are the currency you trade for great jobs: autonomy, creativity and impact."],
+        ["The craftsman mindset", "Focus on what value you can offer, not on what the job offers you. Getting better is the path to loving your work."],
+        ["Deliberate practice", "Getting better requires stretching beyond comfort, with feedback. Coasting at what you already know builds no capital."]
+      ]
+    },
+    {
+      "id": "range", "title": "Range", "author": "David Epstein", "kind": "book", "year": 2019,
+      "description": "Why generalists often triumph in a world that celebrates early specialization.",
+      "ideas": [
+        ["Kind and wicked learning environments", "Chess and golf have clear rules and fast feedback, so early specialization works. Most of life is messier, and broad experience helps more."],
+        ["The sampling period", "Many top performers tried several activities before settling. Exploring helps you find a good match, which matters more than an early start."],
+        ["Analogical thinking", "People with broad experience can borrow solutions from unrelated fields. Outsiders often solve problems that insiders are stuck on."],
+        ["Late starters aren't behind", "Switching paths isn't wasted time. What you learned elsewhere often becomes an unusual advantage."]
+      ]
+    },
+    {
+      "id": "designing-your-life", "title": "Designing Your Life", "author": "Bill Burnett & Dave Evans", "kind": "book", "year": 2016,
+      "description": "Two Stanford designers apply design thinking to building a career and life you love.",
+      "ideas": [
+        ["Prototype your career", "Before making a big change, test it in small ways: talk to people in the field, shadow someone, take a short project."],
+        ["Odyssey plans", "Sketch three different five-year lives: your current path, what you'd do if that disappeared, and what you'd do if money and judgment didn't matter."],
+        ["Gravity problems", "Some problems can't be solved, like gravity. Accept them and design around them instead of wasting energy fighting."],
+        ["Track your energy", "For a few weeks, note which activities energize or drain you. The patterns reveal what work fits you."]
+      ]
+    },
+    {
+      "id": "the-7-habits", "title": "The 7 Habits of Highly Effective People", "author": "Stephen R. Covey", "kind": "book", "year": 1989,
+      "description": "A principle-centred approach to personal and professional effectiveness.",
+      "ideas": [
+        ["Be proactive", "Between what happens and how you respond, there's a space. Focus on what you can influence rather than what you can't."],
+        ["Begin with the end in mind", "Picture what you want people to say about you at the end of your life. Let that vision guide your daily choices."],
+        ["Put first things first", "Important but not urgent activities, like planning, relationships and health, are where real effectiveness lies. Schedule them before urgent trivia."],
+        ["Seek first to understand", "Most people listen with the intent to reply. Listen to understand first, and you'll be understood more easily."],
+        ["Sharpen the saw", "Regularly renew your body, mind, relationships and spirit. Without maintenance, effectiveness wears down."]
+      ]
+    },
+    {
+      "id": "grit", "title": "Grit", "author": "Angela Duckworth", "kind": "book", "year": 2016,
+      "description": "Research showing that passion and perseverance often matter more than talent.",
+      "ideas": [
+        ["Effort counts twice", "Talent times effort equals skill; skill times effort equals achievement. Effort shows up in both steps."],
+        ["Grit is passion plus perseverance", "Gritty people stick with long-term goals for years, through setbacks and boredom."],
+        ["Interest comes first", "Passion usually starts with a spark of interest, then grows through practice and finding purpose."],
+        ["Hope as a habit", "Gritty people expect their efforts to improve their future. That optimism keeps them trying after failures."]
+      ]
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "topic": { "id": "communication", "name": "Communication", "emoji": "💬", "color": "#1F6F78" },
+  "books": [
+    {
+      "id": "how-to-win-friends", "title": "How to Win Friends and Influence People", "author": "Dale Carnegie", "kind": "book", "year": 1936,
+      "description": "The classic on getting along with people, with advice that still works nearly a century later.",
+      "ideas": [
+        ["Don't criticize, condemn or complain", "Criticism makes people defensive and rarely changes behaviour. Try to understand why people do what they do instead."],
+        ["Become genuinely interested in others", "You'll make more friends in two months by being interested in other people than in two years trying to get them interested in you."],
+        ["Remember names", "A person's name is, to them, one of the sweetest sounds. Using it shows you see them as an individual."],
+        ["Talk in terms of their interests", "To persuade someone, start from what they care about, not what you want."],
+        ["Let the other person save face", "Even when you're right, a little kindness that lets someone keep their dignity goes a long way."]
+      ]
+    },
+    {
+      "id": "crucial-conversations", "title": "Crucial Conversations", "author": "Patterson, Grenny, McMillan & Switzler", "kind": "book", "year": 2002,
+      "description": "Tools for talking when stakes are high, opinions differ and emotions run strong.",
+      "ideas": [
+        ["Start with heart", "Before a difficult talk, ask: what do I really want for myself, for them and for the relationship? It keeps you from trying to just win."],
+        ["Make it safe", "When people feel unsafe, they go silent or get aggressive. Restore safety by showing respect and clarifying shared goals."],
+        ["Separate facts from stories", "\"You were late three times this week\" is a fact. \"You don't care\" is a story. Lead with facts and offer your story tentatively."],
+        ["Fill the pool of shared meaning", "Good decisions come when everyone's views are on the table. Invite others to share, especially when they disagree."]
+      ]
+    },
+    {
+      "id": "nonviolent-communication", "title": "Nonviolent Communication", "author": "Marshall B. Rosenberg", "kind": "book", "year": 1999,
+      "description": "A four-part method for expressing yourself honestly and listening with empathy.",
+      "ideas": [
+        ["Observe without judging", "Describe what happened like a camera would. \"You left dishes in the sink\" invites conversation; \"You're so lazy\" invites a fight."],
+        ["Express feelings", "Say how you feel, using real feeling words: worried, frustrated, relieved. \"I feel that you...\" is usually a thought, not a feeling."],
+        ["Connect feelings to needs", "Behind every feeling is a need, like rest, respect or connection. Naming the need makes it easier for others to help."],
+        ["Make clear requests", "Ask for a specific, doable action, not a vague demand. \"Could you text me if you'll be late?\" beats \"Be more considerate.\""]
+      ]
+    },
+    {
+      "id": "never-split-the-difference", "title": "Never Split the Difference", "author": "Chris Voss", "kind": "book", "year": 2016,
+      "description": "A former FBI hostage negotiator's techniques for everyday negotiations.",
+      "ideas": [
+        ["Tactical empathy", "Show the other side that you understand their position and feelings. People negotiate more openly when they feel heard."],
+        ["Mirroring", "Repeat the last few words someone said, as a question. It encourages them to keep talking and reveal more."],
+        ["Label emotions", "Say \"It seems like you're frustrated about the timeline.\" Naming emotions defuses negative ones and builds trust."],
+        ["Aim for \"that's right\"", "When someone says \"That's right\" after you summarize their view, they feel understood. That's when real agreement becomes possible."],
+        ["Calibrated questions", "Ask \"How am I supposed to do that?\" or \"What makes this important to you?\" Open how and what questions make the other side solve your problem."]
+      ]
+    },
+    {
+      "id": "talk-like-ted", "title": "Talk Like TED", "author": "Carmine Gallo", "kind": "book", "year": 2014,
+      "description": "Lessons from the most popular TED talks on giving presentations people remember.",
+      "ideas": [
+        ["Unleash your passion", "Audiences connect with speakers who clearly love their subject. Talk about what genuinely excites you."],
+        ["Tell stories", "Stories stick in memory far better than data alone. Wrap your key points in personal, vivid stories."],
+        ["Keep it to 18 minutes", "Long talks overload the brain. Shorter presentations force you to focus on what really matters."],
+        ["Deliver jaw-dropping moments", "Give the audience one surprising, memorable moment, a demo, a shocking statistic, that they'll talk about afterwards."]
+      ]
+    }
+  ]
+}
