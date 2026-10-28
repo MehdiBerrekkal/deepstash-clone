@@ -39,3 +39,6 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Only free-to-share EPUBs (with a .json license file) belong in books/. Read other files with "Open your own book" instead.
+books/*.pdf
