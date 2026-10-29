@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, Share, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 import { CardBody, POEM_PREVIEW_LINES } from '@/components/CardBody';
 import { useStore } from '@/lib/store';
@@ -13,7 +13,14 @@ type Props = {
   counter?: string;
   /** Hide the source footer (the reader already shows which book you're in). */
   hideSource?: boolean;
+  /** Let a long body scroll inside the card. Only safe where pages swipe sideways, not in the vertical feed. */
+  scrollable?: boolean;
 };
+
+/** Room in a card taken by everything except the body: padding, header, title, source and buttons. */
+const CARD_CHROME = 300;
+const SOURCE_BLOCK = 76;
+const BODY_LINE = 25;
 
 export function shareText(idea: Idea, sourceTitle?: string, sourceAuthor?: string): string {
   if (idea.kind === 'quote') return `“${idea.body}” — ${idea.author}`;
@@ -21,14 +28,20 @@ export function shareText(idea: Idea, sourceTitle?: string, sourceAuthor?: strin
   return `${idea.title}\n\n${idea.body}${sourceTitle ? `\n\n— ${sourceTitle}, ${sourceAuthor}` : ''}`;
 }
 
-export function IdeaCard({ idea, height, counter, hideSource = false }: Props) {
+export function IdeaCard({ idea, height, counter, hideSource = false, scrollable = false }: Props) {
   const { topicById, sourceById, isSaved, likedIdeaIds, toggleLike } = useStore();
   const topic = topicById[idea.topicId];
   const source = idea.sourceId ? sourceById[idea.sourceId] : undefined;
   const saved = isSaved(idea.id);
   const liked = likedIdeaIds.includes(idea.id);
   const poemCut = idea.kind === 'poem' && idea.body.split('\n').length > POEM_PREVIEW_LINES;
-  const compact = idea.body.length > 420;
+  const compact = idea.body.length > 300;
+  const { width } = useWindowDimensions();
+  // In the feed, long cards show what fits and link to the full text; nothing is silently cut off.
+  const showSource = !!source && !hideSource;
+  const bodyLines = Math.max(4, Math.floor((height - CARD_CHROME - (showSource ? SOURCE_BLOCK : 0)) / BODY_LINE));
+  const charsPerLine = Math.max(20, Math.floor((Math.min(width, 700) - 112) / 7.1));
+  const cut = !scrollable && (idea.kind === 'idea' || idea.kind === 'fact') && idea.body.length / charsPerLine > bodyLines;
 
   const open = () => router.push({ pathname: '/idea/[id]', params: { id: idea.id } });
   const share = () => Share.share({ message: shareText(idea, source?.title, source?.author) });
@@ -41,10 +54,17 @@ export function IdeaCard({ idea, height, counter, hideSource = false }: Props) {
           <Text style={styles.counter}>{counter ?? cardKindById[idea.kind].label}</Text>
         </View>
 
-        <Pressable onPress={open} style={styles.content}>
-          <CardBody idea={idea} maxPoemLines={POEM_PREVIEW_LINES} compact={compact} />
-          {poemCut && <Text style={styles.more}>Read the full poem →</Text>}
-        </Pressable>
+        {scrollable ? (
+          <ScrollView style={styles.content} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            <CardBody idea={idea} compact={compact} />
+          </ScrollView>
+        ) : (
+          <Pressable onPress={open} style={styles.content}>
+            <CardBody idea={idea} maxPoemLines={POEM_PREVIEW_LINES} compact={compact} bodyLines={cut ? bodyLines : undefined} />
+            {poemCut && <Text style={styles.more}>Read the full poem →</Text>}
+            {cut && <Text style={styles.more}>Read more ›</Text>}
+          </Pressable>
+        )}
 
         {source && !hideSource && (
           <Pressable
@@ -91,6 +111,7 @@ const styles = StyleSheet.create({
   topic: { color: colors.text, fontSize: 14, fontWeight: '600', opacity: 0.9 },
   counter: { color: colors.text, fontSize: 13, opacity: 0.6 },
   content: { flexShrink: 1, gap: 12 },
+  scrollContent: { paddingBottom: 8 },
   more: { color: colors.text, fontWeight: '700', opacity: 0.85 },
   source: {
     flexDirection: 'row',

@@ -9,10 +9,12 @@ type Props = {
   maxPoemLines?: number;
   /** Shrink text for long cards so they fit on one screen. */
   compact?: boolean;
+  /** Cut the body to this many lines (the feed links to the full card). */
+  bodyLines?: number;
 };
 
 /** The text of a card, laid out for its kind. Shared by the feed, the book reader and the detail screen. */
-export function CardBody({ idea, maxPoemLines, compact = false }: Props) {
+export function CardBody({ idea, maxPoemLines, compact = false, bodyLines }: Props) {
   if (idea.kind === 'quote') {
     const long = idea.body.length > 140;
     return (
@@ -49,7 +51,9 @@ export function CardBody({ idea, maxPoemLines, compact = false }: Props) {
     <View style={styles.gap}>
       {idea.kind === 'fact' && <Text style={styles.label}>💡 Did you know?</Text>}
       <Text style={[styles.title, compact && styles.titleCompact]}>{idea.title}</Text>
-      <Text style={[styles.body, compact && styles.bodyCompact]}>{idea.body}</Text>
+      <Text style={[styles.body, compact && styles.bodyCompact]} numberOfLines={bodyLines}>
+        {idea.body}
+      </Text>
     </View>
   );
 }
@@ -61,8 +65,8 @@ const styles = StyleSheet.create({
   label: { color: colors.text, fontSize: 13, fontWeight: '700', opacity: 0.75, textTransform: 'uppercase', letterSpacing: 1 },
   title: { color: colors.text, fontSize: 30, fontWeight: '800', lineHeight: 36 },
   titleCompact: { fontSize: 24, lineHeight: 30 },
-  body: { color: colors.text, fontSize: 18, lineHeight: 28, opacity: 0.92 },
-  bodyCompact: { fontSize: 16, lineHeight: 24 },
+  body: { color: colors.text, fontSize: 18, lineHeight: 28, opacity: 0.94, fontFamily: 'Literata_400Regular' },
+  bodyCompact: { fontSize: 16, lineHeight: 25 },
   quoteMark: { color: colors.text, fontSize: 72, lineHeight: 72, fontFamily: serif, opacity: 0.5, marginBottom: -24 },
   quote: { color: colors.text, fontSize: 28, lineHeight: 38, fontFamily: serif, fontStyle: 'italic' },
   quoteLong: { fontSize: 22, lineHeight: 32 },

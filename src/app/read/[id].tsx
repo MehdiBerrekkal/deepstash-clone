@@ -69,7 +69,7 @@ export default function ReaderScreen() {
             renderItem={({ item }) =>
               item.type === 'idea' ? (
                 <View style={{ width: size.width }}>
-                  <IdeaCard idea={item.idea} height={size.height} counter={`${item.index + 1} / ${ideas.length}`} hideSource />
+                  <IdeaCard idea={item.idea} height={size.height} counter={`${item.index + 1} / ${ideas.length}`} hideSource scrollable />
                 </View>
               ) : (
                 <View style={[styles.end, { width: size.width, height: size.height }]}>
