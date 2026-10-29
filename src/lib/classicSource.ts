@@ -14,6 +14,6 @@ export function classicAsSource(c: Classic): Source {
     topicId: c.topicId,
     description: '',
     year: c.year,
-    coverId: coverIds[`classic:${c.id}`],
+    coverId: coverIds[`classic:${c.id}`] ?? c.coverId,
   };
 }

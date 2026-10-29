@@ -42,3 +42,9 @@ yarn-error.*
 
 # Only free-to-share EPUBs (with a .json license file) belong in books/. Read other files with "Open your own book" instead.
 books/*.pdf
+
+# Personal books: my-books/ and everything generated from it stay on this computer.
+/my-books/*
+!/my-books/README.md
+/src/data/my-books/*
+!/src/data/my-books/.gitkeep

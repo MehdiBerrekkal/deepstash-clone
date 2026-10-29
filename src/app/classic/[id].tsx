@@ -35,7 +35,8 @@ export default function ClassicScreen() {
           <BookCover book={classicAsSource(classic)} width={140} favoriteKey={null} onPress={open} fraction={progress?.fraction} />
           <Text style={styles.title}>{classic.title}</Text>
           <Text style={styles.author}>
-            {classic.author} · {formatYear(classic.year)}
+            {classic.author}
+            {classic.year ? ` · ${formatYear(classic.year)}` : ''}
           </Text>
           {classic.translator && <Text style={styles.meta}>Translated by {classic.translator}</Text>}
           <Text style={styles.meta}>
@@ -58,7 +59,12 @@ export default function ClassicScreen() {
             )}
           </View>
           {classic.description && <Text style={styles.description}>{classic.description}</Text>}
-          {classic.license && /^public domain$/i.test(classic.license) ? (
+          {classic.origin === 'private' ? (
+            <Text style={styles.note}>
+              🔒 Personal copy. Imported from the my-books/ folder on this computer. It isn&apos;t in the GitHub repo and stays
+              private.
+            </Text>
+          ) : classic.license && /^public domain$/i.test(classic.license) ? (
             <Text style={styles.note}>
               <Text style={styles.link} onPress={() => classic.licenseUrl && Linking.openURL(classic.licenseUrl)}>
                 Public domain

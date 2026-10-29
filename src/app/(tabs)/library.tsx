@@ -42,10 +42,16 @@ export default function LibraryScreen() {
     [],
   );
 
+  // Your private my-books/ imports, newest first.
+  const myBooks = useMemo(
+    () => classics.filter((c) => c.origin === 'private').sort((a, b) => (b.addedAt ?? '').localeCompare(a.addedAt ?? '')),
+    [],
+  );
+
   // Classics you've started come first.
   const sortedClassics = useMemo(
     () =>
-      [...classics].sort(
+      classics.filter((c) => c.origin !== 'private').sort(
         (a, b) => (readerProgress[classicReaderId(b.id)]?.updatedAt ?? '').localeCompare(readerProgress[classicReaderId(a.id)]?.updatedAt ?? ''),
       ),
     [readerProgress],
@@ -125,6 +131,7 @@ export default function LibraryScreen() {
         </>
       ) : (
         <>
+          {myBooks.length > 0 && <ClassicShelf title="🔒 My books" items={myBooks} />}
           {recentlyAdded.length > 0 && <ClassicShelf title="✨ Recently added" items={recentlyAdded} />}
           <Shelf title="Continue reading" books={shelves.inProgress} />
           <ClassicShelf title="📚 Free classics · read the full book" items={sortedClassics} />

@@ -4,6 +4,7 @@ import { Platform } from 'react-native';
 
 import { classicAssets } from '@/data/classics/assets';
 import catalog from '@/data/classics/index.json';
+import { myBookAssets, myBooks } from '@/lib/myBooks';
 
 /** A whole book ready for the reader: public-domain classics and the user's own EPUBs share this shape. */
 export type FullBook = {
@@ -16,8 +17,10 @@ export type Classic = {
   id: string;
   /** Project Gutenberg ebook number, for public-domain books. */
   gutenberg?: number;
-  /** Added through the books/ folder (scripts/build-books.js). */
-  origin?: 'books';
+  /** books: the shared books/ folder. private: your own my-books/ folder, never committed. */
+  origin?: 'books' | 'private';
+  /** Open Library cover, for private books (shared books keep theirs in covers.json). */
+  coverId?: number;
   /** When `npm run books` first imported it (ISO date). */
   addedAt?: string;
   description?: string;
@@ -36,7 +39,7 @@ export type Classic = {
   words: number;
 };
 
-export const classics = catalog as Classic[];
+export const classics = [...(catalog as Classic[]), ...myBooks];
 export const classicById = Object.fromEntries(classics.map((c) => [c.id, c])) as Record<string, Classic>;
 export const classicBySourceId = Object.fromEntries(
   classics.filter((c) => c.sourceId).map((c) => [c.sourceId!, c]),
@@ -57,7 +60,7 @@ export function loadClassic(id: string): Promise<FullBook> {
   if (!cache.has(key)) {
     const meta = classicById[id];
     const load = (async () => {
-      const asset = Asset.fromModule(classicAssets[id]);
+      const asset = Asset.fromModule(classicAssets[id] ?? myBookAssets[id]);
       await asset.downloadAsync();
       const { chapters } = JSON.parse(await readText(asset.localUri ?? asset.uri));
       return { title: meta.title, author: meta.author, chapters } as FullBook;
