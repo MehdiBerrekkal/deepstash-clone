@@ -67,7 +67,9 @@ export type BookProgress = {
 
 export type ReaderTheme = 'light' | 'sepia' | 'dark';
 
-export type ReaderSettings = { theme: ReaderTheme; fontSize: number };
+export type ReaderFont = 'literata' | 'garamond' | 'sans';
+
+export type ReaderSettings = { theme: ReaderTheme; fontSize: number; font?: ReaderFont };
 
 /** Where the full-book reader is in a book; see paginate.ts. */
 export type ReaderPosition = { chapter: number; para: number; char: number };

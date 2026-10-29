@@ -1,11 +1,21 @@
 import { Stack } from 'expo-router';
+import { useFonts } from 'expo-font';
+import { useEffect } from 'react';
+import { Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import { bookFonts } from '@/lib/bookType';
 import { StoreProvider } from '@/lib/store';
 import { colors } from '@/lib/theme';
 
 export default function RootLayout() {
+  // Book fonts for the reader; text falls back to system fonts until they finish loading.
+  useFonts(bookFonts);
+  // Browsers only hyphenate justified text when they know its language.
+  useEffect(() => {
+    if (Platform.OS === 'web' && typeof document !== 'undefined' && !document.documentElement.lang) document.documentElement.lang = 'en';
+  }, []);
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
     <StoreProvider>

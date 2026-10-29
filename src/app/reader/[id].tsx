@@ -2,32 +2,36 @@ import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions, type LayoutChangeEvent,
+  ActivityIndicator, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions,
+  type GestureResponderEvent, type LayoutChangeEvent, type TextStyle,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PageFlip, type PageFlipHandle } from '@/components/PageFlip';
+import { BOOK_THEMES, READER_FONTS, chapterLabel, displayFont, displayItalic, typeset, type BookTheme } from '@/lib/bookType';
 import { classicById, loadClassic, type FullBook } from '@/lib/fullbook';
 import { loadOwnBook } from '@/lib/ownbooks';
 import { findPage, pageStart, paginate, type Page } from '@/lib/paginate';
 import { useStore } from '@/lib/store';
-import { colors, serif } from '@/lib/theme';
-import type { Idea, ReaderPosition, ReaderTheme } from '@/lib/types';
+import { colors } from '@/lib/theme';
+import type { Idea, ReaderFont, ReaderPosition, ReaderTheme } from '@/lib/types';
 
-/** paper: the page itself; desk: behind an open book; shade: page-turn and fold shadows. */
-const THEMES: Record<ReaderTheme, { bg: string; paper: string; desk: string; shade: string; text: string; muted: string; bar: string; label: string }> = {
-  light: { bg: '#FFFFFF', paper: '#FFFFFF', desk: '#D9D6CF', shade: 'rgba(0,0,0,0.22)', text: '#1E1E1E', muted: '#707070', bar: '#F2F2F2', label: 'Light' },
-  sepia: { bg: '#F4ECD8', paper: '#F4ECD8', desk: '#B9A47C', shade: 'rgba(60,40,10,0.28)', text: '#3B2F1E', muted: '#7A6A55', bar: '#EADFC6', label: 'Sepia' },
-  dark: { bg: '#121212', paper: '#1A1A1A', desk: '#050505', shade: 'rgba(0,0,0,0.6)', text: '#E6E1D6', muted: '#8F8A80', bar: '#1E1E1E', label: 'Dark' },
-};
 const MIN_FONT = 13;
-const MAX_FONT = 34;
-const PAD_X = 24;
-const PAD_Y = 20;
-/** Room at the bottom of each page for its number. */
-const FOOTER = 22;
+const MAX_FONT = 30;
+/** Room above the text for the running head, and below it for the page number. */
+const HEAD = 42;
+const FOOT = 40;
 /** Open-book view when the reading area is landscape and wide enough for two pages. */
 const SPREAD_MIN_WIDTH = 700;
+/** Controls fade out after this long without a tap. */
+const CHROME_HIDE_MS = 3500;
+
+/** Hyphenation where the platform supports it (Android natively, browsers through CSS). */
+const hyphenate = Platform.select<TextStyle>({
+  web: { hyphens: 'auto', WebkitHyphens: 'auto' } as TextStyle,
+  default: {},
+});
 
 /** Paginated full-book reader for bundled classics (kind=classic) and the user's own EPUBs (kind=own). */
 export default function FullReaderScreen() {
@@ -36,9 +40,9 @@ export default function FullReaderScreen() {
   // Wait for saved progress to load (e.g. when the reader is opened from a link) so it resumes in the right place.
   if (!ready) {
     return (
-      <View style={[styles.center, { backgroundColor: colors.background }]}>
+      <View style={[styles.center, { backgroundColor: BOOK_THEMES.light.desk }]}>
         <Stack.Screen options={{ headerShown: false }} />
-        <ActivityIndicator color={colors.muted} />
+        <ActivityIndicator color={BOOK_THEMES.light.soft} />
       </View>
     );
   }
@@ -47,21 +51,29 @@ export default function FullReaderScreen() {
 
 function Reader({ id, kind }: { id: string; kind?: 'classic' | 'own' }) {
   const readerId = `${kind === 'own' ? 'own' : 'classic'}:${id}`;
-  const store = useStore();
-  const { readerSettings, setReaderSettings, readerProgress, setReaderPosition, bookmarks, toggleBookmark, removeBookmark } = store;
-  const [book, setBook] = useState<FullBook | null>(null);
+  const { readerSettings, setReaderSettings, readerProgress, setReaderPosition, bookmarks, toggleBookmark, removeBookmark } = useStore();
+  const [rawBook, setBook] = useState<FullBook | null>(null);
+  // Typeset once, before paginating, so page offsets line up with the text that's drawn.
+  const book = useMemo<FullBook | null>(
+    () => (rawBook ? { ...rawBook, chapters: rawBook.chapters.map((c) => ({ title: typeset(c.title), paragraphs: c.paragraphs.map(typeset) })) } : null),
+    [rawBook],
+  );
   const [error, setError] = useState<string | null>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [panel, setPanel] = useState<null | 'settings' | 'contents'>(null);
   const [clip, setClip] = useState<{ text: string; position: ReaderPosition } | null>(null);
+  const [chrome, setChrome] = useState(true);
   const flip = useRef<PageFlipHandle>(null);
   const window = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   // The position survives re-pagination, so changing the text size keeps your place.
   const [anchor, setAnchor] = useState<ReaderPosition | null>(() => readerProgress[readerId] ?? null);
 
-  const theme = THEMES[readerSettings.theme];
+  const theme = BOOK_THEMES[readerSettings.theme] ?? BOOK_THEMES.light;
+  const fontKey: ReaderFont = readerSettings.font ?? 'literata';
+  const font = READER_FONTS[fontKey];
   const fontSize = readerSettings.fontSize;
-  const lineHeight = Math.round(fontSize * 1.55);
+  const lineHeight = Math.round(fontSize * font.leading);
 
   useEffect(() => {
     let alive = true;
@@ -78,16 +90,28 @@ function Reader({ id, kind }: { id: string; kind?: 'classic' | 'own' }) {
     };
   }, [id, kind]);
 
+  // Controls fade away while you read; any tap in the middle of the page brings them back.
+  useEffect(() => {
+    if (!chrome || panel || !book) return;
+    const t = setTimeout(() => setChrome(false), CHROME_HIDE_MS);
+    return () => clearTimeout(t);
+  }, [chrome, panel, book]);
+
   const spread = size.width > size.height && size.width >= SPREAD_MIN_WIDTH;
   const pageWidth = spread ? size.width / 2 : size.width;
-  const padX = spread ? PAD_X + 12 : PAD_X;
+  // A comfortable measure: generous margins that grow with the page, wider toward the outside edge in a spread.
+  const margin = Math.round(Math.min(64, Math.max(24, pageWidth * 0.085)));
+  const textWidth = pageWidth - margin * 2;
+  const textHeight = size.height - HEAD - FOOT;
+  const openerSink = Math.round(size.height * 0.12);
+  const openerLines = Math.ceil((openerSink + fontSize * 1.9 * 1.25 * 2 + 64) / lineHeight);
 
   const pages = useMemo(
     () =>
       book && size.width > 0
-        ? paginate(book, { width: pageWidth - padX * 2, height: size.height - PAD_Y * 2 - FOOTER, fontSize, lineHeight })
+        ? paginate(book, { width: textWidth, height: textHeight, fontSize, lineHeight, charWidth: font.charWidth, paragraphGap: 0.15, openerLines })
         : [],
-    [book, size.width, size.height, pageWidth, padX, fontSize, lineHeight],
+    [book, size.width, textWidth, textHeight, fontSize, lineHeight, font.charWidth, openerLines],
   );
 
   // The page shown is derived from a text position, so rotating or resizing the text keeps your place.
@@ -103,7 +127,7 @@ function Reader({ id, kind }: { id: string; kind?: 'classic' | 'own' }) {
     return starts;
   }, [pages]);
 
-  /** Jump straight to a page (contents, bookmarks) without the turn animation. */
+  /** Jump straight to a page (contents, bookmarks, the scrubber) without the turn animation. */
   const goTo = useCallback(
     (index: number) => {
       const target = pages[Math.min(Math.max(index, 0), pages.length - 1)];
@@ -127,7 +151,7 @@ function Reader({ id, kind }: { id: string; kind?: 'classic' | 'own' }) {
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof globalThis.addEventListener !== 'function') return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowRight' || e.key === 'PageDown') step(1);
+      if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') step(1);
       if (e.key === 'ArrowLeft' || e.key === 'PageUp') step(-1);
     };
     globalThis.addEventListener('keydown', onKey);
@@ -138,7 +162,7 @@ function Reader({ id, kind }: { id: string; kind?: 'classic' | 'own' }) {
   const page = pages[current];
   const visible = spread ? [current, current + 1] : [current];
   const markedHere = page ? marks.find((b) => visible.includes(findPage(pages, b))) : undefined;
-  const chapterTitle = page && book ? book.chapters[page.chapter]?.title : '';
+  const chapterTitle = page && book ? book.chapters[page.chapter]?.title ?? '' : '';
   const percent = pages.length > 1 ? Math.round((current / (pages.length - 1)) * 100) : 100;
   const pageLabel = spread && current + 1 < pages.length ? `Pages ${current + 1}–${current + 2}` : `Page ${current + 1}`;
 
@@ -147,195 +171,198 @@ function Reader({ id, kind }: { id: string; kind?: 'classic' | 'own' }) {
     if (Math.abs(width - size.width) > 1 || Math.abs(height - size.height) > 1) setSize({ width, height });
   };
 
-  // Tapping the left or right edge of the screen turns the page, like an e-reader.
-  const tapTurn = (pageX: number) => {
-    if (pageX < window.width * 0.22) step(-1);
-    else if (pageX > window.width * 0.78) step(1);
+  // Tap the outer edges to turn the page, like an e-reader; tap the middle to show or hide the controls.
+  const onTap = (e: GestureResponderEvent) => {
+    const x = e.nativeEvent.pageX;
+    if (x < window.width * 0.22) step(-1);
+    else if (x > window.width * 0.78) step(1);
+    else setChrome((c) => !c);
   };
 
-  const renderPage = (index: number, width: number) => {
-    const item: Page = pages[index];
-    const chapter = book!.chapters[item.chapter];
-    const isLeft = spread && index % 2 === 0;
-    return (
-      <Pressable
-        accessible={false}
-        onPress={(e) => tapTurn(e.nativeEvent.pageX)}
-        style={[styles.page, { width, height: size.height, backgroundColor: theme.paper, paddingHorizontal: padX }]}>
-        {/* Slight shading toward the outer edge, like the curve of a real page. */}
-        <LinearGradient
-          pointerEvents="none"
-          colors={isLeft ? [theme.shade, 'transparent'] : ['transparent', theme.shade]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={[styles.edge, isLeft ? { left: 0 } : { right: 0 }, { opacity: spread ? 0.35 : 0.18 }]}
-        />
-        {item.chapterTitle && (
-          <Text style={[styles.chapterTitle, { color: theme.text, fontSize: fontSize * 1.3, lineHeight: lineHeight * 1.3 }]}>
-            {item.chapterTitle}
-          </Text>
-        )}
-        {item.pieces.map((piece) => {
-          const text = chapter.paragraphs[piece.para];
-          // Pressable rather than Text's own onLongPress, which react-native-web doesn't support.
-          return (
-            <Pressable
-              key={`${index}-${piece.para}-${piece.from}`}
-              accessibilityHint="Long-press to save this passage"
-              delayLongPress={450}
-              onPress={(e) => tapTurn(e.nativeEvent.pageX)}
-              onLongPress={() => setClip({ text, position: { chapter: item.chapter, para: piece.para, char: 0 } })}>
-              <Text style={[styles.paragraph, { color: theme.text, fontSize, lineHeight, marginBottom: lineHeight * 0.5 }]}>
-                {text.slice(piece.from, piece.to)}
-              </Text>
-            </Pressable>
-          );
-        })}
-        <Text
-          style={[
-            styles.pageNumber,
-            { color: theme.muted, left: padX, right: padX, textAlign: spread ? (isLeft ? 'left' : 'right') : 'center' },
-          ]}>
-          {index + 1}
-        </Text>
-      </Pressable>
-    );
-  };
+  const renderPage = (index: number, width: number) => (
+    <BookPage
+      book={book!}
+      page={pages[index]}
+      index={index}
+      width={width}
+      height={size.height}
+      margin={margin}
+      spreadSide={spread ? (index % 2 === 0 ? 'left' : 'right') : undefined}
+      theme={theme}
+      fontKey={fontKey}
+      fontSize={fontSize}
+      lineHeight={lineHeight}
+      openerSink={openerSink}
+      onTap={onTap}
+      onLongPressParagraph={(text, position) => setClip({ text, position })}
+    />
+  );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: spread ? theme.desk : theme.bg }]} edges={['top', 'bottom', 'left', 'right']}>
+    <View style={[styles.container, { backgroundColor: spread ? theme.desk : theme.paper }]}>
       <Stack.Screen options={{ headerShown: false }} />
-      <View style={[styles.topBar, { backgroundColor: theme.bar }]}>
-        <Pressable accessibilityLabel="Close book" onPress={() => (router.canGoBack() ? router.back() : router.replace('/library'))} style={styles.iconButton}>
-          <Text style={[styles.icon, { color: theme.text }]}>‹</Text>
-        </Pressable>
-        <View style={styles.titleWrap}>
-          <Text style={[styles.bookTitle, { color: theme.text }]} numberOfLines={1}>
-            {book?.title ?? ''}
-          </Text>
-          <Text style={[styles.chapterLabel, { color: theme.muted }]} numberOfLines={1}>
-            {chapterTitle}
-          </Text>
+      <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
+        <View style={[styles.stage, spread && styles.stageSpread]} onLayout={onLayout}>
+          {error ? (
+            <View style={styles.center}>
+              <Text style={[styles.message, { color: theme.ink, fontFamily: font.regular }]}>{error}</Text>
+            </View>
+          ) : !book || !pages.length ? (
+            <View style={styles.center}>
+              <ActivityIndicator color={theme.soft} />
+              <Text style={[styles.message, { color: theme.soft, fontFamily: displayItalic }]}>Opening the book…</Text>
+            </View>
+          ) : (
+            <PageFlip
+              ref={flip}
+              width={size.width}
+              height={size.height}
+              spread={spread}
+              pageCount={pages.length}
+              index={leaf}
+              onIndexChange={onLeafChange}
+              renderPage={renderPage}
+              shade={theme.shade}
+              onPinchEnd={(scale) => changeFont(fontSize * scale)}
+            />
+          )}
         </View>
-        <Pressable accessibilityLabel="Contents and bookmarks" onPress={() => setPanel('contents')} style={styles.iconButton}>
-          <Text style={[styles.icon, { color: theme.text }]}>☰</Text>
-        </Pressable>
-        <Pressable
-          accessibilityLabel={markedHere ? 'Remove bookmark' : 'Bookmark this page'}
-          disabled={!page}
-          onPress={() => page && toggleBookmark(readerId, markedHere ?? pageStart(page), `${chapterTitle} · ${pageLabel.toLowerCase()}`)}
-          style={styles.iconButton}>
-          <Text style={[styles.icon, { color: markedHere ? colors.accent : theme.text }]}>{markedHere ? '★' : '☆'}</Text>
-        </Pressable>
-        <Pressable accessibilityLabel="Text size and theme" onPress={() => setPanel('settings')} style={styles.iconButton}>
-          <Text style={[styles.aa, { color: theme.text }]}>Aa</Text>
-        </Pressable>
-      </View>
+      </SafeAreaView>
 
-      <View style={styles.list} onLayout={onLayout}>
-        {error ? (
-          <View style={styles.center}>
-            <Text style={[styles.message, { color: theme.text }]}>{error}</Text>
+      {chrome && (
+        <Animated.View
+          entering={FadeIn.duration(180)}
+          exiting={FadeOut.duration(260)}
+          style={[styles.topBar, { backgroundColor: theme.chrome, paddingTop: insets.top + 4, borderBottomColor: theme.rule }]}>
+          <Pressable
+            accessibilityLabel="Close book"
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/library'))}
+            style={styles.iconButton}>
+            <Text style={[styles.icon, { color: theme.chromeText }]}>‹</Text>
+          </Pressable>
+          <View style={styles.titleWrap}>
+            <Text style={[styles.bookTitle, { color: theme.chromeText, fontFamily: displayFont }]} numberOfLines={1}>
+              {book?.title ?? ''}
+            </Text>
+            <Text style={[styles.chapterLabel, { color: theme.soft }]} numberOfLines={1}>
+              {chapterTitle}
+            </Text>
           </View>
-        ) : !book || !pages.length ? (
-          <View style={styles.center}>
-            <ActivityIndicator color={theme.muted} />
-            <Text style={[styles.message, { color: theme.muted }]}>Opening book…</Text>
-          </View>
-        ) : (
-          <PageFlip
-            ref={flip}
-            width={size.width}
-            height={size.height}
-            spread={spread}
-            pageCount={pages.length}
-            index={leaf}
-            onIndexChange={onLeafChange}
-            renderPage={renderPage}
-            shade={theme.shade}
-            onPinchEnd={(scale) => changeFont(fontSize * scale)}
+          <Pressable accessibilityLabel="Contents and bookmarks" onPress={() => setPanel('contents')} style={styles.iconButton}>
+            <Text style={[styles.icon, { color: theme.chromeText }]}>☰</Text>
+          </Pressable>
+          <Pressable
+            accessibilityLabel={markedHere ? 'Remove bookmark' : 'Bookmark this page'}
+            disabled={!page}
+            onPress={() => page && toggleBookmark(readerId, markedHere ?? pageStart(page), `${chapterTitle} · ${pageLabel.toLowerCase()}`)}
+            style={styles.iconButton}>
+            <Text style={[styles.icon, { color: markedHere ? '#B5492F' : theme.chromeText }]}>{markedHere ? '★' : '☆'}</Text>
+          </Pressable>
+          <Pressable accessibilityLabel="Text size, font and theme" onPress={() => setPanel('settings')} style={styles.iconButton}>
+            <Text style={[styles.aa, { color: theme.chromeText, fontFamily: displayFont }]}>Aa</Text>
+          </Pressable>
+        </Animated.View>
+      )}
+
+      {chrome && pages.length > 0 && (
+        <Animated.View
+          entering={FadeIn.duration(180)}
+          exiting={FadeOut.duration(260)}
+          style={[styles.bottomBar, { backgroundColor: theme.chrome, paddingBottom: insets.bottom + 8, borderTopColor: theme.rule }]}>
+          <Scrubber
+            theme={theme}
+            count={pages.length}
+            current={current}
+            chapterStarts={chapterStarts}
+            onSeek={(i) => {
+              goTo(i);
+              setChrome(true);
+            }}
           />
-        )}
-      </View>
-
-      <View style={[styles.bottomBar, { backgroundColor: theme.bar }]}>
-        <Pressable accessibilityLabel="Previous page" onPress={() => step(-1)} style={styles.navButton}>
-          <Text style={[styles.navText, { color: theme.text }]}>‹</Text>
-        </Pressable>
-        <View style={styles.progressWrap}>
-          <View style={[styles.track, { backgroundColor: theme.muted + '44' }]}>
-            <View style={[styles.fill, { width: `${percent}%` }]} />
-          </View>
-          <Text style={[styles.pageLabel, { color: theme.muted }]}>
-            {pages.length ? `${pageLabel} of ${pages.length} · ${percent}%` : ' '}
+          <Text style={[styles.pageLabel, { color: theme.soft }]}>
+            {pageLabel} of {pages.length} · {percent}%
           </Text>
-        </View>
-        <Pressable accessibilityLabel="Next page" onPress={() => step(1)} style={styles.navButton}>
-          <Text style={[styles.navText, { color: theme.text }]}>›</Text>
-        </Pressable>
-      </View>
+        </Animated.View>
+      )}
 
       <Modal visible={panel === 'settings'} transparent animationType="fade" onRequestClose={() => setPanel(null)}>
         <Pressable style={styles.backdrop} onPress={() => setPanel(null)}>
-          <Pressable style={[styles.sheet, { backgroundColor: theme.bar }]} onPress={() => {}}>
-            <Text style={[styles.sheetTitle, { color: theme.text }]}>Text size</Text>
+          <Pressable style={[styles.sheet, { backgroundColor: theme.paper, borderColor: theme.rule }]} onPress={() => {}}>
+            <Text style={[styles.sheetTitle, { color: theme.ink, fontFamily: displayFont }]}>Font</Text>
             <View style={styles.row}>
-              <Pressable onPress={() => changeFont(fontSize - 2)} style={[styles.sizeButton, { borderColor: theme.muted }]}>
-                <Text style={[styles.sizeSmall, { color: theme.text }]}>A−</Text>
-              </Pressable>
-              <Text style={[styles.sizeValue, { color: theme.text }]}>{fontSize}</Text>
-              <Pressable onPress={() => changeFont(fontSize + 2)} style={[styles.sizeButton, { borderColor: theme.muted }]}>
-                <Text style={[styles.sizeLarge, { color: theme.text }]}>A+</Text>
-              </Pressable>
-            </View>
-            <Text style={[styles.hint, { color: theme.muted }]}>
-              Tips: drag a page to turn it, or tap the edges or use the arrow keys. Pinch with two fingers to zoom. Turn
-              your phone sideways to see two pages like an open book. Long-press a paragraph to save it to a stash.
-            </Text>
-            <Text style={[styles.sheetTitle, { color: theme.text }]}>Theme</Text>
-            <View style={styles.row}>
-              {(Object.keys(THEMES) as ReaderTheme[]).map((t) => (
+              {(Object.keys(READER_FONTS) as ReaderFont[]).map((f) => (
                 <Pressable
-                  key={t}
-                  onPress={() => setReaderSettings({ theme: t })}
-                  style={[styles.themeButton, { backgroundColor: THEMES[t].bg, borderColor: t === readerSettings.theme ? colors.accent : theme.muted }]}>
-                  <Text style={{ color: THEMES[t].text, fontWeight: '700' }}>{THEMES[t].label}</Text>
+                  key={f}
+                  accessibilityLabel={`Font ${READER_FONTS[f].label}`}
+                  onPress={() => setReaderSettings({ font: f })}
+                  style={[styles.choice, { borderColor: f === fontKey ? theme.ink : theme.rule }]}>
+                  <Text style={{ color: theme.ink, fontFamily: READER_FONTS[f].regular, fontSize: 20 }}>Ag</Text>
+                  <Text style={{ color: theme.soft, fontSize: 12 }}>{READER_FONTS[f].label}</Text>
                 </Pressable>
               ))}
             </View>
+
+            <Text style={[styles.sheetTitle, { color: theme.ink, fontFamily: displayFont }]}>Size</Text>
+            <View style={styles.row}>
+              <Pressable onPress={() => changeFont(fontSize - 1)} style={[styles.sizeButton, { borderColor: theme.rule }]}>
+                <Text style={{ color: theme.ink, fontFamily: font.regular, fontSize: 15 }}>A−</Text>
+              </Pressable>
+              <Text style={[styles.sizeValue, { color: theme.ink }]}>{fontSize}</Text>
+              <Pressable onPress={() => changeFont(fontSize + 1)} style={[styles.sizeButton, { borderColor: theme.rule }]}>
+                <Text style={{ color: theme.ink, fontFamily: font.regular, fontSize: 22 }}>A+</Text>
+              </Pressable>
+            </View>
+
+            <Text style={[styles.sheetTitle, { color: theme.ink, fontFamily: displayFont }]}>Paper</Text>
+            <View style={styles.row}>
+              {(Object.keys(BOOK_THEMES) as ReaderTheme[]).map((t) => (
+                <Pressable
+                  key={t}
+                  accessibilityLabel={`Theme ${BOOK_THEMES[t].label}`}
+                  onPress={() => setReaderSettings({ theme: t })}
+                  style={[styles.choice, { backgroundColor: BOOK_THEMES[t].paper, borderColor: t === readerSettings.theme ? theme.ink : theme.rule }]}>
+                  <Text style={{ color: BOOK_THEMES[t].ink, fontFamily: font.regular, fontSize: 18 }}>Aa</Text>
+                  <Text style={{ color: BOOK_THEMES[t].soft, fontSize: 12 }}>{BOOK_THEMES[t].label}</Text>
+                </Pressable>
+              ))}
+            </View>
+            <Text style={[styles.hint, { color: theme.soft }]}>
+              Drag a page or tap the edges to turn it, and tap the middle to show or hide these controls. Pinch to zoom, turn
+              your phone sideways for an open book, and long-press a paragraph to save it.
+            </Text>
           </Pressable>
         </Pressable>
       </Modal>
 
       <Modal visible={panel === 'contents'} transparent animationType="slide" onRequestClose={() => setPanel(null)}>
-        <View style={[styles.full, { backgroundColor: theme.bg }]}>
+        <View style={[styles.full, { backgroundColor: theme.paper }]}>
           <SafeAreaView style={{ flex: 1 }}>
             <View style={styles.contentsHeader}>
-              <Text style={[styles.sheetTitle, { color: theme.text }]}>Contents</Text>
+              <Text style={[styles.contentsTitle, { color: theme.ink, fontFamily: displayFont }]}>Contents</Text>
               <Pressable onPress={() => setPanel(null)} style={styles.iconButton}>
-                <Text style={[styles.icon, { color: theme.text }]}>✕</Text>
+                <Text style={[styles.icon, { color: theme.ink }]}>✕</Text>
               </Pressable>
             </View>
             <ScrollView contentContainerStyle={styles.contentsList}>
               {marks.length > 0 && (
                 <>
-                  <Text style={[styles.section, { color: theme.muted }]}>Bookmarks</Text>
+                  <Text style={[styles.section, { color: theme.soft }]}>Bookmarks</Text>
                   {marks.map((b) => (
-                    <View key={b.id} style={[styles.contentsRow, { borderColor: theme.muted + '33' }]}>
+                    <View key={b.id} style={[styles.contentsRow, { borderColor: theme.rule }]}>
                       <Pressable
                         style={{ flex: 1 }}
                         onPress={() => {
                           setPanel(null);
                           goTo(findPage(pages, b));
                         }}>
-                        <Text style={[styles.contentsText, { color: theme.text }]}>★ {b.label}</Text>
+                        <Text style={[styles.contentsText, { color: theme.ink, fontFamily: font.regular }]}>★ {b.label}</Text>
                       </Pressable>
                       <Pressable accessibilityLabel="Delete bookmark" onPress={() => removeBookmark(readerId, b.id)}>
-                        <Text style={{ color: theme.muted }}>Remove</Text>
+                        <Text style={{ color: theme.soft }}>Remove</Text>
                       </Pressable>
                     </View>
                   ))}
-                  <Text style={[styles.section, { color: theme.muted }]}>Chapters</Text>
+                  <Text style={[styles.section, { color: theme.soft }]}>Chapters</Text>
                 </>
               )}
               {book?.chapters.map((c, i) => (
@@ -345,11 +372,13 @@ function Reader({ id, kind }: { id: string; kind?: 'classic' | 'own' }) {
                     setPanel(null);
                     goTo(chapterStarts[i] ?? 0);
                   }}
-                  style={[styles.contentsRow, { borderColor: theme.muted + '33' }]}>
-                  <Text style={[styles.contentsText, { color: theme.text }, page?.chapter === i && styles.contentsCurrent]} numberOfLines={2}>
+                  style={[styles.contentsRow, { borderColor: theme.rule }]}>
+                  <Text
+                    style={[styles.contentsText, { color: theme.ink, fontFamily: page?.chapter === i ? font.bold : font.regular }]}
+                    numberOfLines={2}>
                     {c.title}
                   </Text>
-                  <Text style={{ color: theme.muted }}>{(chapterStarts[i] ?? 0) + 1}</Text>
+                  <Text style={{ color: theme.soft, fontFamily: displayItalic, fontSize: 16 }}>{(chapterStarts[i] ?? 0) + 1}</Text>
                 </Pressable>
               ))}
             </ScrollView>
@@ -366,7 +395,149 @@ function Reader({ id, kind }: { id: string; kind?: 'classic' | 'own' }) {
         kind={kind}
         onClose={() => setClip(null)}
       />
-    </SafeAreaView>
+    </View>
+  );
+}
+
+type BookPageProps = {
+  book: FullBook;
+  page: Page;
+  index: number;
+  width: number;
+  height: number;
+  margin: number;
+  spreadSide?: 'left' | 'right';
+  theme: BookTheme;
+  fontKey: ReaderFont;
+  fontSize: number;
+  lineHeight: number;
+  openerSink: number;
+  onTap: (e: GestureResponderEvent) => void;
+  onLongPressParagraph: (text: string, position: ReaderPosition) => void;
+};
+
+/** One printed page: running head, text block (or chapter opener), and folio, on toned paper. */
+function BookPage({
+  book, page, index, width, height, margin, spreadSide, theme, fontKey, fontSize, lineHeight, openerSink, onTap, onLongPressParagraph,
+}: BookPageProps) {
+  const font = READER_FONTS[fontKey];
+  const chapter = book.chapters[page.chapter];
+  const opener = page.chapterTitle ? chapterLabel(page.chapterTitle) : null;
+  // Left pages of a spread carry the book title, right pages the chapter, as in a printed book.
+  const runningHead = spreadSide === 'left' ? book.title : chapter.title;
+  // Justify only when lines are long enough (or Android can hyphenate); short ragged lines beat rivers of space.
+  const textWidth = width - margin * 2;
+  const justify = Platform.OS === 'android' || textWidth / (fontSize * font.charWidth) >= 44;
+  const body: TextStyle = { color: theme.ink, fontFamily: font.regular, fontSize, lineHeight, textAlign: justify ? 'justify' : 'left' };
+
+  return (
+    <Pressable accessible={false} onPress={onTap} style={{ width, height, backgroundColor: theme.paper }}>
+      {/* Faint toning toward the edges, and the inner gutter shadow, like real paper. */}
+      <LinearGradient pointerEvents="none" colors={[theme.vignette, 'transparent', 'transparent', theme.vignette]} locations={[0, 0.1, 0.9, 1]} style={StyleSheet.absoluteFill} />
+      <LinearGradient
+        pointerEvents="none"
+        colors={spreadSide === 'left' ? ['transparent', theme.vignette] : [theme.vignette, 'transparent']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={[styles.sideTone, spreadSide === 'left' ? { right: 0 } : { left: 0 }]}
+      />
+
+      {!opener && (
+        <Text numberOfLines={1} style={[styles.runningHead, { color: theme.soft, fontFamily: displayFont, left: margin, right: margin }]}>
+          {runningHead.toUpperCase()}
+        </Text>
+      )}
+
+      <View style={{ position: 'absolute', top: HEAD, left: margin, right: margin, bottom: FOOT, overflow: 'hidden' }}>
+        {opener && (
+          <View style={{ paddingTop: openerSink, marginBottom: lineHeight * 0.9, alignItems: 'center' }}>
+            {opener.kicker && <Text style={[styles.kicker, { color: theme.soft, fontFamily: displayFont }]}>{opener.kicker.toUpperCase()}</Text>}
+            <Text style={[styles.openerTitle, { color: theme.ink, fontFamily: displayFont, fontSize: fontSize * 1.9, lineHeight: fontSize * 1.9 * 1.15 }]}>
+              {opener.title}
+            </Text>
+            <Text style={[styles.ornament, { color: theme.rule }]}>❦</Text>
+          </View>
+        )}
+        {page.pieces.map((piece, i) => {
+          const text = chapter.paragraphs[piece.para];
+          const slice = text.slice(piece.from, piece.to);
+          const firstOfChapter = piece.para === 0 && piece.from === 0;
+          // Book convention: no indent on a chapter's first paragraph, indents (not gaps) between the rest.
+          const indent = piece.from === 0 && !firstOfChapter && !(opener && i === 0) && !slice.includes('\n');
+          const position = { chapter: page.chapter, para: piece.para, char: 0 };
+          return (
+            <Pressable
+              key={`${index}-${piece.para}-${piece.from}`}
+              accessibilityHint="Long-press to save this passage"
+              delayLongPress={450}
+              onPress={onTap}
+              onLongPress={() => onLongPressParagraph(text, position)}>
+              <Text style={[body, hyphenate, { marginBottom: lineHeight * 0.15 }]} android_hyphenationFrequency="full">
+                {opener && i === 0 ? (
+                  <>
+                    {/* A raised initial opens each chapter. */}
+                    <Text style={{ fontFamily: displayFont, fontSize: fontSize * 2.4, color: theme.ink }}>{slice.charAt(0)}</Text>
+                    {slice.slice(1)}
+                  </>
+                ) : (
+                  <>
+                    {indent ? ' ' : ''}
+                    {slice}
+                  </>
+                )}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <Text
+        style={[
+          styles.folio,
+          { color: theme.soft, fontFamily: displayItalic, left: margin, right: margin, textAlign: spreadSide === 'left' ? 'left' : spreadSide === 'right' ? 'right' : 'center' },
+        ]}>
+        {index + 1}
+      </Text>
+    </Pressable>
+  );
+}
+
+/** Progress bar you can tap or drag to jump through the book, with chapter ticks. */
+function Scrubber({
+  theme, count, current, chapterStarts, onSeek,
+}: { theme: BookTheme; count: number; current: number; chapterStarts: number[]; onSeek: (index: number) => void }) {
+  const [trackWidth, setTrackWidth] = useState(1);
+  const [drag, setDrag] = useState<number | null>(null);
+  const fraction = drag ?? (count > 1 ? current / (count - 1) : 1);
+  // The children ignore touches, so locationX is always measured from the track's left edge.
+  const at = (e: GestureResponderEvent) => Math.min(1, Math.max(0, e.nativeEvent.locationX / trackWidth));
+
+  return (
+    <View
+      onLayout={(e) => setTrackWidth(Math.max(1, e.nativeEvent.layout.width))}
+      onStartShouldSetResponder={() => true}
+      onMoveShouldSetResponder={() => true}
+      onResponderGrant={(e) => setDrag(at(e))}
+      onResponderMove={(e) => setDrag(at(e))}
+      onResponderRelease={(e) => {
+        const f = at(e);
+        setDrag(null);
+        onSeek(Math.round(f * (count - 1)));
+      }}
+      onResponderTerminate={() => setDrag(null)}
+      accessibilityRole="adjustable"
+      accessibilityLabel="Reading progress"
+      accessibilityValue={{ min: 1, max: count, now: current + 1 }}
+      style={styles.scrubber}>
+      <View pointerEvents="none" style={[styles.scrubTrack, { backgroundColor: theme.rule }]}>
+        {count > 1 &&
+          chapterStarts.slice(1, 60).map((s, i) => (
+            <View key={i} style={[styles.tick, { left: `${(s / (count - 1)) * 100}%`, backgroundColor: theme.soft }]} />
+          ))}
+        <View style={[styles.scrubFill, { width: `${fraction * 100}%`, backgroundColor: theme.ink }]} />
+      </View>
+      <View pointerEvents="none" style={[styles.knob, { left: `${fraction * 100}%`, backgroundColor: theme.ink, borderColor: theme.paper }]} />
+    </View>
   );
 }
 
@@ -407,8 +578,8 @@ function ClipSheet({
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={[styles.sheet, { backgroundColor: colors.surface }]} onPress={() => {}}>
-          <Text style={[styles.sheetTitle, { color: colors.text }]}>Save this passage</Text>
+        <Pressable style={[styles.sheet, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={() => {}}>
+          <Text style={[styles.sheetTitle, { color: colors.text, fontFamily: displayFont }]}>Save this passage</Text>
           <ScrollView style={styles.passageBox}>
             <Text style={styles.passage}>“{passage}”</Text>
           </ScrollView>
@@ -432,47 +603,58 @@ function ClipSheet({
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 6, height: 52, gap: 2 },
-  iconButton: { minWidth: 40, height: 40, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
-  icon: { fontSize: 22, fontWeight: '600' },
-  aa: { fontSize: 17, fontWeight: '800' },
-  titleWrap: { flex: 1, paddingHorizontal: 4 },
-  bookTitle: { fontSize: 15, fontWeight: '700' },
-  chapterLabel: { fontSize: 12 },
-  list: { flex: 1, overflow: 'hidden' },
-  page: { paddingVertical: PAD_Y, overflow: 'hidden' },
-  edge: { position: 'absolute', top: 0, bottom: 0, width: 18 },
-  pageNumber: { position: 'absolute', bottom: 10, fontSize: 12 },
-  chapterTitle: { fontFamily: serif, fontWeight: '800', marginBottom: 16 },
-  paragraph: { fontFamily: serif },
+  stage: { flex: 1, overflow: 'hidden' },
+  stageSpread: { margin: 14, borderRadius: 4, shadowColor: '#000', shadowOpacity: 0.35, shadowRadius: 18, shadowOffset: { width: 0, height: 8 }, elevation: 10 },
+  sideTone: { position: 'absolute', top: 0, bottom: 0, width: 28 },
+  runningHead: { position: 'absolute', top: 18, fontSize: 11, letterSpacing: 2, textAlign: 'center' },
+  kicker: { fontSize: 13, letterSpacing: 3, marginBottom: 10 },
+  openerTitle: { textAlign: 'center' },
+  ornament: { fontSize: 20, marginTop: 14 },
+  folio: { position: 'absolute', bottom: 14, fontSize: 16 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 },
-  message: { fontSize: 16, textAlign: 'center', lineHeight: 24 },
-  bottomBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 6, paddingVertical: 6, gap: 6 },
-  navButton: { width: 44, height: 40, alignItems: 'center', justifyContent: 'center' },
-  navText: { fontSize: 26, fontWeight: '600' },
-  progressWrap: { flex: 1, gap: 4 },
-  track: { height: 3, borderRadius: 2, overflow: 'hidden' },
-  fill: { height: 3, backgroundColor: colors.accent },
+  message: { fontSize: 18, textAlign: 'center', lineHeight: 26 },
+  topBar: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    paddingBottom: 6,
+    gap: 2,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  iconButton: { minWidth: 40, height: 40, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
+  icon: { fontSize: 22, fontWeight: '500' },
+  aa: { fontSize: 20 },
+  titleWrap: { flex: 1, paddingHorizontal: 4 },
+  bookTitle: { fontSize: 18 },
+  chapterLabel: { fontSize: 12 },
+  bottomBar: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 20, paddingTop: 10, gap: 4, borderTopWidth: StyleSheet.hairlineWidth },
+  scrubber: { height: 28, justifyContent: 'center' },
+  scrubTrack: { height: 3, borderRadius: 2, overflow: 'hidden' },
+  scrubFill: { position: 'absolute', left: 0, top: 0, bottom: 0 },
+  tick: { position: 'absolute', top: 0, bottom: 0, width: 1, opacity: 0.6 },
+  knob: { position: 'absolute', width: 16, height: 16, marginLeft: -8, borderRadius: 8, borderWidth: 2, top: 6 },
   pageLabel: { fontSize: 12, textAlign: 'center' },
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
-  sheet: { padding: 20, paddingBottom: 32, borderTopLeftRadius: 24, borderTopRightRadius: 24, gap: 12, maxHeight: '85%' },
-  sheetTitle: { fontSize: 18, fontWeight: '800' },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  sizeButton: { flex: 1, alignItems: 'center', paddingVertical: 12, borderRadius: 12, borderWidth: 1 },
-  sizeSmall: { fontSize: 15, fontWeight: '700' },
-  sizeLarge: { fontSize: 22, fontWeight: '700' },
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  sheet: { padding: 20, paddingBottom: 32, borderTopLeftRadius: 22, borderTopRightRadius: 22, gap: 12, maxHeight: '88%', borderWidth: StyleSheet.hairlineWidth },
+  sheetTitle: { fontSize: 20 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  choice: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 12, borderWidth: 1.5, gap: 2 },
+  sizeButton: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 12, borderWidth: 1 },
   sizeValue: { fontSize: 16, fontWeight: '700', width: 32, textAlign: 'center' },
-  hint: { fontSize: 13 },
-  themeButton: { flex: 1, alignItems: 'center', paddingVertical: 14, borderRadius: 12, borderWidth: 2 },
+  hint: { fontSize: 13, lineHeight: 19 },
   full: { flex: 1 },
   contentsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 8 },
+  contentsTitle: { fontSize: 28 },
   contentsList: { paddingHorizontal: 20, paddingBottom: 40 },
-  section: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1, marginTop: 16, marginBottom: 4 },
+  section: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 16, marginBottom: 4 },
   contentsRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth },
-  contentsText: { flex: 1, fontSize: 16 },
-  contentsCurrent: { fontWeight: '800' },
+  contentsText: { flex: 1, fontSize: 17 },
   passageBox: { maxHeight: 180 },
-  passage: { color: colors.text, fontFamily: serif, fontStyle: 'italic', fontSize: 16, lineHeight: 24 },
+  passage: { color: colors.text, fontFamily: 'Literata_400Regular_Italic', fontSize: 16, lineHeight: 25 },
   stashRow: { flexDirection: 'row', justifyContent: 'space-between', padding: 14, borderRadius: 12, backgroundColor: colors.surfaceRaised },
   stashName: { color: colors.text, fontSize: 16 },
   doneButton: { alignItems: 'center', paddingVertical: 14, borderRadius: 999, backgroundColor: colors.accent },

@@ -73,7 +73,7 @@ const initialUserState: UserState = {
   readIdeaIds: [],
   dailyGoal: 10,
   today: { date: '', count: 0 },
-  readerSettings: { theme: 'sepia', fontSize: 19 },
+  readerSettings: { theme: 'light', fontSize: 19, font: 'literata' },
   readerProgress: {},
   bookmarks: {},
   clips: [],

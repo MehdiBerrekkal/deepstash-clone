@@ -7,25 +7,40 @@ export type PagePiece = { para: number; from: number; to: number };
 
 export type Page = {
   chapter: number;
-  /** Set on a chapter's first page. */
+  /** Set on a chapter's first page, which is laid out as a chapter opener. */
   chapterTitle?: string;
   pieces: PagePiece[];
 };
 
-type Layout = { width: number; height: number; fontSize: number; lineHeight: number };
+type Layout = {
+  width: number;
+  height: number;
+  fontSize: number;
+  lineHeight: number;
+  /** Average glyph width in ems for the chosen font. */
+  charWidth?: number;
+  /** Space between paragraphs, in lines (book style is small, with indents instead). */
+  paragraphGap?: number;
+  /** Lines taken by a chapter opener (sink, title, ornament). */
+  openerLines?: number;
+};
 
 /**
  * Splits a book into screen-sized pages by estimating how many lines each paragraph takes.
  * The estimate is a little conservative so text doesn't overflow; pages clip anything that still does.
  */
-export function paginate(book: FullBook, { width, height, fontSize, lineHeight }: Layout): Page[] {
-  const charsPerLine = Math.max(16, Math.floor(width / (fontSize * 0.5)));
+export function paginate(
+  book: FullBook,
+  { width, height, fontSize, lineHeight, charWidth = 0.5, paragraphGap = 1, openerLines = 3 }: Layout,
+): Page[] {
+  const charsPerLine = Math.max(16, Math.floor(width / (fontSize * charWidth)));
   const linesPerPage = Math.max(6, Math.floor((height / lineHeight) * 0.95));
+  const opener = Math.min(openerLines, Math.floor(linesPerPage * 0.55));
   const pages: Page[] = [];
 
   book.chapters.forEach((chapter, c) => {
     let page: Page = { chapter: c, chapterTitle: chapter.title, pieces: [] };
-    let used = 3; // the chapter title
+    let used = opener;
     const flush = () => {
       if (page.pieces.length || page.chapterTitle) pages.push(page);
       page = { chapter: c, pieces: [] };
@@ -36,11 +51,11 @@ export function paginate(book: FullBook, { width, height, fontSize, lineHeight }
       let from = 0;
       while (from < text.length) {
         const rest = text.slice(from);
-        const restLines = rest.split('\n').reduce((n, line) => n + Math.max(1, Math.ceil(line.length / charsPerLine)), 0);
+        const restLines = rest.split('\n').reduce((n, line) => n + Math.max(1, Math.ceil((line.length + 3) / charsPerLine)), 0);
         const free = linesPerPage - used;
         if (restLines <= free) {
           page.pieces.push({ para: p, from, to: text.length });
-          used += restLines + 1;
+          used += restLines + paragraphGap;
           if (used >= linesPerPage) flush();
           break;
         }
@@ -49,7 +64,7 @@ export function paginate(book: FullBook, { width, height, fontSize, lineHeight }
           continue;
         }
         // Fill the rest of the page, breaking at a space or line break.
-        let take = Math.max(1, free) * charsPerLine;
+        let take = Math.max(1, Math.floor(free)) * charsPerLine;
         const newline = rest.lastIndexOf('\n', take);
         const space = rest.lastIndexOf(' ', take);
         const cut = newline > take * 0.5 ? newline + 1 : space > take * 0.5 ? space + 1 : take;
