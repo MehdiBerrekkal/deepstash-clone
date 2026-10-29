@@ -45,6 +45,8 @@ Full books live in `src/data/classics/`. Each one is a `.txt` asset that holds t
 
 To add a free-to-share EPUB (public domain or Creative Commons), put it in `books/` with a small JSON file next to it and run `npm run books`. See [books/README.md](books/README.md).
 
+For books you own (for example DRM-free EPUBs you bought), use the private `my-books/` folder instead. `npm run books` adds them to a **My books** shelf, and Git ignores the folder and everything generated from it, so nothing is committed. Any build of the app made while books are in that folder includes them, so such builds are for personal use only. See [my-books/README.md](my-books/README.md).
+
 ## Project layout
 
 ```
