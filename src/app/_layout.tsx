@@ -7,6 +7,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { CelebrationHost } from '@/components/Celebration';
 import { bookFonts } from '@/lib/bookType';
+import { WebSafeArea } from '@/lib/safeArea';
 import { StoreProvider } from '@/lib/store';
 import { colors } from '@/lib/theme';
 
@@ -19,6 +20,7 @@ export default function RootLayout() {
   }, []);
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
+    <WebSafeArea>
     <StoreProvider>
       <StatusBar style="light" />
       <Stack
@@ -43,6 +45,7 @@ export default function RootLayout() {
       </Stack>
       <CelebrationHost />
     </StoreProvider>
+    </WebSafeArea>
     </GestureHandlerRootView>
   );
 }

@@ -111,3 +111,23 @@ export const HIGHLIGHT_COLORS: Record<HighlightColor, { label: string; fill: str
   blue: { label: 'Blue', fill: 'rgba(100,160,230,0.40)', solid: '#5E97D6' },
   pink: { label: 'Pink', fill: 'rgba(235,120,160,0.40)', solid: '#DE6E98' },
 };
+
+const SAMPLE_PROSE =
+  'It was the best of times, it was the worst of times, it was the age of wisdom, it was the age of foolishness. She said, “I never thought so,” and smiled.';
+
+/**
+ * Average glyph width (in ems) of a font, measured in the browser once the font has loaded, so pages are filled
+ * properly instead of by a cautious estimate. Includes a small margin so a page never overflows. Null elsewhere.
+ */
+export function measuredCharWidth(fontFamily: string): number | null {
+  if (Platform.OS !== 'web' || typeof document === 'undefined') return null;
+  try {
+    if (!document.fonts?.check(`20px ${fontFamily}`)) return null;
+    const ctx = document.createElement('canvas').getContext('2d');
+    if (!ctx) return null;
+    ctx.font = `100px ${fontFamily}`;
+    return (ctx.measureText(SAMPLE_PROSE).width / SAMPLE_PROSE.length / 100) * 1.03;
+  } catch {
+    return null;
+  }
+}

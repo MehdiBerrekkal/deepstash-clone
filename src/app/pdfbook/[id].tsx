@@ -13,6 +13,7 @@ import { BOOK_THEMES, displayFont, displayItalic } from '@/lib/bookType';
 import { classicById } from '@/lib/fullbook';
 import { myBookPdfAssets } from '@/lib/myBooks';
 import { loadPdfData } from '@/lib/ownbooks';
+import { setScreenColor } from '@/lib/safeArea';
 import { useStore } from '@/lib/store';
 
 const SPREAD_MIN_WIDTH = 700;
@@ -69,6 +70,7 @@ function PdfBook({ id, source }: { id: string; source: 'own' | 'private' }) {
   const insets = useSafeAreaInsets();
 
   const spread = size.width > size.height && size.width >= SPREAD_MIN_WIDTH;
+  useEffect(() => setScreenColor(spread ? theme.desk : theme.paper), [spread, theme]);
   const leaf = spread ? Math.floor(current / 2) : current;
   const pageWidth = spread ? size.width / 2 : size.width;
   // Render at the screen's pixel density (capped) so text stays sharp, and higher when zoomed.

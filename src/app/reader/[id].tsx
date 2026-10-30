@@ -1,3 +1,4 @@
+import { useFonts } from 'expo-font';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -13,7 +14,7 @@ import { HighlightSheet } from '@/components/HighlightSheet';
 import { PageFlip, type PageFlipHandle } from '@/components/PageFlip';
 import { Scrubber } from '@/components/Scrubber';
 import { VoicePicker } from '@/components/VoicePicker';
-import { BOOK_THEMES, HIGHLIGHT_COLORS, READER_FONTS, chapterLabel, displayFont, displayItalic, typeset, type BookTheme } from '@/lib/bookType';
+import { BOOK_THEMES, HIGHLIGHT_COLORS, READER_FONTS, bookFonts, measuredCharWidth, chapterLabel, displayFont, displayItalic, typeset, type BookTheme } from '@/lib/bookType';
 import { classicAsSource } from '@/lib/classicSource';
 import { classicById, loadClassic, type FullBook } from '@/lib/fullbook';
 import { LISTEN_RATES, useListen, type Sentence, type SleepTimer } from '@/lib/listen';
@@ -21,6 +22,7 @@ import { isNatural, naturalVoiceInfo } from '@/lib/neuralVoice';
 import { loadOwnBook } from '@/lib/ownbooks';
 import { findPage, pageStart, paginate, type Page } from '@/lib/paginate';
 import { celebrate } from '@/lib/celebrate';
+import { setScreenColor } from '@/lib/safeArea';
 import { searchBook, type BookHit } from '@/lib/search';
 import { CHARS_PER_WORD, DEFAULT_WPM, formatDuration, readingSpeed } from '@/lib/stats';
 import { useStore } from '@/lib/store';
@@ -133,7 +135,12 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
     return () => clearTimeout(t);
   }, [chrome, panel, book]);
 
+  // In the browser, measure the real font so pages fill to the bottom (re-paginates once the font has loaded).
+  const [fontsLoaded] = useFonts(bookFonts);
+  const charWidth = useMemo(() => (fontsLoaded && measuredCharWidth(font.regular)) || font.charWidth, [fontsLoaded, font]);
   const spread = size.width > size.height && size.width >= SPREAD_MIN_WIDTH;
+  // The strips behind the status bar and home indicator take the page's colour.
+  useEffect(() => setScreenColor(spread ? theme.desk : theme.paper), [spread, theme]);
   const pageWidth = spread ? size.width / 2 : size.width;
   // A comfortable measure: generous margins that grow with the page, wider toward the outside edge in a spread.
   const margin = Math.round(Math.min(64, Math.max(24, pageWidth * 0.085)));
@@ -145,9 +152,9 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
   const pages = useMemo(
     () =>
       book && size.width > 0
-        ? paginate(book, { width: textWidth, height: textHeight, fontSize, lineHeight, charWidth: font.charWidth, paragraphGap: 0.15, openerLines })
+        ? paginate(book, { width: textWidth, height: textHeight, fontSize, lineHeight, charWidth, paragraphGap: 0.15, openerLines })
         : [],
-    [book, size.width, textWidth, textHeight, fontSize, lineHeight, font.charWidth, openerLines],
+    [book, size.width, textWidth, textHeight, fontSize, lineHeight, charWidth, openerLines],
   );
 
   // The page shown is derived from a text position, so rotating or resizing the text keeps your place.
