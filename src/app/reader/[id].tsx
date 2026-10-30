@@ -17,6 +17,7 @@ import { BOOK_THEMES, HIGHLIGHT_COLORS, READER_FONTS, chapterLabel, displayFont,
 import { classicAsSource } from '@/lib/classicSource';
 import { classicById, loadClassic, type FullBook } from '@/lib/fullbook';
 import { LISTEN_RATES, useListen, type Sentence, type SleepTimer } from '@/lib/listen';
+import { isNatural, naturalVoiceInfo } from '@/lib/neuralVoice';
 import { loadOwnBook } from '@/lib/ownbooks';
 import { findPage, pageStart, paginate, type Page } from '@/lib/paginate';
 import { celebrate } from '@/lib/celebrate';
@@ -100,7 +101,15 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
   const lineHeight = Math.round(fontSize * font.leading);
   const language = (kind === 'own' ? undefined : classicById[id]?.lang) ?? 'en';
   const listenRate = readerSettings.listenRate ?? 1;
-  const listen = useListen(book, { rate: listenRate, voice: readerSettings.voice, language });
+  // If the natural voice proves too slow here, stop choosing it automatically.
+  const onNaturalFailed = useCallback(() => setReaderSettings({ naturalOff: true }), [setReaderSettings]);
+  const listen = useListen(book, {
+    rate: listenRate,
+    voice: readerSettings.voice,
+    language,
+    preferNatural: !readerSettings.naturalOff,
+    onNaturalFailed,
+  });
 
   useEffect(() => {
     let alive = true;
@@ -421,6 +430,28 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
         </Animated.View>
       )}
 
+      {(listen.loading !== null || listen.notice) && (
+        <Animated.View
+          entering={FadeIn.duration(200)}
+          exiting={FadeOut.duration(200)}
+          style={[styles.listenNotice, { backgroundColor: theme.ink, bottom: (chrome ? 136 : 74) + insets.bottom }]}>
+          {listen.loading !== null ? (
+            <>
+              <Text style={[styles.listenNoticeText, { color: theme.paper }]}>
+                ✨ Downloading the natural voice · {Math.round(listen.loading * 100)}% of {naturalVoiceInfo(listen.naturalVoice)?.sizeMB ?? 63} MB (only once)
+              </Text>
+              <View style={[styles.noticeTrack, { backgroundColor: theme.soft }]}>
+                <View style={[styles.noticeFill, { backgroundColor: theme.paper, width: `${Math.round(listen.loading * 100)}%` }]} />
+              </View>
+            </>
+          ) : (
+            <Pressable onPress={listen.dismissNotice}>
+              <Text style={[styles.listenNoticeText, { color: theme.paper }]}>{listen.notice} ✕</Text>
+            </Pressable>
+          )}
+        </Animated.View>
+      )}
+
       {listen.sentence && (
         <Animated.View
           entering={FadeIn.duration(200)}
@@ -452,7 +483,7 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
               listen.setPlaying(false);
               setPanel('voice');
             }} style={[styles.listenChip, { borderColor: theme.rule }]}>
-            <Text style={[styles.listenChipText, { color: theme.chromeText }]}>Voice</Text>
+            <Text style={[styles.listenChipText, { color: theme.chromeText }]}>{listen.natural ? '✨ Natural' : listen.naturalAvailable ? '✨ Voice' : 'Voice'}</Text>
           </Pressable>
           <Pressable
             accessibilityLabel="Sleep timer"
@@ -476,7 +507,12 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
                 fontBold={font.bold}
                 language={language}
                 selected={readerSettings.voice}
-                onSelect={(v) => setReaderSettings({ voice: v })}
+                natural={listen.naturalAvailable}
+                naturalActive={listen.natural ? listen.naturalVoice : null}
+                onSelect={(v) => {
+                  setReaderSettings({ voice: v, ...(isNatural(v) ? { naturalOff: false } : {}) });
+                  if (isNatural(v)) listen.tryNatural();
+                }}
               />
             ) : (
               <>
@@ -897,6 +933,10 @@ const styles = StyleSheet.create({
   listenIcon: { fontSize: 16 },
   playButton: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   playIcon: { fontSize: 16, fontWeight: '800' },
+  listenNotice: { position: 'absolute', left: 16, right: 16, alignSelf: 'center', maxWidth: 520, borderRadius: 14, padding: 12, gap: 8 },
+  listenNoticeText: { fontSize: 13, fontWeight: '600', lineHeight: 18 },
+  noticeTrack: { height: 4, borderRadius: 2, overflow: 'hidden' },
+  noticeFill: { height: 4 },
   listenChip: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 6 },
   listenChipText: { fontSize: 12, fontWeight: '700' },
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },

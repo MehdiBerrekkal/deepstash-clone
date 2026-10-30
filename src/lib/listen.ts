@@ -1,8 +1,11 @@
 import * as Speech from 'expo-speech';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 
 import type { FullBook } from '@/lib/fullbook';
+import {
+  NATURAL_PREFIX, isNatural, loadNatural, naturalDownloaded, naturalSupported, naturalVoicesFor, playClip, synthesize, unlockAudio, type Clip,
+} from '@/lib/neuralVoice';
 import type { BookPosition } from '@/lib/paginate';
 
 /** A sentence in a book: chapter, paragraph and character range. */
@@ -198,32 +201,74 @@ const SYSTEM_RATE = 0.95;
 const PARAGRAPH_PAUSE = 350;
 const CHAPTER_PAUSE = 900;
 
-type Options = { rate: number; voice?: string; language: string };
+type Options = {
+  rate: number;
+  voice?: string;
+  language: string;
+  /** Use the natural (neural) voice when nothing is chosen and it's already downloaded. */
+  preferNatural?: boolean;
+  /** Called when the natural voice can't keep up or fails, so it isn't picked automatically again. */
+  onNaturalFailed?: (reason: string) => void;
+};
+
+/** What to say for a sentence: a chapter's first sentence is introduced by its title. */
+function spokenText(book: FullBook, s: Sentence, language: string) {
+  const body = speakable(sentenceText(book, s), language);
+  const opening = s.para === 0 && s.from === 0 ? speakableTitle(book.chapters[s.chapter]?.title ?? '', language) : '';
+  return opening ? `${opening}. ... ${body}` : body;
+}
+
+/** How long to wait before a sentence: a beat between paragraphs and a longer one before a new chapter. */
+function gapBefore(prev: Sentence, next: Sentence) {
+  return next.chapter !== prev.chapter ? CHAPTER_PAUSE : next.para !== prev.para ? PARAGRAPH_PAUSE : 0;
+}
+
+const sentenceKey = (s: Sentence) => `${s.chapter}.${s.para}.${s.from}`;
+/** Sentences generated ahead of the one playing, so the natural voice never waits between them. */
+const LOOKAHEAD = 2;
+/** If the natural voice keeps making you wait this long between sentences, the device is too slow for it. */
+const STALL_MS = 1800;
+const MAX_STALLS = 3;
 
 /**
  * Reads a book aloud one sentence at a time, so the current sentence can be highlighted and followed.
- * Pausing stops speech and keeps the sentence, which also works on Android (no native pause there).
+ * Two engines: the device's own voices (expo-speech) everywhere, and on the web the on-device natural voices
+ * (Piper, see neuralVoice.ts) for English and French books. Pausing stops speech and keeps the sentence, which also works
+ * on Android (no native pause there).
  */
-export function useListen(book: FullBook | null, { rate, voice: chosen, language }: Options) {
+export function useListen(book: FullBook | null, { rate, voice: chosen, language, preferNatural, onNaturalFailed }: Options) {
   const [sentence, setSentence] = useState<Sentence | null>(null);
   const [playing, setPlaying] = useState(false);
   const [sleep, setSleep] = useState<SleepTimer>(null);
   const [finished, setFinished] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  /** Download progress of the natural voice (0..1) while it loads, else null. */
+  const [loading, setLoading] = useState<number | null>(null);
+  const [systemOnly, setSystemOnly] = useState(false);
+  const naturalChoices = naturalVoicesFor(language);
+  const naturalAvailable = naturalChoices.length > 0 && naturalSupported();
+
   // Without a chosen voice, use the most natural one installed for the book's language.
   const [best, setBest] = useState<string | undefined>(undefined);
   useEffect(() => {
-    if (chosen) return;
     let alive = true;
     voicesFor(language).then((v) => alive && setBest(v[0]?.id));
     return () => {
       alive = false;
     };
-  }, [chosen, language]);
-  const voice = chosen ?? best;
+  }, [language]);
 
-  // Speak the current sentence; when it ends, move to the next. Any change (pause, speed, voice) restarts it cleanly.
+  const naturalVoice =
+    isNatural(chosen) && naturalChoices.some((v) => NATURAL_PREFIX + v.id === chosen) ? chosen! : `${NATURAL_PREFIX}${naturalChoices[0]?.id}`;
+  // With no voice chosen, the natural voice is used once it's been downloaded (so nothing big downloads unasked).
+  const cached = naturalAvailable && naturalDownloaded(naturalVoice);
+  const wantsNatural = isNatural(chosen) || (!chosen && preferNatural && cached);
+  const natural = wantsNatural && naturalAvailable && !systemOnly;
+  const systemVoice = chosen && !isNatural(chosen) ? chosen : best;
+
+  // System voices: speak the current sentence; when it ends, move to the next. Any change restarts it cleanly.
   useEffect(() => {
-    if (!playing || !sentence || !book) return;
+    if (!playing || !sentence || !book || natural) return;
     let cancelled = false;
     let pause: ReturnType<typeof setTimeout> | undefined;
     const advance = () => {
@@ -238,26 +283,118 @@ export function useListen(book: FullBook | null, { rate, voice: chosen, language
         setPlaying(false);
         setSleep(null);
       }
-      // A beat between paragraphs and a longer one before a new chapter, like a person reading.
-      const gap = next.chapter !== sentence.chapter ? CHAPTER_PAUSE : next.para !== sentence.para ? PARAGRAPH_PAUSE : 0;
+      const gap = gapBefore(sentence, next);
       if (gap) pause = setTimeout(() => !cancelled && setSentence(next), gap / rate);
       else setSentence(next);
     };
-    const body = speakable(sentenceText(book, sentence), language);
-    // A chapter's first sentence is introduced by its title.
-    const opening = sentence.para === 0 && sentence.from === 0 ? speakableTitle(book.chapters[sentence.chapter]?.title ?? '', language) : '';
-    const text = opening ? `${opening}. ... ${body}` : body;
+    const text = spokenText(book, sentence, language);
     if (!text) {
       advance();
       return;
     }
-    Speech.speak(text, { rate: rate * SYSTEM_RATE, voice, language, onDone: advance, onError: advance });
+    Speech.speak(text, { rate: rate * SYSTEM_RATE, voice: systemVoice, language, onDone: advance, onError: advance });
     return () => {
       cancelled = true;
       clearTimeout(pause);
       void Speech.stop();
     };
-  }, [playing, sentence, book, rate, voice, language, sleep]);
+  }, [playing, sentence, book, rate, systemVoice, language, sleep, natural]);
+
+  // Natural voice: sentences are generated a little ahead and played back to back.
+  const clips = useRef(new Map<string, Promise<Clip>>());
+  const stalls = useRef(0);
+  useEffect(() => {
+    if (!playing || !sentence || !book || !natural) return;
+    let cancelled = false;
+    let stop = () => {};
+    let pause: ReturnType<typeof setTimeout> | undefined;
+    const clipFor = (s: Sentence) => {
+      const key = `${naturalVoice}|${sentenceKey(s)}`;
+      let clip = clips.current.get(key);
+      if (!clip) {
+        const text = spokenText(book, s, language);
+        clip = synthesize(text || '.', naturalVoice);
+        clips.current.set(key, clip);
+        // Keep memory small: forget old clips.
+        if (clips.current.size > 12) {
+          const [oldest] = clips.current.keys();
+          clips.current.get(oldest)?.then((c) => URL.revokeObjectURL(c.url)).catch(() => {});
+          clips.current.delete(oldest);
+        }
+      }
+      return clip;
+    };
+    const giveUp = (reason: string) => {
+      setSystemOnly(true);
+      setLoading(null);
+      setNotice(reason);
+      onNaturalFailed?.(reason);
+    };
+
+    (async () => {
+      const t0 = Date.now();
+      try {
+        await loadNatural(naturalVoice, (f) => !cancelled && setLoading(f < 1 ? f : null));
+        if (!cancelled) setLoading(null);
+      } catch {
+        if (!cancelled) giveUp("The natural voice couldn't load on this device, so a system voice is reading instead.");
+        return;
+      }
+      let clip: Clip;
+      try {
+        clip = await clipFor(sentence);
+      } catch {
+        if (!cancelled) giveUp("The natural voice hit a problem, so a system voice is reading instead.");
+        return;
+      }
+      if (cancelled) return;
+      // Track waits between sentences (not the first one, which may include loading).
+      const waited = Date.now() - t0;
+      if (clips.current.size > 1 && waited > STALL_MS / rate) stalls.current += 1;
+      if (stalls.current >= MAX_STALLS) {
+        giveUp('This device is too slow for the natural voice at this speed, so a system voice is reading instead.');
+        return;
+      }
+      // Queue the next sentences while this one plays.
+      let ahead: Sentence | null = sentence;
+      for (let i = 0; i < LOOKAHEAD && ahead; i++) {
+        ahead = nextSentence(book, ahead);
+        if (ahead) clipFor(ahead).catch(() => {});
+      }
+      const playback = playClip(clip, rate);
+      stop = playback.stop;
+      try {
+        await playback.done;
+      } catch {
+        if (!cancelled) giveUp("Audio couldn't play here, so a system voice is reading instead.");
+        return;
+      }
+      if (cancelled) return;
+      const next = nextSentence(book, sentence);
+      if (!next) {
+        setPlaying(false);
+        setFinished(true);
+        return;
+      }
+      if (sleep?.kind === 'chapter' && next.chapter !== sleep.chapter) {
+        setPlaying(false);
+        setSleep(null);
+      }
+      const gap = gapBefore(sentence, next);
+      if (gap) pause = setTimeout(() => !cancelled && setSentence(next), gap / rate);
+      else setSentence(next);
+    })();
+    return () => {
+      cancelled = true;
+      clearTimeout(pause);
+      stop();
+    };
+  }, [playing, sentence, book, rate, naturalVoice, language, sleep, natural, onNaturalFailed]);
+
+  // A new voice choice gets a fresh chance.
+  useEffect(() => {
+    stalls.current = 0;
+  }, [chosen]);
 
   // Sleep timer by the clock.
   useEffect(() => {
@@ -277,15 +414,21 @@ export function useListen(book: FullBook | null, { rate, voice: chosen, language
       if (!book) return;
       const s = sentenceAt(book, from);
       if (!s) return;
+      unlockAudio();
       setFinished(false);
       setSentence(s);
       setPlaying(true);
     },
     [book],
   );
+  const play = useCallback((on: boolean) => {
+    if (on) unlockAudio();
+    setPlaying(on);
+  }, []);
   const skip = useCallback(
     (dir: 1 | -1) => {
       if (!book) return;
+      unlockAudio();
       setSentence((s) => (s ? (dir === 1 ? nextSentence(book, s) ?? s : previousSentence(book, s)) : s));
     },
     [book],
@@ -295,10 +438,17 @@ export function useListen(book: FullBook | null, { rate, voice: chosen, language
     setSentence(null);
     setSleep(null);
   }, []);
+  const tryNatural = useCallback(() => {
+    setSystemOnly(false);
+    setNotice(null);
+  }, []);
 
   return useMemo(
-    () => ({ sentence, playing, sleep, finished, start, skip, close, setPlaying, setSleep }),
-    [sentence, playing, sleep, finished, start, skip, close],
+    () => ({
+      sentence, playing, sleep, finished, natural, naturalVoice, loading, notice, naturalAvailable, naturalCached: cached,
+      start, skip, close, setPlaying: play, setSleep, dismissNotice: () => setNotice(null), tryNatural,
+    }),
+    [sentence, playing, sleep, finished, natural, naturalVoice, loading, notice, naturalAvailable, cached, start, skip, close, play, tryNatural],
   );
 }
 
@@ -308,11 +458,26 @@ let utterance = 0;
 export function speakOnce(text: string, onEnd: () => void, language = 'en', voice?: string) {
   const mine = ++utterance;
   void Speech.stop();
+  let stopClip = () => {};
   const go = (v?: string) =>
     mine === utterance && Speech.speak(speakable(text, language), { language, voice: v, rate: SYSTEM_RATE, onDone: onEnd, onStopped: onEnd, onError: onEnd });
-  if (voice) go(voice);
+  // Once a natural voice is downloaded, cards use it too (falling back to the system voice if it fails).
+  const naturalVoice = `${NATURAL_PREFIX}${naturalVoicesFor(language)[0]?.id}`;
+  if (!voice && naturalSupported() && naturalDownloaded(naturalVoice)) {
+    unlockAudio();
+    synthesize(speakable(text, language), naturalVoice)
+      .then((clip) => {
+        if (mine !== utterance) return;
+        const playback = playClip(clip);
+        stopClip = playback.stop;
+        return playback.done.then(onEnd);
+      })
+      .catch(() => voicesFor(language).then((v) => go(v[0]?.id)));
+  } else if (voice) go(voice);
   else voicesFor(language).then((v) => go(v[0]?.id));
   return () => {
-    if (mine === utterance) void Speech.stop();
+    if (mine !== utterance) return;
+    stopClip();
+    void Speech.stop();
   };
 }

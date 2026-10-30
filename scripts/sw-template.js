@@ -7,8 +7,10 @@ const SHELL = __SHELL__;
 const SHELL_CACHE = `shell-${VERSION}`;
 const ASSET_CACHE = 'assets-v1';
 const REMOTE_CACHE = 'remote-v1';
-// Cross-origin files worth keeping: book covers and the PDF engine.
-const REMOTE = /^https:\/\/(covers\.openlibrary\.org|standardebooks\.org\/images|cdnjs\.cloudflare\.com)\//;
+// Cross-origin files worth keeping: book covers, the PDF engine, and the natural voices (engine + voice models),
+// so they work offline after the first use.
+const REMOTE =
+  /^https:\/\/(covers\.openlibrary\.org|standardebooks\.org\/images|cdnjs\.cloudflare\.com|cdn\.jsdelivr\.net\/npm\/(@mintplex-labs\/piper-tts-web|onnxruntime-web|@diffusionstudio\/piper-wasm)@|huggingface\.co\/diffusionstudio\/piper-voices\/)/;
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(SHELL_CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

@@ -71,7 +71,16 @@ export type ReaderTheme = 'light' | 'sepia' | 'dark';
 
 export type ReaderFont = 'literata' | 'garamond' | 'sans';
 
-export type ReaderSettings = { theme: ReaderTheme; fontSize: number; font?: ReaderFont; listenRate?: number; voice?: string };
+export type ReaderSettings = {
+  theme: ReaderTheme;
+  fontSize: number;
+  font?: ReaderFont;
+  listenRate?: number;
+  /** A system voice id, "kokoro:<voice>" for a natural voice, or unset for the best available. */
+  voice?: string;
+  /** Set when the natural voice was too slow on this device, so it isn't picked automatically. */
+  naturalOff?: boolean;
+};
 
 /** Where the full-book reader is in a book; see paginate.ts. */
 export type ReaderPosition = { chapter: number; para: number; char: number };
