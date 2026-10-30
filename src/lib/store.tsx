@@ -96,6 +96,7 @@ type Store = Content &
     recordBrain: (r: BrainResult) => void;
     addBrainTest: (t: BrainTest) => void;
     setBrainSound: (on: boolean) => void;
+    patchBrain: (p: Partial<BrainState>) => void;
     markBrainHowTo: (id: string) => void;
     markBrainDaily: (part: 'game' | 'quiz') => void;
     addOwnBook: (book: OwnBook) => void;
@@ -120,7 +121,15 @@ export type BrainState = {
   sound?: boolean;
   /** IQ-style test results, newest first. */
   tests?: BrainTest[];
+  /** Sound volume, 0 to 1. */
+  volume?: number;
+  /** A puzzle run left unfinished, so it can be resumed. */
+  run?: BrainRun;
+  /** Today's three-game session and how each game went. */
+  session?: BrainSession;
 };
+export type BrainRun = { id: string; n: number; right: number; points: number; d: number; streak: number; hardest: number; seconds: number; history: boolean[]; saved: number };
+export type BrainSession = { date: string; games: string[]; done: Record<string, { points: number; right: number; total: number; xp: number; from: number; to: number }> };
 export type BrainTest = { date: string; mode: 'full' | 'quick'; iq: number; correct: number; total: number; seconds: number; domains: Partial<Record<Skill, { right: number; total: number }>> };
 export type BrainResult = { id: string; skill: Skill; points: number; perf: number; xp: number; rating?: number; seconds?: number };
 
@@ -428,6 +437,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setBrainSound = useCallback((on: boolean) => setUser((u) => ({ ...u, brain: { ...u.brain, sound: on } })), []);
+  const patchBrain = useCallback((p: Partial<BrainState>) => setUser((u) => ({ ...u, brain: { ...u.brain, ...p } })), []);
 
   const markBrainHowTo = useCallback((id: string) => {
     setUser((u) => ({ ...u, brain: { ...u.brain, seen: [...new Set([...(u.brain?.seen ?? []), id])] } }));
@@ -523,6 +533,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       recordBrain,
       addBrainTest,
       setBrainSound,
+      patchBrain,
       markBrainHowTo,
       markBrainDaily,
       addOwnBook,
@@ -532,7 +543,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [
     content, user, ready, indexes, setFollowedTopics, createStash, deleteStash, toggleInStash, toggleLike, markRead, setBookPosition,
     finishBook, toggleFavoriteBook, setDailyGoal, resetProgress, setReaderSettings, setReaderPosition, toggleBookmark, removeBookmark,
-    saveClip, addHighlight, updateHighlight, removeHighlight, logReading, setMinuteGoal, markReaderFinished, gradeReview, setNotInterested, setAppearance, recordBrain, addBrainTest, setBrainSound, markBrainHowTo, markBrainDaily, addOwnBook, removeOwnBook, markDownloaded,
+    saveClip, addHighlight, updateHighlight, removeHighlight, logReading, setMinuteGoal, markReaderFinished, gradeReview, setNotInterested, setAppearance, recordBrain, addBrainTest, setBrainSound, patchBrain, markBrainHowTo, markBrainDaily, addOwnBook, removeOwnBook, markDownloaded,
   ]);
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

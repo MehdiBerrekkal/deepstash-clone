@@ -74,7 +74,8 @@ export function makeMatrix(d: number, rng: Rng): Item {
   for (const rule of rules) applyRule(grid, rule, rng);
   const cells = grid.flat();
   const answer = cells[8];
-  const wrong = distractors(answer, rules, rng, 7);
+  // Fewer options at the easy end, where few attributes vary.
+  const wrong = distractors(answer, rules, rng, d <= 3 ? 5 : 7);
   const { options, answer: idx } = arrange(rng, answer, wrong);
   return {
     kind: 'matrix',

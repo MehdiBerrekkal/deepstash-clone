@@ -22,7 +22,7 @@ const SERIES: ((rng: Rng) => Series)[] = [
 ];
 
 export function makeSeries(d: number, rng: Rng): Item {
-  const pool = SERIES.map((f) => f(rng)).filter((s) => s.min <= d && s.min >= Math.max(1, d - 5));
+  const pool = SERIES.map((f) => f(rng)).filter((s) => s.min <= d && s.min >= Math.min(d, 9) - 2);
   const s = pick(rng, pool.length ? pool : [SERIES[0](rng)]);
   const shown = s.seq.length - 1;
   const answer = s.seq[shown];
@@ -31,7 +31,7 @@ export function makeSeries(d: number, rng: Rng): Item {
     kind: 'series',
     ask: 'Which number comes next?',
     prompt: s.seq.slice(0, shown),
-    ...numberOptions(rng, answer, 6, [1, -1, 2, -2, Math.round(gap / 2), -Math.round(gap / 2), gap, -gap, 10, -10]),
+    ...numberOptions(rng, answer, 6, [1, -1, 2, -2, Math.round(gap / 2), -Math.round(gap / 2), gap, 10, -10]),
     explain: s.why,
     difficulty: d,
   };
@@ -74,11 +74,14 @@ export function makeNumberMatrix(d: number, rng: Rng): Item {
     { f: (a, b) => (a + b) * 2, why: 'In each row: (first + second) × 2 = third.', min: 5 },
     { f: (a, b) => a * a + b, why: 'In each row: first² + second = third.', min: 8 },
     { f: (a, b) => Math.abs(a - b) * 3, why: 'In each row: the difference of the first two, × 3.', min: 7 },
+    { f: (a, b) => a * b + a + b, why: 'In each row: first × second + first + second = third.', min: 9 },
+    { f: (a, b) => a * a - b * b, why: 'In each row: first² − second² = third.', min: 10 },
   ];
-  const rule = pick(rng, rules.filter((r) => r.min <= d));
+  const rule = pick(rng, rules.filter((r) => r.min <= d && r.min >= Math.min(d, 9) - 3));
   const rows = [0, 1, 2].map(() => {
     const a = int(rng, 2, d < 5 ? 9 : 12);
-    const b = int(rng, 2, d < 5 ? 9 : 12);
+    // Keep results positive for the squares rule.
+    const b = rule.min === 10 ? int(rng, 1, a - 1 || 1) : int(rng, 2, d < 5 ? 9 : 12);
     return [a, b, rule.f(a, b)];
   });
   const answer = rows[2][2];
@@ -185,6 +188,19 @@ const ANALOGIES: [string, string, string, string, string[], number][] = [
   ['Verbose', 'Concise', 'Lethargic', 'Energetic', ['Sleepy', 'Lazy', 'Tired', 'Slow'], 7],
 ];
 
+/** The relation behind each analogy, keyed by its first word, so explanations teach something. */
+const RELATIONS: Record<string, string> = {
+  Pen: 'a tool and what it is used for', Hungry: 'a need and what satisfies it', Seed: 'an early stage and what it grows into',
+  Thermometer: 'an instrument and what it measures', Author: 'a maker and what they create', Drought: 'a shortage and what is missing',
+  Archipelago: 'a group and one of its members', Prologue: 'what opens a work and what closes it', Benevolent: 'opposites',
+  Ephemeral: 'opposites', Cartographer: 'a specialist and what they produce', Laconic: 'sparing with something (words / money)',
+  Pugnacious: 'a trait and the action it inclines to', Sycophant: 'a type of person and what they do', Myopia: 'an impairment and the faculty it affects',
+  Paucity: 'opposites (scarcity / abundance)', Obdurate: 'a trait and what it refuses to do', Fetter: 'opposite actions',
+  Insipid: 'lacking something (flavour / interest)', Quixotic: 'opposites', Calf: 'a young animal and the adult',
+  Ornithology: 'a field of study and its subject', Sculptor: 'a worker and their tool', Glacier: 'a landform and what it is made of',
+  Mitigate: 'opposite actions', Verbose: 'opposites',
+};
+
 export function makeVerbal(d: number, rng: Rng): Item {
   const pool = ANALOGIES.filter((a) => Math.abs(a[5] - d) <= 2);
   const [a, b, c, ans, wrong, level] = pick(rng, pool.length ? pool : ANALOGIES);
@@ -195,7 +211,7 @@ export function makeVerbal(d: number, rng: Rng): Item {
     prompt: `${a} is to ${b} as ${c} is to …`,
     options,
     answer,
-    explain: `${a} → ${b} is the same relation as ${c} → ${ans}.`,
+    explain: `The relation is ${RELATIONS[a] ?? 'the same in both pairs'}: ${a} → ${b}, so ${c} → ${ans}.`,
     difficulty: level,
   };
 }

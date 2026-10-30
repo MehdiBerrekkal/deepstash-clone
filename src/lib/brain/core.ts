@@ -75,12 +75,13 @@ export function numberOptions(rng: Rng, answer: number, n = 6, spread: number[] 
 // ---------- adaptive difficulty ----------
 
 /**
- * A staircase: two right in a row steps up, a wrong answer steps down, so each run settles where you get about
+ * A staircase: two right in a row steps up (one, while warming up), a wrong answer steps down, so each run settles where you get about
  * 70% right and keeps pushing as you improve.
  */
-export function stair(d: number, right: boolean, streak: number) {
+export function stair(d: number, right: boolean, streak: number, fast = false) {
   if (!right) return Math.max(1, d - 1);
-  return streak > 0 && streak % 2 === 0 ? Math.min(MAX_D, d + 1) : d;
+  // While warming up (the first few items of a run) every right answer steps up, so a run finds your level quickly.
+  return fast || (streak > 0 && streak % 2 === 0) ? Math.min(MAX_D, d + 1) : d;
 }
 
 // ---------- ranks and XP ----------

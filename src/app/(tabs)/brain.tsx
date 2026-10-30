@@ -5,16 +5,20 @@ import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } fr
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
 import { SkillRadar } from '@/components/brain/SkillRadar';
+import { GoalRing } from '@/components/GoalRing';
 import { displayFont } from '@/lib/bookType';
-import { GAMES, dailyGame } from '@/lib/brain/catalog';
+import { GAMES, dailyGame, gameById, sessionGames } from '@/lib/brain/catalog';
 import { DOMAINS, rankFor, type Skill } from '@/lib/brain/core';
 import { QUIZ, QUIZ_CATEGORIES } from '@/data/brain/quiz';
 import { localDate, useStore } from '@/lib/store';
 import { colors } from '@/lib/theme';
 
+/** Unfinished runs can be resumed for a day. */
+const isRecent = (t: number) => Date.now() - t < 24 * 3600e3;
+
 /** The training hub: rank and cognitive profile, tests, the daily challenge, a weekly plan, games by domain, quizzes. */
 export default function BrainScreen() {
-  const { brain } = useStore();
+  const { brain, streak, patchBrain, setBrainSound } = useStore();
   const [mode, setMode] = useState<'training' | 'quizzes'>('training');
   const [quizMode, setQuizMode] = useState<'standard' | 'timed' | 'hard'>('standard');
   const { width } = useWindowDimensions();
@@ -29,15 +33,77 @@ export default function BrainScreen() {
   const weakest = [...DOMAINS].sort((a, b) => (brain.skills[a.id] ?? -1) - (brain.skills[b.id] ?? -1)).slice(0, 2);
   const plan = weakest.flatMap((d) => GAMES.filter((g) => g.skill === d.id).sort((a, b) => (brain.played[a.id] ?? 0) - (brain.played[b.id] ?? 0)).slice(0, 2));
   const open = (id: string, params: Record<string, string> = {}) => router.push({ pathname: '/brain/[game]', params: { game: id, ...params } });
+  // Today's session: three games aimed at your weaker areas, the same all day.
+  const session = brain.session?.date === today ? brain.session : null;
+  const sessionList = session?.games ?? sessionGames(brain.skills, brain.played, today);
+  const sessionDone = session ? sessionList.filter((g) => session.done[g]).length : 0;
+  const nextGame = sessionList.find((g) => !session?.done[g]);
+  const startSession = () => {
+    if (!session) patchBrain({ session: { date: today, games: sessionList, done: {} } });
+    if (nextGame) open(nextGame, { session: '1' });
+  };
+  const run = brain.run && isRecent(brain.run.saved) && gameById[brain.run.id] ? brain.run : null;
+  const sound = brain.sound !== false;
+  const volume = brain.volume ?? 0.7;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Animated.View entering={FadeInDown.duration(400)}>
+        <LinearGradient colors={['#2A2160', '#141A3A', '#0B0E1C']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.session}>
+          <View style={styles.rowBetween}>
+            <Text style={styles.heroKicker}>TODAY’S SESSION</Text>
+            <Text style={styles.sessionMeta}>{streak.count > 0 ? `🔥 ${streak.count}-day streak` : 'about 6 min'}</Text>
+          </View>
+          <Text style={styles.sessionTitle}>{sessionDone >= 3 ? 'Session complete' : sessionDone ? `${sessionDone} of 3 done` : 'Three games, picked for you'}</Text>
+          <View style={styles.sessionGames}>
+            {sessionList.map((g, i) => {
+              const gd = gameById[g];
+              const dm = DOMAINS.find((d) => d.id === gd.skill)!;
+              const r = session?.done[g];
+              return (
+                <View key={g} style={[styles.sessionGame, { borderColor: r ? '#3DDC97' : `${dm.color}66` }, g === nextGame && { borderColor: dm.color, backgroundColor: `${dm.color}1A` }]}>
+                  <Text style={[styles.sessionGlyph, { color: r ? '#3DDC97' : dm.color }]}>{r ? '✓' : `${i + 1}`}</Text>
+                  <Text style={styles.sessionName} numberOfLines={2}>
+                    {gd.name}
+                  </Text>
+                  <Text style={[styles.sessionArea, { color: dm.color }]}>{r ? `${r.points} pts` : dm.name}</Text>
+                </View>
+              );
+            })}
+          </View>
+          {nextGame ? (
+            <Pressable accessibilityLabel="Start today's session" onPress={startSession} style={styles.sessionBtn}>
+              <Text style={styles.sessionBtnText}>{sessionDone ? `Continue · ${gameById[nextGame].name}` : 'Start session'}</Text>
+            </Pressable>
+          ) : (
+            <Text style={styles.heroSmall}>
+              +{Object.values(session?.done ?? {}).reduce((a, r) => a + r.xp, 0)} XP today. A new mix tomorrow, or keep training below.
+            </Text>
+          )}
+        </LinearGradient>
+      </Animated.View>
+
+      {run && (
+        <Animated.View entering={FadeInDown.delay(30).duration(400)}>
+          <Pressable accessibilityLabel="Continue unfinished game" onPress={() => open(run.id)} style={styles.continueCard}>
+            <View style={styles.flex}>
+              <Text style={styles.testKicker}>CONTINUE</Text>
+              <Text style={styles.cardTitle}>{gameById[run.id].name}</Text>
+              <Text style={styles.muted}>
+                Question {run.n + 1} of {gameById[run.id].items} · Level {run.d} · {run.points} pts
+              </Text>
+            </View>
+            <Text style={styles.chev}>›</Text>
+          </Pressable>
+        </Animated.View>
+      )}
+
+      <Animated.View entering={FadeInDown.delay(60).duration(400)}>
         <LinearGradient colors={['#1B2140', '#11152A', '#0B0E1C']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
           <View style={styles.heroTop}>
             <View>
               <Text style={styles.heroKicker}>COGNITIVE PROFILE</Text>
-              <Text style={styles.heroScore}>{profile ?? '—'}</Text>
+              {profile !== null ? <Text style={styles.heroScore}>{profile}</Text> : <Text style={styles.heroEmpty}>Play a few games to build it</Text>}
             </View>
             <View style={[styles.rankBadge, { borderColor: rank.color }]}>
               <Text style={[styles.rankText, { color: rank.color }]}>◆ {rank.name}</Text>
@@ -50,6 +116,14 @@ export default function BrainScreen() {
           <Text style={styles.heroSmall}>{rank.next ? `${rank.next.xp - (brain.xp ?? 0)} XP to ${rank.next.name}` : 'Top rank'}</Text>
           <View style={styles.radar}>
             <SkillRadar skills={brain.skills} size={Math.min(width - 72, 320)} />
+          </View>
+          <View style={styles.rings}>
+            {DOMAINS.map((d) => (
+              <View key={d.id} style={styles.ringItem}>
+                <GoalRing progress={(brain.skills[d.id] ?? 0) / 100} size={44} stroke={4} color={d.color} track="rgba(255,255,255,0.1)" label={brain.skills[d.id] !== undefined ? String(brain.skills[d.id]) : '–'} />
+                <Text style={[styles.ringLabel, { color: d.color }]}>{d.short}</Text>
+              </View>
+            ))}
           </View>
         </LinearGradient>
       </Animated.View>
@@ -137,7 +211,7 @@ export default function BrainScreen() {
                             <View style={[styles.levelFill, { width: `${lv * 10}%`, backgroundColor: d.color }]} />
                           </View>
                           <View style={styles.rowBetween}>
-                            <Text style={styles.tileMeta}>D{lv}</Text>
+                            <Text style={styles.tileMeta}>Level {lv}</Text>
                             <Text style={styles.tileMeta}>{brain.best[g.id] ? `Best ${brain.best[g.id]}` : 'New'}</Text>
                           </View>
                         </LinearGradient>
@@ -171,6 +245,22 @@ export default function BrainScreen() {
           ))}
         </Animated.View>
       )}
+      <View style={styles.card}>
+        <View style={styles.rowBetween}>
+          <Text style={styles.cardTitle}>Sound</Text>
+          <Pressable accessibilityLabel={sound ? 'Mute brain sounds' : 'Turn brain sounds on'} onPress={() => setBrainSound(!sound)} style={[styles.toggle, sound && styles.toggleOn]}>
+            <Text style={[styles.modeText, sound && styles.modeTextOn]}>{sound ? 'On' : 'Off'}</Text>
+          </Pressable>
+        </View>
+        <View style={[styles.row, !sound && { opacity: 0.4 }]}>
+          {[0.25, 0.5, 0.75, 1].map((v) => (
+            <Pressable key={v} accessibilityLabel={`Volume ${v * 100}%`} disabled={!sound} onPress={() => patchBrain({ volume: v })} style={[styles.modeChip, Math.abs(volume - v) < 0.13 && styles.volOn]}>
+              <Text style={[styles.modeText, Math.abs(volume - v) < 0.13 && styles.modeTextOn]}>{v === 0.25 ? 'Soft' : v === 1 ? 'Loud' : `${v * 100}%`}</Text>
+            </Pressable>
+          ))}
+        </View>
+        <Text style={styles.muted}>Sounds play in the web app; the phone app adds haptics. Animations follow your device’s reduce-motion setting.</Text>
+      </View>
       <Text style={styles.disclaimer}>Scores here are estimates for practice and fun. They are not a clinically validated IQ test.</Text>
     </ScrollView>
   );
@@ -184,6 +274,7 @@ const styles = StyleSheet.create({
   heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   heroKicker: { color: '#8E97C8', fontSize: 11, fontWeight: '900', letterSpacing: 2 },
   heroScore: { color: '#F2F4FF', fontFamily: displayFont, fontSize: 56, lineHeight: 60, fontVariant: ['lining-nums'] },
+  heroEmpty: { color: '#AEB5DA', fontSize: 15, marginTop: 8, maxWidth: 190 },
   rankBadge: { borderWidth: 1, borderRadius: 14, paddingHorizontal: 12, paddingVertical: 8, alignItems: 'flex-end', backgroundColor: 'rgba(255,255,255,0.04)' },
   rankText: { fontWeight: '900', fontSize: 16 },
   rankXp: { color: '#8E97C8', fontSize: 12, fontWeight: '700' },
@@ -235,5 +326,23 @@ const styles = StyleSheet.create({
   modeText: { color: colors.text, fontWeight: '800', fontSize: 12 },
   modeTextOn: { color: '#0B0D14' },
   quizRow: { flexDirection: 'row', alignItems: 'center', gap: 14, padding: 16, borderRadius: 18, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
+  session: { borderRadius: 26, padding: 20, gap: 12, borderWidth: 1, borderColor: 'rgba(183,140,255,0.35)' },
+  sessionMeta: { color: '#FFB547', fontSize: 12, fontWeight: '800' },
+  sessionTitle: { color: '#F2F4FF', fontFamily: displayFont, fontSize: 28, lineHeight: 32 },
+  sessionGames: { flexDirection: 'row', gap: 8 },
+  sessionGame: { flex: 1, minHeight: 96, borderRadius: 16, borderWidth: 1, padding: 10, gap: 4, backgroundColor: 'rgba(255,255,255,0.03)' },
+  sessionGlyph: { fontWeight: '900', fontSize: 16 },
+  sessionName: { color: '#F2F4FF', fontWeight: '800', fontSize: 13, lineHeight: 17 },
+  sessionArea: { fontSize: 11, fontWeight: '800', marginTop: 'auto' },
+  sessionBtn: { alignItems: 'center', paddingVertical: 15, borderRadius: 16, backgroundColor: '#B78CFF', minHeight: 50 },
+  sessionBtnText: { color: '#0B0D14', fontWeight: '900', fontSize: 16 },
+  continueCard: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, borderRadius: 20, backgroundColor: colors.surface, borderWidth: 1.5, borderColor: '#7C8CFF' },
+  chev: { color: '#7C8CFF', fontSize: 32, fontWeight: '300' },
+  rings: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
+  ringItem: { alignItems: 'center', gap: 4 },
+  ringLabel: { fontSize: 10, fontWeight: '900', letterSpacing: 1 },
+  toggle: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999, backgroundColor: colors.surfaceRaised, minWidth: 60, alignItems: 'center' },
+  toggleOn: { backgroundColor: '#3DDC97' },
+  volOn: { backgroundColor: '#7C8CFF' },
   disclaimer: { color: colors.muted, fontSize: 11, textAlign: 'center', lineHeight: 16, marginTop: 6 },
 });
