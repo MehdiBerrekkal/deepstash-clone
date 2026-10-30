@@ -573,6 +573,7 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
           book={book}
           readerId={readerId}
           topicId={kind === 'own' ? '' : classicById[id]?.topicId ?? ''}
+          language={language}
           onClose={() => setMarking(null)}
         />
       )}
