@@ -84,11 +84,17 @@ function walk(dir) {
     '<meta name="apple-mobile-web-app-status-bar-style" content="default">',
     `<meta name="apple-mobile-web-app-title" content="${NAME}">`,
     `<meta name="theme-color" content="${BACKGROUND}">`,
-    `<style>html,body{background:${BACKGROUND};overscroll-behavior:none}</style>`,
+    `<style>html,body{background:${BACKGROUND};overscroll-behavior:none}@supports (height:100dvh){html,body,#root{height:100dvh}}</style>`,
     `<script>if('serviceWorker' in navigator){addEventListener('load',function(){navigator.serviceWorker.register('${base}sw.js',{scope:'${base}'})})}</script>`,
   ].join('');
   let html = fs.readFileSync(path.join(dist, 'index.html'), 'utf8');
   html = html.replace(/<meta name="viewport"[^>]*>/, '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, shrink-to-fit=no">');
+  // In a Safari tab (not the home-screen app), let Safari keep the page out of the status bar, notch and toolbars
+  // itself: "cover" would draw the page underneath them. The home-screen app keeps "cover" and its own insets.
+  const browserViewport =
+    "<script>(function(){var n=navigator,s=n.standalone===true||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches);" +
+    "if(!s){var m=document.querySelector('meta[name=viewport]');if(m)m.setAttribute('content','width=device-width, initial-scale=1, viewport-fit=auto, shrink-to-fit=no')}})()</script>";
+  html = html.replace(/(<meta name="viewport"[^>]*>)/, `$1${browserViewport}`);
   html = html.replace(/<title>[^<]*<\/title>/, `<title>${NAME}</title>`);
   html = html.replace('</head>', `${head}</head>`);
   fs.writeFileSync(path.join(dist, 'index.html'), html);
