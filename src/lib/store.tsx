@@ -8,7 +8,7 @@ import type { OwnBook } from '@/lib/ownbooks';
 import { NEW_PER_DAY, schedule, type Grade, type ReviewState } from '@/lib/review';
 import { supabase } from '@/lib/supabase';
 import type { Appearance } from '@/lib/theme';
-import type { Level, Skill } from '@/lib/brain/games';
+import type { Skill } from '@/lib/brain/core';
 import type {
   Bookmark, BookProgress, CardKind, DayLog, Highlight, Idea, ReaderPosition, ReaderProgress, ReaderSettings, Source, Stash, Streak, Topic,
 } from '@/lib/types';
@@ -93,7 +93,9 @@ type Store = Content &
     setNotInterested: (ideaId: string, hide: boolean) => void;
     setAppearance: (appearance: Appearance) => void;
     /** Records a finished game or quiz; returns whether it was a personal best and the new level. */
-    recordBrain: (r: BrainResult) => { best: boolean; level: Level };
+    recordBrain: (r: BrainResult) => void;
+    addBrainTest: (t: BrainTest) => void;
+    setBrainSound: (on: boolean) => void;
     markBrainHowTo: (id: string) => void;
     markBrainDaily: (part: 'game' | 'quiz') => void;
     addOwnBook: (book: OwnBook) => void;
@@ -106,14 +108,21 @@ export type BrainState = {
   skills: Partial<Record<Skill, number>>;
   /** Best points per game or quiz set. */
   best: Record<string, number>;
-  /** Current difficulty per game. */
-  levels: Record<string, Level>;
+  /** Current difficulty per game, 1-10 (adapted as you play). */
+  levels: Record<string, number>;
   played: Record<string, number>;
   /** Games whose how-to has been shown. */
   seen: string[];
   daily: { date: string; game: boolean; quiz: boolean };
+  /** Experience points from all training, for ranks. */
+  xp?: number;
+  /** Sound effects on (web). */
+  sound?: boolean;
+  /** IQ-style test results, newest first. */
+  tests?: BrainTest[];
 };
-export type BrainResult = { id: string; skill: Skill; points: number; accuracy: number; perf: number; adapt?: boolean; seconds?: number };
+export type BrainTest = { date: string; mode: 'full' | 'quick'; iq: number; correct: number; total: number; seconds: number; domains: Partial<Record<Skill, { right: number; total: number }>> };
+export type BrainResult = { id: string; skill: Skill; points: number; perf: number; xp: number; rating?: number; seconds?: number };
 
 const EMPTY_DAY: DayLog = { seconds: 0, pages: 0, words: 0, cards: 0 };
 const CARD_SECONDS = 30;
@@ -392,33 +401,33 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const recordBrain = useCallback((r: BrainResult) => {
-    let out = { best: false, level: 1 as Level };
     setUser((u) => {
       const b = u.brain ?? initialUserState.brain;
       const old = b.skills[r.skill];
-      const best = r.points > (b.best[r.id] ?? 0);
-      // Difficulty follows how you do: up after a strong session, down after a weak one.
-      const level = (b.levels[r.id] ?? 1) as Level;
-      const next = (r.adapt === false ? level : r.accuracy >= 0.8 ? Math.min(3, level + 1) : r.accuracy <= 0.4 ? Math.max(1, level - 1) : level) as Level;
-      out = { best, level: next };
       const date = localDate();
       const day = u.readingLog[date] ?? EMPTY_DAY;
       return {
         ...u,
         streak: bumpStreak(u.streak),
         // Brain practice counts toward the day's minutes too.
-        readingLog: { ...u.readingLog, [date]: { ...day, seconds: day.seconds + Math.min(r.seconds ?? 60, 600) } },
+        readingLog: { ...u.readingLog, [date]: { ...day, seconds: day.seconds + Math.min(r.seconds ?? 60, 900) } },
         brain: {
           ...b,
           skills: { ...b.skills, [r.skill]: Math.round(old === undefined ? r.perf : old * 0.65 + r.perf * 0.35) },
-          best: best ? { ...b.best, [r.id]: r.points } : b.best,
-          levels: { ...b.levels, [r.id]: next },
+          best: r.points > (b.best[r.id] ?? 0) ? { ...b.best, [r.id]: r.points } : b.best,
+          levels: r.rating ? { ...b.levels, [r.id]: r.rating } : b.levels,
           played: { ...b.played, [r.id]: (b.played[r.id] ?? 0) + 1 },
+          xp: (b.xp ?? 0) + r.xp,
         },
       };
     });
-    return out;
   }, []);
+
+  const addBrainTest = useCallback((t: BrainTest) => {
+    setUser((u) => ({ ...u, brain: { ...u.brain, tests: [t, ...(u.brain.tests ?? [])].slice(0, 30), xp: (u.brain.xp ?? 0) + t.correct * 25 } }));
+  }, []);
+
+  const setBrainSound = useCallback((on: boolean) => setUser((u) => ({ ...u, brain: { ...u.brain, sound: on } })), []);
 
   const markBrainHowTo = useCallback((id: string) => {
     setUser((u) => ({ ...u, brain: { ...u.brain, seen: [...new Set([...(u.brain?.seen ?? []), id])] } }));
@@ -512,6 +521,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setNotInterested,
       setAppearance,
       recordBrain,
+      addBrainTest,
+      setBrainSound,
       markBrainHowTo,
       markBrainDaily,
       addOwnBook,
@@ -521,7 +532,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [
     content, user, ready, indexes, setFollowedTopics, createStash, deleteStash, toggleInStash, toggleLike, markRead, setBookPosition,
     finishBook, toggleFavoriteBook, setDailyGoal, resetProgress, setReaderSettings, setReaderPosition, toggleBookmark, removeBookmark,
-    saveClip, addHighlight, updateHighlight, removeHighlight, logReading, setMinuteGoal, markReaderFinished, gradeReview, setNotInterested, setAppearance, recordBrain, markBrainHowTo, markBrainDaily, addOwnBook, removeOwnBook, markDownloaded,
+    saveClip, addHighlight, updateHighlight, removeHighlight, logReading, setMinuteGoal, markReaderFinished, gradeReview, setNotInterested, setAppearance, recordBrain, addBrainTest, setBrainSound, markBrainHowTo, markBrainDaily, addOwnBook, removeOwnBook, markDownloaded,
   ]);
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

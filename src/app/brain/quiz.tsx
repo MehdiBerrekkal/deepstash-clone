@@ -1,10 +1,11 @@
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, ZoomIn } from 'react-native-reanimated';
 
 import { displayFont } from '@/lib/bookType';
-import { seeded, type Rng } from '@/lib/brain/games';
+import { seeded, type Rng } from '@/lib/brain/core';
+import { sfx } from '@/lib/brain/sfx';
 import { celebrate } from '@/lib/celebrate';
 import { QUIZ, QUIZ_CATEGORIES, type QuizCategory, type QuizQuestion } from '@/data/brain/quiz';
 import { haptic } from '@/lib/haptics';
@@ -12,6 +13,7 @@ import { localDate, useStore } from '@/lib/store';
 import { colors } from '@/lib/theme';
 
 const SET_SIZE = 10;
+const QUESTION_SECONDS = 20;
 
 function shuffle<T>(rng: Rng, xs: T[]): T[] {
   const a = [...xs];
@@ -23,12 +25,12 @@ function shuffle<T>(rng: Rng, xs: T[]): T[] {
 }
 
 /** A set of questions: easy first, harder later. The daily set is three questions everyone gets that day. */
-function buildSet(category: QuizCategory | 'daily', seed: string): QuizQuestion[] {
+function buildSet(category: QuizCategory | 'daily', seed: string, hard: boolean): QuizQuestion[] {
   const rng = seeded(seed);
-  if (category === 'daily') return shuffle(rng, QUIZ.filter((q) => q.category !== 'culture')).slice(0, 3);
+  if (category === 'daily') return shuffle(rng, QUIZ.filter((q) => q.category !== 'culture' && q.level === 3)).slice(0, 3);
   const pool = QUIZ.filter((q) => q.category === category);
   const by = (l: number, n: number) => shuffle(rng, pool.filter((q) => q.level === l)).slice(0, n);
-  const set = [...by(1, 3), ...by(2, 4), ...by(3, 3)];
+  const set = hard ? [...by(2, 4), ...by(3, 6)] : [...by(1, 2), ...by(2, 4), ...by(3, 4)];
   // Top up from any level if a category is short of one level.
   const rest = shuffle(rng, pool.filter((q) => !set.includes(q)));
   return [...set, ...rest].slice(0, SET_SIZE);
@@ -42,13 +44,15 @@ function shuffled(q: QuizQuestion, rng: Rng) {
 
 /** A quiz: one question at a time, feedback and the reason right after each answer, a score at the end. */
 export default function QuizScreen() {
-  const { category } = useLocalSearchParams<{ category: QuizCategory | 'daily' }>();
+  const { category, mode } = useLocalSearchParams<{ category: QuizCategory | 'daily'; mode?: 'standard' | 'timed' | 'hard' }>();
+  const timed = mode === 'timed';
   const { recordBrain, markBrainDaily, brain } = useStore();
   const daily = category === 'daily';
   const meta = QUIZ_CATEGORIES.find((c) => c.id === category);
   const french = meta?.lang === 'fr';
   const [seed] = useState(() => (daily ? `quiz-${localDate()}` : `${category}-${Math.random()}`));
-  const [questions] = useState(() => buildSet(category, seed));
+  const [questions] = useState(() => buildSet(category, seed, mode === 'hard'));
+  const [left, setLeft] = useState(QUESTION_SECONDS);
   const [rng] = useState(() => seeded(`${seed}-options`));
   const [order] = useState(() => questions.map((q) => shuffled(q, rng)));
   const [i, setI] = useState(0);
@@ -69,25 +73,46 @@ export default function QuizScreen() {
     setPicked(k);
     if (k === o.answer) {
       haptic.tap();
+      sfx.right();
       setScore((s) => s + 1);
-    } else haptic.tick();
+    } else {
+      haptic.tick();
+      sfx.wrong();
+    }
   };
+
+  // Timed mode: 20 seconds per question; running out counts as wrong.
+  useEffect(() => {
+    if (!timed || picked !== null || done) return;
+    const t = setInterval(() => setLeft((s) => s - 1), 1000);
+    return () => clearInterval(t);
+  }, [timed, picked, done, i]);
+  const expired = timed && left <= 0 && picked === null;
+  useEffect(() => {
+    if (!expired) return;
+    const t = setTimeout(() => choose(-1), 0);
+    return () => clearTimeout(t);
+    // Only reacting to the clock running out.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expired]);
 
   const next = () => {
     if (i + 1 < questions.length) {
       setI(i + 1);
       setPicked(null);
+      setLeft(QUESTION_SECONDS);
       return;
     }
     const accuracy = score / questions.length;
     const skill = daily ? 'logic' : meta!.skill;
-    const r = recordBrain({ id, skill, points: score * 10, accuracy, perf: Math.round(accuracy * 100), adapt: false, seconds: questions.length * 20 });
+    const isBest = score * 10 > (brain.best[id] ?? 0);
+    recordBrain({ id, skill, points: score * 10, perf: Math.round(accuracy * 100), xp: score * 8 + (timed ? 20 : 0) + (mode === 'hard' ? 20 : 0), seconds: questions.length * 20 });
     if (daily) {
       markBrainDaily('quiz');
       if (brain.daily.date === localDate() && brain.daily.game) celebrate({ emoji: '⚡', title: 'Daily challenge done!', subtitle: 'See you tomorrow for a new one.' });
     }
-    if (r.best && score > 0 && !daily) celebrate({ emoji: '🏆', title: 'Personal best!', subtitle: `${score} / ${questions.length} in ${meta?.name}.` });
-    setBest(r.best && !daily);
+    if (isBest && score > 0 && !daily) celebrate({ emoji: '🏆', title: 'Personal best!', subtitle: `${score} / ${questions.length} in ${meta?.name}.` });
+    setBest(isBest && !daily);
     setDone(true);
   };
 
@@ -136,6 +161,11 @@ export default function QuizScreen() {
           <View style={styles.track}>
             <View style={[styles.fill, { width: `${(i / questions.length) * 100}%` }]} />
           </View>
+          {timed && (
+            <View style={styles.track}>
+              <View style={[styles.fill, styles.timer, { width: `${(Math.max(0, left) / QUESTION_SECONDS) * 100}%` }]} />
+            </View>
+          )}
           <Animated.Text key={i} entering={FadeIn.duration(200)} style={styles.question}>
             {q.question}
           </Animated.Text>
@@ -157,7 +187,7 @@ export default function QuizScreen() {
           {picked !== null && (
             <Animated.View entering={ZoomIn.duration(200)} style={styles.feedback}>
               <Text style={[styles.feedbackTitle, { color: picked === o.answer ? '#4FA45F' : colors.danger }]}>
-                {picked === o.answer ? t.right : t.wrong}
+                {picked === o.answer ? t.right : picked === -1 ? (french ? 'Temps écoulé.' : 'Time’s up.') : t.wrong}
               </Text>
               <Text style={styles.feedbackText}>{q.why}</Text>
               <Pressable accessibilityLabel="Next question" onPress={next} style={styles.primary}>
@@ -178,6 +208,7 @@ const styles = StyleSheet.create({
   progressRow: { flexDirection: 'row', justifyContent: 'space-between' },
   track: { height: 6, borderRadius: 3, backgroundColor: colors.surfaceRaised, overflow: 'hidden' },
   fill: { height: 6, backgroundColor: colors.accent },
+  timer: { backgroundColor: '#FF6FB5' },
   question: { color: colors.text, fontFamily: displayFont, fontSize: 26, lineHeight: 32, marginVertical: 8 },
   options: { gap: 10 },
   option: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 16, backgroundColor: colors.surface, borderWidth: 2, borderColor: 'transparent' },
