@@ -2,6 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import { bundledContent, type Content } from '@/data/content';
+import { rankFeed, type FeedItem } from '@/lib/feed';
+import { classicById } from '@/lib/fullbook';
 import type { OwnBook } from '@/lib/ownbooks';
 import { NEW_PER_DAY, schedule, type Grade, type ReviewState } from '@/lib/review';
 import { supabase } from '@/lib/supabase';
@@ -42,6 +44,8 @@ type UserState = {
   reviews: Record<string, ReviewState>;
   /** New items started per day, to cap how many arrive at once. */
   reviewNew: { date: string; count: number };
+  /** Cards you marked "Not interested": hidden, and their topics ranked lower. */
+  notInterested: string[];
   ownBooks: OwnBook[];
   /** Catalog books downloaded to this device, newest first. */
   downloadedBooks: string[];
@@ -81,6 +85,7 @@ type Store = Content &
     /** Today's review queue: items due, then a few new ones. */
     reviewQueue: string[];
     gradeReview: (key: string, grade: Grade) => void;
+    setNotInterested: (ideaId: string, hide: boolean) => void;
     addOwnBook: (book: OwnBook) => void;
     removeOwnBook: (id: string) => void;
     markDownloaded: (id: string) => void;
@@ -111,6 +116,7 @@ const initialUserState: UserState = {
   finishedReaders: {},
   reviews: {},
   reviewNew: { date: '', count: 0 },
+  notInterested: [],
   ownBooks: [],
   downloadedBooks: [],
 };
@@ -347,6 +353,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const setNotInterested = useCallback((ideaId: string, hide: boolean) => {
+    setUser((u) => ({
+      ...u,
+      notInterested: hide ? [ideaId, ...u.notInterested.filter((id) => id !== ideaId)] : u.notInterested.filter((id) => id !== ideaId),
+    }));
+  }, []);
+
   const addOwnBook = useCallback((book: OwnBook) => setUser((u) => ({ ...u, ownBooks: [book, ...u.ownBooks] })), []);
 
   const removeOwnBook = useCallback((id: string) => {
@@ -424,6 +437,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       markReaderFinished,
       reviewQueue,
       gradeReview,
+      setNotInterested,
       addOwnBook,
       removeOwnBook,
       markDownloaded,
@@ -431,7 +445,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [
     content, user, ready, indexes, setFollowedTopics, createStash, deleteStash, toggleInStash, toggleLike, markRead, setBookPosition,
     finishBook, toggleFavoriteBook, setDailyGoal, resetProgress, setReaderSettings, setReaderPosition, toggleBookmark, removeBookmark,
-    saveClip, addHighlight, updateHighlight, removeHighlight, logReading, setMinuteGoal, markReaderFinished, gradeReview, addOwnBook, removeOwnBook, markDownloaded,
+    saveClip, addHighlight, updateHighlight, removeHighlight, logReading, setMinuteGoal, markReaderFinished, gradeReview, setNotInterested, addOwnBook, removeOwnBook, markDownloaded,
   ]);
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
@@ -454,42 +468,32 @@ function seededRandom(seed: string) {
   };
 }
 
-function shuffle<T>(items: T[], random: () => number): T[] {
-  const out = [...items];
-  for (let i = out.length - 1; i > 0; i--) {
-    const j = Math.floor(random() * (i + 1));
-    [out[i], out[j]] = [out[j], out[i]];
-  }
-  return out;
-}
-
 /**
- * Cards from followed topics first, interleaved by topic so the feed doesn't clump,
- * shuffled daily, with cards you've already read pushed to the end.
+ * The For you feed, ranked from your likes, stashes, highlights, favourite books and reading (see feed.ts).
+ * The ranking is worked out once per day and filter, so liking a card doesn't reshuffle the feed under you;
+ * "Not interested" removes a card straight away.
  */
-export function useFeed(kind: CardKind | null): Idea[] {
-  const { ideas, followedTopicIds, readIdeaIds } = useStore();
+export function useFeed(kind: CardKind | null): FeedItem[] {
+  const store = useStore();
   const day = localDate();
-  // Only reorder when the day or filter changes, not every time a card is marked read.
-  const [readSnapshot] = useState(() => new Set(readIdeaIds));
+  // A snapshot of your signals when the feed opens.
+  const [signals] = useState(() => ({
+    likedIdeaIds: store.likedIdeaIds,
+    stashedIdeaIds: store.stashes.flatMap((st) => st.ideaIds),
+    readIdeaIds: store.readIdeaIds,
+    bookTopicIds: [
+      ...store.favoriteBooks.map((k) => (k.startsWith('book:') ? store.sourceById[k.slice(5)]?.topicId : k.startsWith('classic:') ? classicById[k.slice(8)]?.topicId : undefined)),
+      ...store.highlights.map((h) => (h.readerId.startsWith('classic:') ? classicById[h.readerId.slice(8)]?.topicId : undefined)),
+    ].filter((t): t is string => !!t),
+    notInterested: store.notInterested,
+  }));
+  const { ideas, followedTopicIds, ideaById, sourceById, topicById, notInterested } = store;
+  const ranked = useMemo(
+    () => rankFeed({ ...signals, ideas, kind, followedTopicIds, ideaById, sourceById, topicById, random: seededRandom(`${day}:${kind ?? 'all'}`) }),
+    [signals, ideas, kind, followedTopicIds, ideaById, sourceById, topicById, day],
+  );
   return useMemo(() => {
-    const random = seededRandom(`${day}:${kind ?? 'all'}`);
-    const followed = new Set(followedTopicIds);
-    const byTopic = new Map<string, Idea[]>();
-    for (const idea of ideas) {
-      if (kind && idea.kind !== kind) continue;
-      const list = byTopic.get(idea.topicId) ?? [];
-      list.push(idea);
-      byTopic.set(idea.topicId, list);
-    }
-    const interleave = (topicIds: string[]) => {
-      const queues = shuffle(topicIds, random).map((id) => shuffle(byTopic.get(id) ?? [], random));
-      const out: Idea[] = [];
-      while (queues.some((q) => q.length)) for (const q of queues) if (q.length) out.push(q.shift()!);
-      return out;
-    };
-    const topicIds = [...byTopic.keys()];
-    const ordered = [...interleave(topicIds.filter((id) => followed.has(id))), ...interleave(topicIds.filter((id) => !followed.has(id)))];
-    return [...ordered.filter((i) => !readSnapshot.has(i.id)), ...ordered.filter((i) => readSnapshot.has(i.id))];
-  }, [ideas, followedTopicIds, kind, day, readSnapshot]);
+    const hidden = new Set(notInterested);
+    return ranked.filter((f) => !hidden.has(f.idea.id));
+  }, [ranked, notInterested]);
 }

@@ -17,6 +17,10 @@ type Props = {
   hideSource?: boolean;
   /** Let a long body scroll inside the card. Only safe where pages swipe sideways, not in the vertical feed. */
   scrollable?: boolean;
+  /** Why the feed picked this card, e.g. "Because you liked Atomic Habits". */
+  reason?: string;
+  /** Shows a "Not interested" button. */
+  onNotInterested?: () => void;
 };
 
 /** Room in a card taken by everything except the body: padding, header, title, source and buttons. */
@@ -30,7 +34,7 @@ export function shareText(idea: Idea, sourceTitle?: string, sourceAuthor?: strin
   return `${idea.title}\n\n${idea.body}${sourceTitle ? `\n\n— ${sourceTitle}, ${sourceAuthor}` : ''}`;
 }
 
-export function IdeaCard({ idea, height, counter, hideSource = false, scrollable = false }: Props) {
+export function IdeaCard({ idea, height, counter, hideSource = false, scrollable = false, reason, onNotInterested }: Props) {
   const { topicById, sourceById, isSaved, likedIdeaIds, toggleLike } = useStore();
   const topic = topicById[idea.topicId];
   const source = idea.sourceId ? sourceById[idea.sourceId] : undefined;
@@ -41,7 +45,7 @@ export function IdeaCard({ idea, height, counter, hideSource = false, scrollable
   const { width } = useWindowDimensions();
   // In the feed, long cards show what fits and link to the full text; nothing is silently cut off.
   const showSource = !!source && !hideSource;
-  const bodyLines = Math.max(4, Math.floor((height - CARD_CHROME - (showSource ? SOURCE_BLOCK : 0)) / BODY_LINE));
+  const bodyLines = Math.max(4, Math.floor((height - CARD_CHROME - (reason ? 18 : 0) - (showSource ? SOURCE_BLOCK : 0)) / BODY_LINE));
   const charsPerLine = Math.max(20, Math.floor((Math.min(width, 700) - 112) / 7.1));
   const cut = !scrollable && (idea.kind === 'idea' || idea.kind === 'fact') && idea.body.length / charsPerLine > bodyLines;
 
@@ -60,8 +64,20 @@ export function IdeaCard({ idea, height, counter, hideSource = false, scrollable
     <View style={[styles.page, { height }]}>
       <View style={[styles.card, { backgroundColor: topic?.color ?? colors.surface }]}>
         <View style={styles.header}>
-          <Text style={styles.topic}>{topic ? `${topic.emoji}  ${topic.name}` : ''}</Text>
+          <View style={styles.headerText}>
+            <Text style={styles.topic}>{topic ? `${topic.emoji}  ${topic.name}` : ''}</Text>
+            {!!reason && (
+              <Text style={styles.reason} numberOfLines={1}>
+                ✦ {reason}
+              </Text>
+            )}
+          </View>
           <Text style={styles.counter}>{counter ?? cardKindById[idea.kind].label}</Text>
+          {onNotInterested && (
+            <Pressable accessibilityRole="button" accessibilityLabel="Not interested" onPress={onNotInterested} hitSlop={10} style={styles.hide}>
+              <Text style={styles.hideText}>✕</Text>
+            </Pressable>
+          )}
         </View>
 
         {scrollable ? (
@@ -124,7 +140,11 @@ export function IdeaCard({ idea, height, counter, hideSource = false, scrollable
 const styles = StyleSheet.create({
   page: { paddingHorizontal: 16, paddingVertical: 12 },
   card: { flex: 1, borderRadius: 28, padding: 24, justifyContent: 'space-between', gap: 16, overflow: 'hidden' },
-  header: { flexDirection: 'row', justifyContent: 'space-between' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 },
+  headerText: { flex: 1, gap: 3 },
+  reason: { color: colors.text, fontSize: 12, fontWeight: '600', opacity: 0.75 },
+  hide: { marginTop: -2, width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.2)' },
+  hideText: { color: colors.text, fontSize: 11, fontWeight: '800', opacity: 0.8 },
   topic: { color: colors.text, fontSize: 14, fontWeight: '600', opacity: 0.9 },
   counter: { color: colors.text, fontSize: 13, opacity: 0.6 },
   content: { flexShrink: 1, gap: 12 },

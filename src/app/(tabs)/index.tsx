@@ -1,4 +1,4 @@
-import { useLayoutEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View, type LayoutChangeEvent, type ListViewToken } from 'react-native';
 import { router, useNavigation } from 'expo-router';
 
@@ -8,12 +8,19 @@ import { KindFilter } from '@/components/KindFilter';
 import { minutesOf } from '@/lib/stats';
 import { localDate, useFeed, useStore } from '@/lib/store';
 import { colors } from '@/lib/theme';
-import type { CardKind, Idea } from '@/lib/types';
+import type { FeedItem } from '@/lib/feed';
+import type { CardKind } from '@/lib/types';
 
 export default function FeedScreen() {
   const [kind, setKind] = useState<CardKind | null>(null);
   const feed = useFeed(kind);
-  const { streak, markRead, readingLog, minuteGoal, reviewQueue } = useStore();
+  const { streak, markRead, readingLog, minuteGoal, reviewQueue, setNotInterested } = useStore();
+  const [undo, setUndo] = useState<string | null>(null);
+  useEffect(() => {
+    if (!undo) return;
+    const t = setTimeout(() => setUndo(null), 5000);
+    return () => clearTimeout(t);
+  }, [undo]);
   const minutes = minutesOf(readingLog[localDate()]);
   const navigation = useNavigation();
   const [height, setHeight] = useState(0);
@@ -37,7 +44,7 @@ export default function FeedScreen() {
 
   // FlatList doesn't allow this callback to change after mount; markRead is stable.
   const [onViewable] = useState(() => ({ viewableItems }: { viewableItems: ListViewToken[] }) => {
-    for (const v of viewableItems) if (v.isViewable && v.item) markRead((v.item as Idea).id);
+    for (const v of viewableItems) if (v.isViewable && v.item) markRead((v.item as FeedItem).idea.id);
   });
 
   const onLayout = (e: LayoutChangeEvent) => setHeight(e.nativeEvent.layout.height);
@@ -62,8 +69,18 @@ export default function FeedScreen() {
           <FlatList
             key={kind ?? 'all'}
             data={feed}
-            keyExtractor={(idea) => idea.id}
-            renderItem={({ item }) => <IdeaCard idea={item} height={height} />}
+            keyExtractor={(item) => item.idea.id}
+            renderItem={({ item }) => (
+              <IdeaCard
+                idea={item.idea}
+                height={height}
+                reason={item.reason}
+                onNotInterested={() => {
+                  setNotInterested(item.idea.id, true);
+                  setUndo(item.idea.id);
+                }}
+              />
+            )}
             pagingEnabled
             snapToInterval={height}
             snapToAlignment="start"
@@ -77,6 +94,19 @@ export default function FeedScreen() {
           />
         )}
       </View>
+      {undo && (
+        <View style={styles.toast}>
+          <Text style={styles.toastText}>Got it. You&apos;ll see fewer cards like that.</Text>
+          <Pressable
+            accessibilityLabel="Undo"
+            onPress={() => {
+              setNotInterested(undo, false);
+              setUndo(null);
+            }}>
+            <Text style={styles.toastUndo}>Undo</Text>
+          </Pressable>
+        </View>
+      )}
     </View>
   );
 }
@@ -101,6 +131,21 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(242,184,75,0.35)',
   },
   reviewIcon: { fontSize: 22 },
+  toast: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    bottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 14,
+    backgroundColor: colors.text,
+  },
+  toastText: { flex: 1, color: colors.background, fontWeight: '600' },
+  toastUndo: { color: '#B5492F', fontWeight: '800' },
   reviewTitle: { color: colors.text, fontWeight: '800', fontSize: 15 },
   reviewSub: { color: colors.muted, fontSize: 13 },
   reviewGo: { color: colors.accent, fontWeight: '800' },
