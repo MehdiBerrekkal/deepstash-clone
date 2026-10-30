@@ -33,6 +33,8 @@ export type Classic = {
   lang?: string;
   /** Catalog books: the EPUB to download. */
   epubUrl?: string;
+  /** A PDF from my-books/, read in the PDF reader instead of the text reader. */
+  format?: 'pdf';
   /** Open Library cover, for private books (shared books keep theirs in covers.json). */
   coverId?: number;
   /** When `npm run books` first imported it (ISO date). */

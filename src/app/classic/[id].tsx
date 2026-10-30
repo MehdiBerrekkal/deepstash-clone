@@ -20,7 +20,7 @@ export default function ClassicScreen() {
   const needsDownload = classic?.origin === 'catalog' && !downloadedBooks.includes(classic.id);
 
   useEffect(() => {
-    if (classic && !needsDownload) loadClassic(classic.id).then(setBook).catch(() => {});
+    if (classic && !needsDownload && classic.format !== 'pdf') loadClassic(classic.id).then(setBook).catch(() => {});
   }, [classic, needsDownload]);
 
   const download = async () => {
@@ -43,7 +43,10 @@ export default function ClassicScreen() {
   const progress = readerProgress[classicReaderId(classic.id)];
   const hours = readMinutesForWords(classic.words) / 60;
   const linked = classic.sourceId ? sourceById[classic.sourceId] : undefined;
-  const open = () => router.push({ pathname: '/reader/[id]', params: { id: classic.id, kind: 'classic' } });
+  const open = () =>
+    classic.format === 'pdf'
+      ? router.push({ pathname: '/pdfbook/[id]', params: { id: classic.id, source: 'private' } })
+      : router.push({ pathname: '/reader/[id]', params: { id: classic.id, kind: 'classic' } });
 
   return (
     <>

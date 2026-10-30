@@ -26,7 +26,8 @@ async function run<T>(mode: IDBTransactionMode, fn: (store: IDBObjectStore) => I
 }
 
 export const webStore = {
-  get: (key: string) => run<string | undefined>('readonly', (s) => s.get(key) as IDBRequest<string | undefined>).catch(() => undefined),
-  set: (key: string, value: string) => run('readwrite', (s) => s.put(value, key)).then(() => true, () => false),
+  get: <T = string>(key: string) => run<T | undefined>('readonly', (s) => s.get(key) as IDBRequest<T | undefined>).catch(() => undefined),
+  /** Values can be strings or binary (ArrayBuffer), e.g. a whole PDF. */
+  set: (key: string, value: string | ArrayBuffer) => run('readwrite', (s) => s.put(value, key)).then(() => true, () => false),
   remove: (key: string) => run('readwrite', (s) => s.delete(key)).then(() => true, () => false),
 };

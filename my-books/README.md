@@ -1,12 +1,12 @@
 # My books (private)
 
-Put EPUBs you own here, for example DRM-free books you bought, and they show up on a **🔒 My books** shelf in your copy of the app.
+Put EPUBs or PDFs you own here, for example DRM-free books you bought, and they show up on a **🔒 My books** shelf in your copy of the app.
 
 **Nothing in this folder is ever committed or pushed.** Git ignores everything here except this README, and the converted text goes to `src/data/my-books/`, which Git also ignores. Your books stay on this computer.
 
 ## Steps
 
-1. Copy a DRM-free `.epub` into this folder. Any file name works.
+1. Copy a DRM-free `.epub` or a `.pdf` into this folder. Any file name works. PDFs keep their original pages and open in the page-turning PDF reader.
 2. In a terminal in the project folder, run:
 
    ```bash

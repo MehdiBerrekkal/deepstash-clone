@@ -1,11 +1,10 @@
 import { router } from 'expo-router';
-import { Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 import { BookCover } from '@/components/BookCover';
 import { FavoriteButton } from '@/components/FavoriteButton';
 import { classicAsSource } from '@/lib/classicSource';
 import { classicById } from '@/lib/fullbook';
-import { previewPdf } from '@/lib/ownbooks';
 import { useStore } from '@/lib/store';
 import { colors } from '@/lib/theme';
 import type { Source } from '@/lib/types';
@@ -64,8 +63,7 @@ export default function FavoritesScreen() {
                 style={styles.fileInfo}
                 onPress={() => {
                   if (b.kind === 'epub') router.push({ pathname: '/reader/[id]', params: { id: b.id, kind: 'own' } });
-                  else if (Platform.OS === 'web') router.push({ pathname: '/pdf/[id]', params: { id: b.id } });
-                  else previewPdf(b).catch(() => {});
+                  else router.push({ pathname: '/pdfbook/[id]', params: { id: b.id, source: 'own' } });
                 }}>
                 <Text style={styles.badge}>{b.kind === 'pdf' ? 'PDF' : 'EPUB'}</Text>
                 <Text style={styles.fileTitle} numberOfLines={1}>

@@ -24,6 +24,7 @@ export type OwnBook = {
 };
 
 const WEB_KEY = (id: string) => `deepstash-clone/own-book/${id}`;
+const PDF_KEY = (id: string) => `deepstash-clone/own-pdf/${id}`;
 const memory = new Map<string, FullBook>();
 const webPdfUrls = new Map<string, string>();
 
@@ -61,6 +62,8 @@ export async function pickOwnBook(): Promise<OwnBook | null> {
     const title = name.replace(/\.pdf$/i, '');
     if (Platform.OS === 'web') {
       webPdfUrls.set(id, asset.file ? URL.createObjectURL(asset.file) : asset.uri);
+      // Keep the bytes in IndexedDB so the PDF is still there after the tab is closed.
+      await webStore.set(PDF_KEY(id), await readBytes(asset).then((b) => (b instanceof Uint8Array ? b.slice().buffer : b)));
       return { id, kind: 'pdf', fileName: name, title, author: 'PDF', addedAt };
     }
     const dest = new File(folder(), `${id}.pdf`);
@@ -102,6 +105,19 @@ export async function loadSavedBook(id: string): Promise<FullBook | null> {
 
 export const loadOwnBook = loadSavedBook;
 
+/** The raw bytes of one of the user's PDFs, as the PDF engine wants them (base64 on native, bytes on the web). */
+export async function loadPdfData(book: OwnBook): Promise<{ base64?: string; bytes?: ArrayBuffer }> {
+  if (Platform.OS === 'web') {
+    const stored = await webStore.get<ArrayBuffer>(PDF_KEY(book.id));
+    if (stored) return { bytes: stored };
+    const url = webPdfUrls.get(book.id);
+    if (url) return { bytes: await (await fetch(url)).arrayBuffer() };
+    throw new Error('This PDF is no longer stored in this browser. Open the file again from the Library.');
+  }
+  if (!book.uri || !new File(book.uri).exists) throw new Error('This PDF is no longer on the device. Open the file again from the Library.');
+  return { base64: await new File(book.uri).base64() };
+}
+
 /** Web only: the object URL of a PDF picked in this session. */
 export function webPdfUrl(id: string): string | undefined {
   return webPdfUrls.get(id);
@@ -119,6 +135,7 @@ export async function deleteOwnBookFiles(book: OwnBook): Promise<void> {
   memory.delete(book.id);
   if (Platform.OS === 'web') {
     await webStore.remove(WEB_KEY(book.id));
+    await webStore.remove(PDF_KEY(book.id));
     await AsyncStorage.removeItem(WEB_KEY(book.id)).catch(() => {});
     const url = webPdfUrls.get(book.id);
     if (url?.startsWith('blob:')) URL.revokeObjectURL(url);

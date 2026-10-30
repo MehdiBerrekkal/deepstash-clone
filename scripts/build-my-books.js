@@ -1,4 +1,4 @@
-// Imports the EPUBs in the private my-books/ folder onto the app's "My books" shelf (see my-books/README.md).
+// Imports the EPUBs and PDFs in the private my-books/ folder onto the app's "My books" shelf (see my-books/README.md).
 // No license or sidecar is needed: these are your own copies. Everything is written to src/data/my-books/, which Git
 // ignores, and no tracked file is touched, so nothing from my-books/ can end up in the repository.
 // Runs as the first step of: npm run books
@@ -18,7 +18,7 @@ const TOPICS = new Set([
 /** "Leading Change (Kotter).epub" -> "my-leading-change-kotter". The prefix keeps ids apart from shared books. */
 function idFor(file) {
   const slug = file
-    .replace(/\.epub$/i, '')
+    .replace(/\.(epub|pdf)$/i, '')
     .toLowerCase()
     .normalize('NFD')
     .replace(/[^a-z0-9]+/g, '-')
@@ -102,10 +102,47 @@ async function findCover(title, author) {
     console.log(`ok   my-books/${file}: "${title}" by ${author}, ${parsed.chapters.length} chapters`);
   }
 
-  // Remove books whose EPUB was deleted from my-books/.
+  // PDFs are copied as they are; the app renders their pages in the book-style PDF reader.
+  const pdfs = fs.existsSync(inDir) ? fs.readdirSync(inDir).filter((f) => f.toLowerCase().endsWith('.pdf')) : [];
+  for (const file of pdfs) {
+    const id = idFor(file);
+    const sidecarPath = path.join(inDir, file.replace(/\.pdf$/i, '.json'));
+    let extra = {};
+    if (fs.existsSync(sidecarPath)) {
+      try {
+        extra = JSON.parse(fs.readFileSync(sidecarPath, 'utf8'));
+      } catch (e) {
+        console.log(`note ${file}: ignoring its .json (${e.message})`);
+      }
+    }
+    const title = extra.title || file.replace(/\.pdf$/i, '').replace(/[_]+/g, ' ').replace(/\s+/g, ' ').trim();
+    const author = extra.author || 'PDF';
+    const topicId = TOPICS.has(extra.topicId) ? extra.topicId : '';
+    const previous = existing[id];
+    fs.copyFileSync(path.join(inDir, file), path.join(outDir, `${id}.pdf`));
+    const meta = {
+      id,
+      origin: 'private',
+      format: 'pdf',
+      title,
+      author,
+      year: Number(extra.year) || previous?.year || 0,
+      topicId,
+      ...(extra.description ? { description: extra.description } : {}),
+      addedAt: previous?.addedAt ?? new Date().toISOString(),
+      ...(extra.author ? { coverId: previous?.title === title && previous?.coverId ? previous.coverId : await findCover(title, author) } : {}),
+      chapters: 0,
+      words: 0,
+    };
+    fs.writeFileSync(path.join(outDir, `${id}.meta.json`), JSON.stringify(meta, null, 2) + '\n');
+    kept.add(id);
+    console.log(`ok   my-books/${file}: PDF "${title}"`);
+  }
+
+  // Remove books whose file was deleted from my-books/.
   for (const id of Object.keys(existing)) {
     if (kept.has(id)) continue;
-    for (const f of [`${id}.txt`, `${id}.meta.json`]) fs.rmSync(path.join(outDir, f), { force: true });
+    for (const f of [`${id}.txt`, `${id}.pdf`, `${id}.meta.json`]) fs.rmSync(path.join(outDir, f), { force: true });
     console.log(`removed ${id} from My books`);
   }
   console.log(`My books: ${kept.size} ${kept.size === 1 ? 'book' : 'books'} (private, not committed).`);

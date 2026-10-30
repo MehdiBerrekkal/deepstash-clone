@@ -9,6 +9,7 @@ import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PageFlip, type PageFlipHandle } from '@/components/PageFlip';
+import { Scrubber } from '@/components/Scrubber';
 import { BOOK_THEMES, READER_FONTS, chapterLabel, displayFont, displayItalic, typeset, type BookTheme } from '@/lib/bookType';
 import { classicById, loadClassic, type FullBook } from '@/lib/fullbook';
 import { loadOwnBook } from '@/lib/ownbooks';
@@ -502,45 +503,6 @@ function BookPage({
   );
 }
 
-/** Progress bar you can tap or drag to jump through the book, with chapter ticks. */
-function Scrubber({
-  theme, count, current, chapterStarts, onSeek,
-}: { theme: BookTheme; count: number; current: number; chapterStarts: number[]; onSeek: (index: number) => void }) {
-  const [trackWidth, setTrackWidth] = useState(1);
-  const [drag, setDrag] = useState<number | null>(null);
-  const fraction = drag ?? (count > 1 ? current / (count - 1) : 1);
-  // The children ignore touches, so locationX is always measured from the track's left edge.
-  const at = (e: GestureResponderEvent) => Math.min(1, Math.max(0, e.nativeEvent.locationX / trackWidth));
-
-  return (
-    <View
-      onLayout={(e) => setTrackWidth(Math.max(1, e.nativeEvent.layout.width))}
-      onStartShouldSetResponder={() => true}
-      onMoveShouldSetResponder={() => true}
-      onResponderGrant={(e) => setDrag(at(e))}
-      onResponderMove={(e) => setDrag(at(e))}
-      onResponderRelease={(e) => {
-        const f = at(e);
-        setDrag(null);
-        onSeek(Math.round(f * (count - 1)));
-      }}
-      onResponderTerminate={() => setDrag(null)}
-      accessibilityRole="adjustable"
-      accessibilityLabel="Reading progress"
-      accessibilityValue={{ min: 1, max: count, now: current + 1 }}
-      style={styles.scrubber}>
-      <View pointerEvents="none" style={[styles.scrubTrack, { backgroundColor: theme.rule }]}>
-        {count > 1 &&
-          chapterStarts.slice(1, 60).map((s, i) => (
-            <View key={i} style={[styles.tick, { left: `${(s / (count - 1)) * 100}%`, backgroundColor: theme.soft }]} />
-          ))}
-        <View style={[styles.scrubFill, { width: `${fraction * 100}%`, backgroundColor: theme.ink }]} />
-      </View>
-      <View pointerEvents="none" style={[styles.knob, { left: `${fraction * 100}%`, backgroundColor: theme.ink, borderColor: theme.paper }]} />
-    </View>
-  );
-}
-
 /** Long-press a paragraph to save it as a quote card in a stash. */
 function ClipSheet({
   clip, book, bookId, kind, onClose,
@@ -632,11 +594,6 @@ const styles = StyleSheet.create({
   bookTitle: { fontSize: 18 },
   chapterLabel: { fontSize: 12 },
   bottomBar: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 20, paddingTop: 10, gap: 4, borderTopWidth: StyleSheet.hairlineWidth },
-  scrubber: { height: 28, justifyContent: 'center' },
-  scrubTrack: { height: 3, borderRadius: 2, overflow: 'hidden' },
-  scrubFill: { position: 'absolute', left: 0, top: 0, bottom: 0 },
-  tick: { position: 'absolute', top: 0, bottom: 0, width: 1, opacity: 0.6 },
-  knob: { position: 'absolute', width: 16, height: 16, marginLeft: -8, borderRadius: 8, borderWidth: 2, top: 6 },
   pageLabel: { fontSize: 12, textAlign: 'center' },
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   sheet: { padding: 20, paddingBottom: 32, borderTopLeftRadius: 22, borderTopRightRadius: 22, gap: 12, maxHeight: '88%', borderWidth: StyleSheet.hairlineWidth },

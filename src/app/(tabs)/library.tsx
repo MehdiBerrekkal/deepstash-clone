@@ -1,6 +1,6 @@
 import { router, useNavigation } from 'expo-router';
 import { useLayoutEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { BookCover } from '@/components/BookCover';
 import { BookGrid } from '@/components/BookGrid';
@@ -8,7 +8,7 @@ import { FavoriteButton } from '@/components/FavoriteButton';
 import { Shelf } from '@/components/Shelf';
 import { classicAsSource } from '@/lib/classicSource';
 import { classicReaderId, classics, type Classic } from '@/lib/fullbook';
-import { deleteOwnBookFiles, pickOwnBook, previewPdf, type OwnBook } from '@/lib/ownbooks';
+import { deleteOwnBookFiles, pickOwnBook, type OwnBook } from '@/lib/ownbooks';
 import { useStore } from '@/lib/store';
 import { colors } from '@/lib/theme';
 
@@ -64,12 +64,8 @@ export default function LibraryScreen() {
   const openOwn = async (book: OwnBook) => {
     setFileError(null);
     if (book.kind === 'epub') return router.push({ pathname: '/reader/[id]', params: { id: book.id, kind: 'own' } });
-    if (Platform.OS === 'web') return router.push({ pathname: '/pdf/[id]', params: { id: book.id } });
-    try {
-      await previewPdf(book);
-    } catch (e) {
-      setFileError((e as Error).message);
-    }
+    // PDFs open in the book-style PDF reader on every platform.
+    router.push({ pathname: '/pdfbook/[id]', params: { id: book.id, source: 'own' } });
   };
 
   const pick = async () => {
@@ -176,7 +172,6 @@ export default function LibraryScreen() {
             })}
             <Text style={styles.footerText}>
               DRM-free files only. They stay on this device and are never uploaded.
-              {Platform.OS === 'web' ? ' In the browser, PDFs stay open only until you close the tab.' : ''}
             </Text>
           </View>
           {shelves.byTopic.map(({ topic, books }) => (
