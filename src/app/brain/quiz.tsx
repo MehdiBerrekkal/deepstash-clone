@@ -9,6 +9,9 @@ import { sfx } from '@/lib/brain/sfx';
 import { celebrate } from '@/lib/celebrate';
 import { QUIZ, QUIZ_CATEGORIES, type QuizCategory, type QuizQuestion } from '@/data/brain/quiz';
 import { haptic } from '@/lib/haptics';
+import { detectLang, voiceForLanguage } from '@/lib/lang';
+import { speakOnce } from '@/lib/listen';
+import { prewarmNatural } from '@/lib/neuralVoice';
 import { localDate, useStore } from '@/lib/store';
 import { colors } from '@/lib/theme';
 
@@ -46,7 +49,7 @@ function shuffled(q: QuizQuestion, rng: Rng) {
 export default function QuizScreen() {
   const { category, mode } = useLocalSearchParams<{ category: QuizCategory | 'daily'; mode?: 'standard' | 'timed' | 'hard' }>();
   const timed = mode === 'timed';
-  const { recordBrain, markBrainDaily, brain } = useStore();
+  const { recordBrain, markBrainDaily, brain, readerSettings } = useStore();
   const daily = category === 'daily';
   const meta = QUIZ_CATEGORIES.find((c) => c.id === category);
   const french = meta?.lang === 'fr';
@@ -64,6 +67,23 @@ export default function QuizScreen() {
 
   const q = questions[i];
   const o = order[i];
+  // Read the question and its options aloud, in the question's language with the voice chosen for it.
+  const [speaking, setSpeaking] = useState<null | (() => void)>(null);
+  const readAloud = () => {
+    if (speaking) return speaking();
+    const lang = french ? 'fr' : detectLang(q.question);
+    const text = `${q.question} ... ${o.options.map((x, k) => `${'ABCD'[k]}: ${x}.`).join(' ')}`;
+    setSpeaking(() => speakOnce(text, () => setSpeaking(null), lang, voiceForLanguage(readerSettings, lang)));
+  };
+  // Get the reading voice ready in the background, so 🔊 starts quickly.
+  const quizLang = french ? 'fr' : 'en';
+  const quizVoice = voiceForLanguage(readerSettings, quizLang);
+  useEffect(() => {
+    const t = setTimeout(() => prewarmNatural(quizVoice, quizLang, readerSettings.naturalOff), 800);
+    return () => clearTimeout(t);
+  }, [quizVoice, quizLang, readerSettings.naturalOff]);
+  // Stop reading when the question changes or the quiz closes.
+  useEffect(() => () => speaking?.(), [speaking, i]);
   const t = french
     ? { right: 'Bonne réponse !', wrong: 'Pas tout à fait.', next: 'Suivante', end: 'Voir le résultat', again: 'Recommencer', back: 'Terminé', of: 'sur' }
     : { right: 'Correct!', wrong: 'Not quite.', next: 'Next', end: 'See result', again: 'Try another set', back: 'Done', of: 'of' };
@@ -166,9 +186,14 @@ export default function QuizScreen() {
               <View style={[styles.fill, styles.timer, { width: `${(Math.max(0, left) / QUESTION_SECONDS) * 100}%` }]} />
             </View>
           )}
-          <Animated.Text key={i} entering={FadeIn.duration(200)} style={styles.question}>
-            {q.question}
-          </Animated.Text>
+          <View style={styles.questionRow}>
+            <Animated.Text key={i} entering={FadeIn.duration(200)} style={[styles.question, styles.flex]}>
+              {q.question}
+            </Animated.Text>
+            <Pressable accessibilityLabel={french ? 'Lire la question' : 'Read the question aloud'} onPress={readAloud} hitSlop={8} style={[styles.speak, !!speaking && styles.speakOn]}>
+              <Text style={styles.speakText}>{speaking ? '■' : '🔊'}</Text>
+            </Pressable>
+          </View>
           <View style={styles.options}>
             {o.options.map((text, k) => {
               const state = picked === null ? null : k === o.answer ? 'right' : k === picked ? 'wrong' : 'dim';
@@ -209,6 +234,10 @@ const styles = StyleSheet.create({
   track: { height: 6, borderRadius: 3, backgroundColor: colors.surfaceRaised, overflow: 'hidden' },
   fill: { height: 6, backgroundColor: colors.accent },
   timer: { backgroundColor: '#FF6FB5' },
+  questionRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  speak: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surfaceRaised, marginTop: 10 },
+  speakOn: { backgroundColor: '#FF6FB5' },
+  speakText: { fontSize: 18, color: colors.text },
   question: { color: colors.text, fontFamily: displayFont, fontSize: 26, lineHeight: 32, marginVertical: 8 },
   options: { gap: 10 },
   option: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 16, backgroundColor: colors.surface, borderWidth: 2, borderColor: 'transparent' },

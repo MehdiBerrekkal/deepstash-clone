@@ -154,6 +154,14 @@ export default function ProfileScreen() {
         </Text>
       </Pressable>
 
+      <Pressable accessibilityLabel="Voices" onPress={() => router.push('/voices')} style={styles.card}>
+        <View style={styles.rowBetween}>
+          <Text style={styles.heading}>🔊 Voices</Text>
+          <Text style={styles.link}>Open ›</Text>
+        </View>
+        <Text style={styles.muted}>Choose the English and French voices that read books, idea cards and quizzes aloud, including the natural AI voices.</Text>
+      </Pressable>
+
       <Pressable accessibilityLabel="All highlights" onPress={() => router.push('/highlights')} style={styles.card}>
         <View style={styles.rowBetween}>
           <Text style={styles.heading}>✎ Highlights and notes</Text>

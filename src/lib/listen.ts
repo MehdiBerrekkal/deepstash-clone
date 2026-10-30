@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 
 import type { FullBook } from '@/lib/fullbook';
+import { detectLang } from '@/lib/lang';
 import {
   NATURAL_PREFIX, isNatural, loadNatural, naturalDownloaded, naturalSupported, naturalVoicesFor, playClip, synthesize, unlockAudio, type Clip,
 } from '@/lib/neuralVoice';
@@ -16,7 +17,7 @@ export const LISTEN_RATES = [0.75, 1, 1.25, 1.5, 1.75, 2];
 /** Long sentences are read in pieces; some engines refuse very long input. */
 const MAX_PIECE = 600;
 
-const ABBREVIATION = /(?:^|[\s(“"])(?:[A-Z]|Mr|Mrs|Ms|Dr|St|Jr|Sr|Prof|Rev|Capt|Col|Gen|Lt|Mt|No|vs|etc|viz|M|Mme|Mlle)\.\s*$/;
+const ABBREVIATION = /(?:^|[\s(“"])(?:[A-Z]|Mr|Mrs|Ms|Dr|St|Jr|Sr|Prof|Rev|Capt|Col|Gen|Lt|Mt|No|vs|etc|viz|M|MM|Mme|Mlle|Mgr|cf|p|av|apr|J\.-C)\.\s*$/;
 
 const sentenceCache = new WeakMap<object, Map<string, { from: number; to: number }[]>>();
 
@@ -74,7 +75,7 @@ export function sentenceAt(book: FullBook, pos: BookPosition): Sentence | null {
  * The first piece to read when you press play: a long sentence is cut at an early comma (or after about eight
  * words), so the natural voice can start speaking sooner; the rest of the sentence follows as the next piece.
  */
-export function leadPiece(book: FullBook, s: Sentence): Sentence {
+export function leadPiece(book: FullBook, s: Sentence, language = 'en'): Sentence {
   const text = (book.chapters[s.chapter]?.paragraphs[s.para] ?? '').slice(s.from, s.to);
   const words = [...text.matchAll(/\S+\s*/g)];
   // At a chapter start the title is read first, so keep the first words fewer.
@@ -84,6 +85,14 @@ export function leadPiece(book: FullBook, s: Sentence): Sentence {
   for (let i = 0; i < max; i++) {
     end += words[i][0].length;
     if (i >= 2 && /[,;:—–]\s*$/.test(words[i][0])) return { ...s, to: s.from + end };
+  }
+  // French links words across a gap (liaison: "les‿amis"), so a French piece is only cut at punctuation.
+  if (language.startsWith('fr')) {
+    for (let i = max; i < Math.min(words.length - 3, 14); i++) {
+      end += words[i][0].length;
+      if (/[,;:—–]\s*$/.test(words[i][0])) return { ...s, to: s.from + end };
+    }
+    return s;
   }
   return { ...s, to: s.from + end };
 }
@@ -128,7 +137,17 @@ const ABBREVIATIONS_EN: [RegExp, string][] = [
   [/\bi\.e\./g, 'that is'],
 ];
 const ABBREVIATIONS_FR: [RegExp, string][] = [
+  [/\bMM\.(?= [A-ZÉ])/g, 'Messieurs'],
   [/\bM\.(?= [A-ZÉ])/g, 'Monsieur'],
+  [/\bMgr\b\.?/g, 'Monseigneur'],
+  [/\bcf\./g, 'voir'],
+  [/\bc\.-à-d\./g, "c'est-à-dire"],
+  [/\betc\./g, 'et cetera'],
+  [/\bn°\s*/g, 'numéro '],
+  [/\bav\. J\.-C\./g, 'avant Jésus-Christ'],
+  [/\bapr\. J\.-C\./g, 'après Jésus-Christ'],
+  [/\bJ\.-C\./g, 'Jésus-Christ'],
+  [/\bp\.(?= ?\d)/g, 'page'],
   [/\bMme\b\.?/g, 'Madame'],
   [/\bMlle\b\.?/g, 'Mademoiselle'],
   [/\bDr\b\.?/g, 'Docteur'],
@@ -145,6 +164,16 @@ function romanToNumber(r: string) {
   return n;
 }
 
+/** French Roman numerals: "XIXe siècle" → "19e siècle", "François Ier" → "François premier", "Louis XIV" → "Louis 14". */
+function frenchNumerals(t: string) {
+  return t
+    .replace(/\b([IVXLC]{1,6})(?:e|ème|è)\b/g, (m, r: string) => (romanToNumber(r) > 0 ? `${romanToNumber(r)}e` : m))
+    .replace(/\b(\p{Lu}\p{Ll}+) Ier\b/gu, '$1 premier')
+    .replace(/\b(\p{Lu}\p{Ll}+) ([IVXL]{2,6}|V|X)\b/gu, (m, name: string, r: string) =>
+      /^(Le|La|Les|Un|Une|De|Du|Des|Et|En|Au|Aux|Ce|Il|Elle)$/.test(name) ? m : `${name} ${romanToNumber(r)}`,
+    );
+}
+
 /**
  * Text as it should be heard: abbreviations spelled out, dialogue dashes and brackets turned into pauses,
  * footnote markers and decorations dropped. Works for any voice.
@@ -158,6 +187,10 @@ export function speakable(text: string, language = 'en') {
     .replace(/\s*\)\s*/g, ', ')
     .replace(/…|\.\.\./g, '... ')
     .replace(/&/g, language.startsWith('fr') ? ' et ' : ' and ');
+  if (language.startsWith('fr')) {
+    // « Guillemets » are heard as a slight pause, not read.
+    t = frenchNumerals(t.replace(/«[\s  ]*/g, '').replace(/[\s  ]*»/g, ''));
+  }
   for (const [re, word] of language.startsWith('fr') ? ABBREVIATIONS_FR : ABBREVIATIONS_EN) t = t.replace(re, word);
   return t
     .replace(/,\s*([,.;:!?])/g, '$1')
@@ -433,10 +466,10 @@ export function useListen(book: FullBook | null, { rate, voice: chosen, language
       const s = sentenceAt(book, from);
       if (!s) return;
       loadNatural(naturalVoice)
-        .then(() => clipFor(leadPiece(book, s)))
+        .then(() => clipFor(leadPiece(book, s, language)))
         .catch(() => {});
     },
-    [book, natural, playing, naturalVoice, clipFor],
+    [book, natural, playing, naturalVoice, clipFor, language],
   );
 
   // A new voice choice gets a fresh chance.
@@ -464,11 +497,11 @@ export function useListen(book: FullBook | null, { rate, voice: chosen, language
       if (!s) return;
       unlockAudio();
       setFinished(false);
-      setSentence(leadPiece(book, s));
+      setSentence(leadPiece(book, s, language));
       setPreparing(!!natural);
       setPlaying(true);
     },
-    [book, natural],
+    [book, natural, language],
   );
   const play = useCallback(
     (on: boolean) => {
@@ -508,27 +541,34 @@ export function useListen(book: FullBook | null, { rate, voice: chosen, language
 
 let utterance = 0;
 
-/** Speak a short text (an idea card), stopping anything else. Returns a stop function that only stops this text. */
-export function speakOnce(text: string, onEnd: () => void, language = 'en', voice?: string) {
+/**
+ * Speak a short text (an idea card, a quiz question), stopping anything else. The language is detected when not
+ * given; `voice` is the voice chosen for that language. Returns a stop function that only stops this text.
+ */
+export function speakOnce(text: string, onEnd: () => void, language: string = detectLang(text), voice?: string) {
   const mine = ++utterance;
   void Speech.stop();
   let stopClip = () => {};
-  const go = (v?: string) =>
-    mine === utterance && Speech.speak(speakable(text, language), { language, voice: v, rate: SYSTEM_RATE, onDone: onEnd, onStopped: onEnd, onError: onEnd });
-  // Once a natural voice is downloaded, cards use it too (falling back to the system voice if it fails).
-  const naturalVoice = `${NATURAL_PREFIX}${naturalVoicesFor(language)[0]?.id}`;
-  if (!voice && naturalSupported() && naturalDownloaded(naturalVoice)) {
+  const spoken = speakable(text, language);
+  const system = (v?: string) =>
+    mine === utterance &&
+    Speech.speak(spoken, { language: language.startsWith('fr') ? 'fr-FR' : 'en-US', voice: v, rate: SYSTEM_RATE, onDone: onEnd, onStopped: onEnd, onError: onEnd });
+  const fallback = () => voicesFor(language).then((v) => system(v[0]?.id));
+  // A chosen natural voice, or (with nothing chosen) the default one once it's downloaded.
+  const defaultNatural = `${NATURAL_PREFIX}${naturalVoicesFor(language)[0]?.id}`;
+  const naturalVoice = isNatural(voice) ? voice! : !voice && naturalDownloaded(defaultNatural) ? defaultNatural : null;
+  if (naturalVoice && naturalSupported()) {
     unlockAudio();
-    synthesize(speakable(text, language), naturalVoice)
+    synthesize(spoken, naturalVoice)
       .then((clip) => {
         if (mine !== utterance) return;
         const playback = playClip(clip);
         stopClip = playback.stop;
         return playback.done.then(onEnd);
       })
-      .catch(() => voicesFor(language).then((v) => go(v[0]?.id)));
-  } else if (voice) go(voice);
-  else voicesFor(language).then((v) => go(v[0]?.id));
+      .catch(fallback);
+  } else if (voice && !isNatural(voice)) system(voice);
+  else void fallback();
   return () => {
     if (mine !== utterance) return;
     stopClip();

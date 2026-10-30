@@ -4,6 +4,7 @@ import { Pressable, ScrollView, Share, StyleSheet, Text, View, useWindowDimensio
 
 import { CardBody, POEM_PREVIEW_LINES } from '@/components/CardBody';
 import { haptic } from '@/lib/haptics';
+import { detectLang, voiceForLanguage } from '@/lib/lang';
 import { speakOnce } from '@/lib/listen';
 import { useStore } from '@/lib/store';
 import { cardKindById, colors, onCardScope, sourceKindLabel } from '@/lib/theme';
@@ -36,7 +37,7 @@ export function shareText(idea: Idea, sourceTitle?: string, sourceAuthor?: strin
 }
 
 export function IdeaCard({ idea, height, counter, hideSource = false, scrollable = false, reason, onNotInterested }: Props) {
-  const { topicById, sourceById, isSaved, likedIdeaIds, toggleLike } = useStore();
+  const { topicById, sourceById, isSaved, likedIdeaIds, toggleLike, readerSettings } = useStore();
   const topic = topicById[idea.topicId];
   const source = idea.sourceId ? sourceById[idea.sourceId] : undefined;
   const saved = isSaved(idea.id);
@@ -56,7 +57,8 @@ export function IdeaCard({ idea, height, counter, hideSource = false, scrollable
   const listen = () => {
     if (speaking) return speaking();
     const words = idea.kind === 'quote' ? `${idea.body} ... ${idea.author}` : `${idea.title}. ${idea.body}`;
-    setSpeaking(() => speakOnce(words, () => setSpeaking(null)));
+    const lang = detectLang(words);
+    setSpeaking(() => speakOnce(words, () => setSpeaking(null), lang, voiceForLanguage(readerSettings, lang)));
   };
   // Stop reading when the card scrolls away and unmounts.
   useEffect(() => () => speaking?.(), [speaking]);

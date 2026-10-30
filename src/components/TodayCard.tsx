@@ -8,6 +8,7 @@ import { GoalRing } from '@/components/GoalRing';
 import { displayFont, displayItalic } from '@/lib/bookType';
 import { classicAsSource } from '@/lib/classicSource';
 import { classicById } from '@/lib/fullbook';
+import { voiceForLanguage } from '@/lib/lang';
 import { prewarmNatural } from '@/lib/neuralVoice';
 import { DEFAULT_WPM, formatDuration, minutesOf, readingSpeed } from '@/lib/stats';
 import { localDate, useStore } from '@/lib/store';
@@ -62,11 +63,12 @@ export function TodayCard({ height, book }: { height: number; book: ContinueBook
   const { readingLog, minuteGoal, streak, reviewQueue, readerSettings, brain } = useStore();
   const brainDone = brain.daily.date === localDate() && brain.daily.game && brain.daily.quiz;
   // You'll likely continue this book: get its voice ready in the background.
+  const bookVoice = voiceForLanguage(readerSettings, book?.language ?? 'en');
   useEffect(() => {
     if (!book) return;
-    const t = setTimeout(() => prewarmNatural(readerSettings.voice, book.language, readerSettings.naturalOff), 2000);
+    const t = setTimeout(() => prewarmNatural(bookVoice, book.language, readerSettings.naturalOff), 2000);
     return () => clearTimeout(t);
-  }, [book, readerSettings.voice, readerSettings.naturalOff]);
+  }, [book, bookVoice, readerSettings.naturalOff]);
   const minutes = minutesOf(readingLog[localDate()]);
   const wpm = readingSpeed(readingLog) ?? DEFAULT_WPM;
   const left = book && book.words ? formatDuration((book.words * (1 - book.fraction)) / wpm) : null;

@@ -79,8 +79,10 @@ export type ReaderSettings = {
   fontSize: number;
   font?: ReaderFont;
   listenRate?: number;
-  /** A system voice id, "kokoro:<voice>" for a natural voice, or unset for the best available. */
+  /** The voice for English text: a system voice id, "piper:<voice>" for a natural voice, or unset for the best available. */
   voice?: string;
+  /** The voice for French text (books, cards, quizzes); `voice` is for English. */
+  voiceFr?: string;
   /** Set when the natural voice was too slow on this device, so it isn't picked automatically. */
   naturalOff?: boolean;
 };

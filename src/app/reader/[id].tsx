@@ -14,6 +14,7 @@ import { HighlightSheet } from '@/components/HighlightSheet';
 import { PageFlip, type PageFlipHandle } from '@/components/PageFlip';
 import { Scrubber } from '@/components/Scrubber';
 import { VoicePicker } from '@/components/VoicePicker';
+import { voiceForLanguage, voiceSetting } from '@/lib/lang';
 import { BOOK_THEMES, HIGHLIGHT_COLORS, READER_FONTS, bookFonts, chooseReaderTheme, measuredCharWidth, readerThemeFor, chapterLabel, displayFont, displayItalic, typeset, type BookTheme } from '@/lib/bookType';
 import { classicAsSource } from '@/lib/classicSource';
 import { classicById, loadClassic, type FullBook } from '@/lib/fullbook';
@@ -112,7 +113,7 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
   const onNaturalFailed = useCallback(() => setReaderSettings({ naturalOff: true }), [setReaderSettings]);
   const listen = useListen(book, {
     rate: listenRate,
-    voice: readerSettings.voice,
+    voice: voiceForLanguage(readerSettings, language),
     language,
     preferNatural: !readerSettings.naturalOff,
     onNaturalFailed,
@@ -548,11 +549,10 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
                 fontRegular={font.regular}
                 fontBold={font.bold}
                 language={language}
-                selected={readerSettings.voice}
-                natural={listen.naturalAvailable}
+                selectedFor={(lang) => voiceForLanguage(readerSettings, lang)}
                 naturalActive={listen.natural ? listen.naturalVoice : null}
-                onSelect={(v) => {
-                  setReaderSettings({ voice: v, ...(isNatural(v) ? { naturalOff: false } : {}) });
+                onSelect={(v, lang) => {
+                  setReaderSettings({ ...voiceSetting(lang, v), ...(isNatural(v) ? { naturalOff: false } : {}) });
                   if (isNatural(v)) listen.tryNatural();
                 }}
               />
