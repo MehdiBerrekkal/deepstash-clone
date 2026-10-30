@@ -12,10 +12,11 @@ import { BookOpening } from '@/components/BookOpening';
 import { HighlightSheet } from '@/components/HighlightSheet';
 import { PageFlip, type PageFlipHandle } from '@/components/PageFlip';
 import { Scrubber } from '@/components/Scrubber';
+import { VoicePicker } from '@/components/VoicePicker';
 import { BOOK_THEMES, HIGHLIGHT_COLORS, READER_FONTS, chapterLabel, displayFont, displayItalic, typeset, type BookTheme } from '@/lib/bookType';
 import { classicAsSource } from '@/lib/classicSource';
 import { classicById, loadClassic, type FullBook } from '@/lib/fullbook';
-import { LISTEN_RATES, useListen, voicesFor, type ListenVoice, type Sentence, type SleepTimer } from '@/lib/listen';
+import { LISTEN_RATES, useListen, type Sentence, type SleepTimer } from '@/lib/listen';
 import { loadOwnBook } from '@/lib/ownbooks';
 import { findPage, pageStart, paginate, type Page } from '@/lib/paginate';
 import { celebrate } from '@/lib/celebrate';
@@ -100,7 +101,6 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
   const language = (kind === 'own' ? undefined : classicById[id]?.lang) ?? 'en';
   const listenRate = readerSettings.listenRate ?? 1;
   const listen = useListen(book, { rate: listenRate, voice: readerSettings.voice, language });
-  const [voices, setVoices] = useState<ListenVoice[]>([]);
 
   useEffect(() => {
     let alive = true;
@@ -208,14 +208,6 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
     else if (pages[current]) listen.start(pageStart(pages[current]));
   }, [listen, pages, current]);
 
-  useEffect(() => {
-    if (panel !== 'voice') return;
-    let alive = true;
-    voicesFor(language).then((v) => alive && setVoices(v));
-    return () => {
-      alive = false;
-    };
-  }, [panel, language]);
 
   const onLeafChange = useCallback(
     (next: number) => {
@@ -454,7 +446,12 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
             style={[styles.listenChip, { borderColor: theme.rule }]}>
             <Text style={[styles.listenChipText, { color: theme.chromeText }]}>{listenRate}×</Text>
           </Pressable>
-          <Pressable accessibilityLabel="Voice" onPress={() => setPanel('voice')} style={[styles.listenChip, { borderColor: theme.rule }]}>
+          <Pressable
+            accessibilityLabel="Voice"
+            onPress={() => {
+              listen.setPlaying(false);
+              setPanel('voice');
+            }} style={[styles.listenChip, { borderColor: theme.rule }]}>
             <Text style={[styles.listenChipText, { color: theme.chromeText }]}>Voice</Text>
           </Pressable>
           <Pressable
@@ -473,36 +470,14 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
         <Pressable style={styles.backdrop} onPress={() => setPanel(null)}>
           <Pressable style={[styles.sheet, { backgroundColor: theme.paper, borderColor: theme.rule }]} onPress={() => {}}>
             {panel === 'voice' ? (
-              <>
-                <Text style={[styles.sheetTitle, { color: theme.ink, fontFamily: displayFont }]}>Voice</Text>
-                <ScrollView style={{ maxHeight: 360 }}>
-                  {[{ id: '', name: 'System default', language }, ...voices].map((v) => {
-                    const on = (readerSettings.voice ?? '') === v.id;
-                    return (
-                      <Pressable
-                        key={v.id || 'default'}
-                        onPress={() => {
-                          setReaderSettings({ voice: v.id || undefined });
-                          setPanel(null);
-                        }}
-                        style={[styles.contentsRow, { borderColor: theme.rule }]}>
-                        <Text style={[styles.contentsText, { color: theme.ink, fontFamily: on ? font.bold : font.regular }]} numberOfLines={1}>
-                          {v.name}
-                        </Text>
-                        <Text style={{ color: theme.soft, fontSize: 12 }}>
-                          {on ? '✓ ' : ''}
-                          {v.language}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </ScrollView>
-                {voices.length === 0 && (
-                  <Text style={[styles.hint, { color: theme.soft }]}>
-                    No other voices were found for this language on this device. You can add more in your phone&apos;s text-to-speech settings.
-                  </Text>
-                )}
-              </>
+              <VoicePicker
+                theme={theme}
+                fontRegular={font.regular}
+                fontBold={font.bold}
+                language={language}
+                selected={readerSettings.voice}
+                onSelect={(v) => setReaderSettings({ voice: v })}
+              />
             ) : (
               <>
                 <Text style={[styles.sheetTitle, { color: theme.ink, fontFamily: displayFont }]}>Sleep timer</Text>
