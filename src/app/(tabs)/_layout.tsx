@@ -37,6 +37,7 @@ export default function TabsLayout() {
       <Tabs.Screen name="index" options={{ title: 'For you', tabBarIcon: icon('◉') }} />
       <Tabs.Screen name="library" options={{ title: 'Library', tabBarIcon: icon('📚') }} />
       <Tabs.Screen name="explore" options={{ title: 'Explore', tabBarIcon: icon('⌕') }} />
+      <Tabs.Screen name="brain" options={{ title: 'Brain', tabBarIcon: icon('🧠') }} />
       <Tabs.Screen name="stashes" options={{ title: 'Stashes', tabBarIcon: icon('★') }} />
       <Tabs.Screen name="profile" options={{ title: 'You', tabBarIcon: icon('◐') }} />
     </Tabs>

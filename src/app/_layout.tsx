@@ -36,6 +36,8 @@ export default function RootLayout() {
         <Stack.Screen name="favorites" options={{ title: 'Favorites' }} />
         <Stack.Screen name="highlights" options={{ title: 'Highlights' }} />
         <Stack.Screen name="review" options={{ title: 'Review' }} />
+        <Stack.Screen name="brain/[game]" options={{ title: 'Brain' }} />
+        <Stack.Screen name="brain/quiz" options={{ title: 'Quiz' }} />
       </ThemedStack>
       <CelebrationHost />
     </StoreProvider>

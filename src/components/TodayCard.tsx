@@ -59,7 +59,8 @@ const greeting = () => {
 
 /** The first page of the For you feed: continue your book, your goal for today and today's review. */
 export function TodayCard({ height, book }: { height: number; book: ContinueBook | null }) {
-  const { readingLog, minuteGoal, streak, reviewQueue, readerSettings } = useStore();
+  const { readingLog, minuteGoal, streak, reviewQueue, readerSettings, brain } = useStore();
+  const brainDone = brain.daily.date === localDate() && brain.daily.game && brain.daily.quiz;
   // You'll likely continue this book: get its voice ready in the background.
   useEffect(() => {
     if (!book) return;
@@ -121,17 +122,23 @@ export function TodayCard({ height, book }: { height: number; book: ContinueBook
             </Text>
             <Text style={styles.tileSub}>🔥 {streak.count}-day streak</Text>
           </Pressable>
-          <Pressable
-            accessibilityLabel="Start today's review"
-            disabled={!reviewQueue.length}
-            onPress={() => router.push('/review')}
-            style={[styles.tile, !reviewQueue.length && { opacity: 0.6 }]}>
-            <Text style={styles.tileIcon}>🧠</Text>
-            <Text style={styles.tileTitle} numberOfLines={1}>
-              {reviewQueue.length ? `${reviewQueue.length} to review` : 'All reviewed'}
-            </Text>
-            <Text style={styles.tileSub}>{reviewQueue.length ? 'Start review ›' : 'Nice work'}</Text>
-          </Pressable>
+          {reviewQueue.length > 0 ? (
+            <Pressable accessibilityLabel="Start today's review" onPress={() => router.push('/review')} style={styles.tile}>
+              <Text style={styles.tileIcon}>🧠</Text>
+              <Text style={styles.tileTitle} numberOfLines={1}>
+                {reviewQueue.length} to review
+              </Text>
+              <Text style={styles.tileSub}>Start review ›</Text>
+            </Pressable>
+          ) : (
+            <Pressable accessibilityLabel="Daily brain challenge" onPress={() => router.push('/brain')} style={[styles.tile, brainDone && { opacity: 0.6 }]}>
+              <Text style={styles.tileIcon}>{brainDone ? '✅' : '⚡'}</Text>
+              <Text style={styles.tileTitle} numberOfLines={1}>
+                {brainDone ? 'Challenge done' : 'Daily challenge'}
+              </Text>
+              <Text style={styles.tileSub}>{brainDone ? 'Nice work' : 'Brain games ›'}</Text>
+            </Pressable>
+          )}
         </Animated.View>
 
         <Text style={styles.hint}>Swipe up for your ideas ↓</Text>
