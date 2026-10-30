@@ -12,6 +12,7 @@ import { PageFlip, type PageFlipHandle } from '@/components/PageFlip';
 import { Scrubber } from '@/components/Scrubber';
 import { BOOK_THEMES, READER_FONTS, chapterLabel, displayFont, displayItalic, typeset, type BookTheme } from '@/lib/bookType';
 import { classicById, loadClassic, type FullBook } from '@/lib/fullbook';
+import { LISTEN_RATES, useListen, voicesFor, type ListenVoice, type Sentence, type SleepTimer } from '@/lib/listen';
 import { loadOwnBook } from '@/lib/ownbooks';
 import { findPage, pageStart, paginate, type Page } from '@/lib/paginate';
 import { useStore } from '@/lib/store';
@@ -61,7 +62,7 @@ function Reader({ id, kind }: { id: string; kind?: 'classic' | 'own' }) {
   );
   const [error, setError] = useState<string | null>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
-  const [panel, setPanel] = useState<null | 'settings' | 'contents'>(null);
+  const [panel, setPanel] = useState<null | 'settings' | 'contents' | 'voice' | 'sleep'>(null);
   const [clip, setClip] = useState<{ text: string; position: ReaderPosition } | null>(null);
   const [chrome, setChrome] = useState(true);
   const flip = useRef<PageFlipHandle>(null);
@@ -75,6 +76,10 @@ function Reader({ id, kind }: { id: string; kind?: 'classic' | 'own' }) {
   const font = READER_FONTS[fontKey];
   const fontSize = readerSettings.fontSize;
   const lineHeight = Math.round(fontSize * font.leading);
+  const language = (kind === 'own' ? undefined : classicById[id]?.lang) ?? 'en';
+  const listenRate = readerSettings.listenRate ?? 1;
+  const listen = useListen(book, { rate: listenRate, voice: readerSettings.voice, language });
+  const [voices, setVoices] = useState<ListenVoice[]>([]);
 
   useEffect(() => {
     let alive = true;
@@ -140,7 +145,58 @@ function Reader({ id, kind }: { id: string; kind?: 'classic' | 'own' }) {
     [pages, readerId, setReaderPosition],
   );
 
-  const onLeafChange = useCallback((next: number) => goTo(spread ? next * 2 : next), [goTo, spread]);
+  // Listening turns the page with the voice. Turning pages yourself stops that until you press play or skip again.
+  const following = useRef(true);
+  const autoTurn = useRef(false);
+  useEffect(() => {
+    const s = listen.sentence;
+    if (!s || !pages.length || !following.current) return;
+    const target = findPage(pages, { chapter: s.chapter, para: s.para, char: s.from });
+    const shown = spread ? [current, current + 1] : [current];
+    if (shown.includes(target)) return;
+    const ahead = spread ? Math.floor(target / 2) - leaf : target - current;
+    // Turn after this render: the next page animates like a real turn, anything further jumps.
+    const t = setTimeout(() => {
+      if (ahead === 1) {
+        autoTurn.current = true;
+        flip.current?.turn(1);
+      } else goTo(target);
+    }, 0);
+    return () => clearTimeout(t);
+    // Only a new sentence should move the page, not your own page turns.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listen.sentence, pages]);
+
+  const listenControl = useCallback(
+    (action: () => void) => {
+      following.current = true;
+      action();
+    },
+    [],
+  );
+  const toggleListen = useCallback(() => {
+    following.current = true;
+    if (listen.sentence) listen.setPlaying(!listen.playing);
+    else if (pages[current]) listen.start(pageStart(pages[current]));
+  }, [listen, pages, current]);
+
+  useEffect(() => {
+    if (panel !== 'voice') return;
+    let alive = true;
+    voicesFor(language).then((v) => alive && setVoices(v));
+    return () => {
+      alive = false;
+    };
+  }, [panel, language]);
+
+  const onLeafChange = useCallback(
+    (next: number) => {
+      if (!autoTurn.current) following.current = false;
+      autoTurn.current = false;
+      goTo(spread ? next * 2 : next);
+    },
+    [goTo, spread],
+  );
   const step = useCallback((dir: 1 | -1) => flip.current?.turn(dir), []);
 
   const changeFont = useCallback(
@@ -196,6 +252,7 @@ function Reader({ id, kind }: { id: string; kind?: 'classic' | 'own' }) {
       openerSink={openerSink}
       onTap={onTap}
       onLongPressParagraph={(text, position) => setClip({ text, position })}
+      spoken={listen.sentence}
     />
   );
 
@@ -249,6 +306,9 @@ function Reader({ id, kind }: { id: string; kind?: 'classic' | 'own' }) {
               {chapterTitle}
             </Text>
           </View>
+          <Pressable accessibilityLabel={listen.sentence ? 'Listening controls' : 'Listen to this book'} onPress={toggleListen} style={styles.iconButton}>
+            <Text style={[styles.icon, { color: listen.sentence ? '#B5492F' : theme.chromeText }]}>{listen.playing ? '❚❚' : '🎧'}</Text>
+          </Pressable>
           <Pressable accessibilityLabel="Contents and bookmarks" onPress={() => setPanel('contents')} style={styles.iconButton}>
             <Text style={[styles.icon, { color: theme.chromeText }]}>☰</Text>
           </Pressable>
@@ -276,6 +336,7 @@ function Reader({ id, kind }: { id: string; kind?: 'classic' | 'own' }) {
             current={current}
             chapterStarts={chapterStarts}
             onSeek={(i) => {
+              following.current = false;
               goTo(i);
               setChrome(true);
             }}
@@ -285,6 +346,106 @@ function Reader({ id, kind }: { id: string; kind?: 'classic' | 'own' }) {
           </Text>
         </Animated.View>
       )}
+
+      {listen.sentence && (
+        <Animated.View
+          entering={FadeIn.duration(200)}
+          style={[
+            styles.listenBar,
+            { backgroundColor: theme.chrome, borderColor: theme.rule, bottom: (chrome ? 74 : 12) + insets.bottom },
+          ]}>
+          <Pressable accessibilityLabel="Previous sentence" onPress={() => listenControl(() => listen.skip(-1))} style={styles.listenButton}>
+            <Text style={[styles.listenIcon, { color: theme.chromeText }]}>⏮</Text>
+          </Pressable>
+          <Pressable
+            accessibilityLabel={listen.playing ? 'Pause' : 'Play'}
+            onPress={() => listenControl(() => listen.setPlaying(!listen.playing))}
+            style={[styles.playButton, { backgroundColor: theme.ink }]}>
+            <Text style={[styles.playIcon, { color: theme.paper }]}>{listen.playing ? '❚❚' : '▶'}</Text>
+          </Pressable>
+          <Pressable accessibilityLabel="Next sentence" onPress={() => listenControl(() => listen.skip(1))} style={styles.listenButton}>
+            <Text style={[styles.listenIcon, { color: theme.chromeText }]}>⏭</Text>
+          </Pressable>
+          <Pressable
+            accessibilityLabel="Reading speed"
+            onPress={() => setReaderSettings({ listenRate: LISTEN_RATES[(LISTEN_RATES.indexOf(listenRate) + 1) % LISTEN_RATES.length] })}
+            style={[styles.listenChip, { borderColor: theme.rule }]}>
+            <Text style={[styles.listenChipText, { color: theme.chromeText }]}>{listenRate}×</Text>
+          </Pressable>
+          <Pressable accessibilityLabel="Voice" onPress={() => setPanel('voice')} style={[styles.listenChip, { borderColor: theme.rule }]}>
+            <Text style={[styles.listenChipText, { color: theme.chromeText }]}>Voice</Text>
+          </Pressable>
+          <Pressable
+            accessibilityLabel="Sleep timer"
+            onPress={() => setPanel('sleep')}
+            style={[styles.listenChip, { borderColor: listen.sleep ? theme.ink : theme.rule }]}>
+            <Text style={[styles.listenChipText, { color: theme.chromeText }]}>{sleepLabel(listen.sleep)}</Text>
+          </Pressable>
+          <Pressable accessibilityLabel="Stop listening" onPress={listen.close} style={styles.listenButton}>
+            <Text style={[styles.listenIcon, { color: theme.soft }]}>✕</Text>
+          </Pressable>
+        </Animated.View>
+      )}
+
+      <Modal visible={panel === 'voice' || panel === 'sleep'} transparent animationType="fade" onRequestClose={() => setPanel(null)}>
+        <Pressable style={styles.backdrop} onPress={() => setPanel(null)}>
+          <Pressable style={[styles.sheet, { backgroundColor: theme.paper, borderColor: theme.rule }]} onPress={() => {}}>
+            {panel === 'voice' ? (
+              <>
+                <Text style={[styles.sheetTitle, { color: theme.ink, fontFamily: displayFont }]}>Voice</Text>
+                <ScrollView style={{ maxHeight: 360 }}>
+                  {[{ id: '', name: 'System default', language }, ...voices].map((v) => {
+                    const on = (readerSettings.voice ?? '') === v.id;
+                    return (
+                      <Pressable
+                        key={v.id || 'default'}
+                        onPress={() => {
+                          setReaderSettings({ voice: v.id || undefined });
+                          setPanel(null);
+                        }}
+                        style={[styles.contentsRow, { borderColor: theme.rule }]}>
+                        <Text style={[styles.contentsText, { color: theme.ink, fontFamily: on ? font.bold : font.regular }]} numberOfLines={1}>
+                          {v.name}
+                        </Text>
+                        <Text style={{ color: theme.soft, fontSize: 12 }}>
+                          {on ? '✓ ' : ''}
+                          {v.language}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </ScrollView>
+                {voices.length === 0 && (
+                  <Text style={[styles.hint, { color: theme.soft }]}>
+                    No other voices were found for this language on this device. You can add more in your phone&apos;s text-to-speech settings.
+                  </Text>
+                )}
+              </>
+            ) : (
+              <>
+                <Text style={[styles.sheetTitle, { color: theme.ink, fontFamily: displayFont }]}>Sleep timer</Text>
+                {SLEEP_OPTIONS.map((o) => (
+                  <Pressable
+                    key={o.label}
+                    onPress={() => {
+                      listen.setSleep(
+                        o.minutes === undefined
+                          ? null
+                          : o.minutes === 0
+                            ? { kind: 'chapter', chapter: listen.sentence?.chapter ?? 0 }
+                            : { kind: 'time', until: Date.now() + o.minutes * 60_000 },
+                      );
+                      setPanel(null);
+                    }}
+                    style={[styles.contentsRow, { borderColor: theme.rule }]}>
+                    <Text style={[styles.contentsText, { color: theme.ink, fontFamily: font.regular }]}>{o.label}</Text>
+                  </Pressable>
+                ))}
+              </>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <Modal visible={panel === 'settings'} transparent animationType="fade" onRequestClose={() => setPanel(null)}>
         <Pressable style={styles.backdrop} onPress={() => setPanel(null)}>
@@ -415,11 +576,13 @@ type BookPageProps = {
   openerSink: number;
   onTap: (e: GestureResponderEvent) => void;
   onLongPressParagraph: (text: string, position: ReaderPosition) => void;
+  /** The sentence being read aloud, highlighted where it falls on this page. */
+  spoken?: Sentence | null;
 };
 
 /** One printed page: running head, text block (or chapter opener), and folio, on toned paper. */
 function BookPage({
-  book, page, index, width, height, margin, spreadSide, theme, fontKey, fontSize, lineHeight, openerSink, onTap, onLongPressParagraph,
+  book, page, index, width, height, margin, spreadSide, theme, fontKey, fontSize, lineHeight, openerSink, onTap, onLongPressParagraph, spoken,
 }: BookPageProps) {
   const font = READER_FONTS[fontKey];
   const chapter = book.chapters[page.chapter];
@@ -466,6 +629,9 @@ function BookPage({
           // Book convention: no indent on a chapter's first paragraph, indents (not gaps) between the rest.
           const indent = piece.from === 0 && !firstOfChapter && !(opener && i === 0) && !slice.includes('\n');
           const position = { chapter: page.chapter, para: piece.para, char: 0 };
+          const mark = spoken && spoken.chapter === page.chapter && spoken.para === piece.para ? spoken : null;
+          // Draws the slice from an offset, with the sentence being read aloud highlighted.
+          const run = (start: number) => (mark ? highlightRuns(text, piece.from + start, piece.to, mark, theme.highlight) : slice.slice(start));
           return (
             <Pressable
               key={`${index}-${piece.para}-${piece.from}`}
@@ -478,12 +644,12 @@ function BookPage({
                   <>
                     {/* A raised initial opens each chapter. */}
                     <Text style={{ fontFamily: displayFont, fontSize: fontSize * 2.4, color: theme.ink }}>{slice.charAt(0)}</Text>
-                    {slice.slice(1)}
+                    {run(1)}
                   </>
                 ) : (
                   <>
                     {indent ? ' ' : ''}
-                    {slice}
+                    {run(0)}
                   </>
                 )}
               </Text>
@@ -501,6 +667,35 @@ function BookPage({
       </Text>
     </Pressable>
   );
+}
+
+/** Splits text[from, to) into plain and highlighted runs around a sentence. */
+function highlightRuns(text: string, from: number, to: number, s: Sentence, color: string) {
+  const a = Math.min(Math.max(s.from, from), to);
+  const b = Math.min(Math.max(s.to, from), to);
+  if (a >= b) return text.slice(from, to);
+  return (
+    <>
+      {text.slice(from, a)}
+      <Text style={{ backgroundColor: color }}>{text.slice(a, b)}</Text>
+      {text.slice(b, to)}
+    </>
+  );
+}
+
+/** minutes: undefined turns the timer off, 0 means the end of the chapter. */
+const SLEEP_OPTIONS: { label: string; minutes?: number }[] = [
+  { label: '15 minutes', minutes: 15 },
+  { label: '30 minutes', minutes: 30 },
+  { label: '60 minutes', minutes: 60 },
+  { label: 'End of this chapter', minutes: 0 },
+  { label: 'Off' },
+];
+
+function sleepLabel(sleep: SleepTimer) {
+  if (!sleep) return '☾';
+  if (sleep.kind === 'chapter') return '☾ Ch.';
+  return `☾ ${Math.max(1, Math.round((sleep.until - Date.now()) / 60_000))}m`;
 }
 
 /** Long-press a paragraph to save it as a quote card in a stash. */
@@ -595,6 +790,28 @@ const styles = StyleSheet.create({
   chapterLabel: { fontSize: 12 },
   bottomBar: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 20, paddingTop: 10, gap: 4, borderTopWidth: StyleSheet.hairlineWidth },
   pageLabel: { fontSize: 12, textAlign: 'center' },
+  listenBar: {
+    position: 'absolute',
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+    shadowColor: '#000',
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
+  listenButton: { width: 34, height: 40, alignItems: 'center', justifyContent: 'center' },
+  listenIcon: { fontSize: 16 },
+  playButton: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  playIcon: { fontSize: 16, fontWeight: '800' },
+  listenChip: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 6 },
+  listenChipText: { fontSize: 12, fontWeight: '700' },
   backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   sheet: { padding: 20, paddingBottom: 32, borderTopLeftRadius: 22, borderTopRightRadius: 22, gap: 12, maxHeight: '88%', borderWidth: StyleSheet.hairlineWidth },
   sheetTitle: { fontSize: 20 },

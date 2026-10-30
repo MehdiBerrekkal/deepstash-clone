@@ -71,7 +71,7 @@ export type ReaderTheme = 'light' | 'sepia' | 'dark';
 
 export type ReaderFont = 'literata' | 'garamond' | 'sans';
 
-export type ReaderSettings = { theme: ReaderTheme; fontSize: number; font?: ReaderFont };
+export type ReaderSettings = { theme: ReaderTheme; fontSize: number; font?: ReaderFont; listenRate?: number; voice?: string };
 
 /** Where the full-book reader is in a book; see paginate.ts. */
 export type ReaderPosition = { chapter: number; para: number; char: number };

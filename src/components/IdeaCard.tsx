@@ -1,7 +1,9 @@
 import { router } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Share, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 import { CardBody, POEM_PREVIEW_LINES } from '@/components/CardBody';
+import { speakOnce } from '@/lib/listen';
 import { useStore } from '@/lib/store';
 import { cardKindById, colors, sourceKindLabel } from '@/lib/theme';
 import type { Idea } from '@/lib/types';
@@ -45,6 +47,14 @@ export function IdeaCard({ idea, height, counter, hideSource = false, scrollable
 
   const open = () => router.push({ pathname: '/idea/[id]', params: { id: idea.id } });
   const share = () => Share.share({ message: shareText(idea, source?.title, source?.author) });
+  const [speaking, setSpeaking] = useState<null | (() => void)>(null);
+  const listen = () => {
+    if (speaking) return speaking();
+    const words = idea.kind === 'quote' ? `${idea.body} ... ${idea.author}` : `${idea.title}. ${idea.body}`;
+    setSpeaking(() => speakOnce(words, () => setSpeaking(null)));
+  };
+  // Stop reading when the card scrolls away and unmounts.
+  useEffect(() => () => speaking?.(), [speaking]);
 
   return (
     <View style={[styles.page, { height }]}>
@@ -94,6 +104,13 @@ export function IdeaCard({ idea, height, counter, hideSource = false, scrollable
           </Pressable>
           <Pressable accessibilityRole="button" onPress={open} style={[styles.action, saved && styles.actionActive]}>
             <Text style={[styles.actionText, saved && styles.actionTextActive]}>{saved ? '★ Stashed' : '☆ Stash'}</Text>
+          </Pressable>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={speaking ? 'Stop listening' : 'Listen'}
+            onPress={listen}
+            style={[styles.action, styles.actionSmall, speaking && styles.actionLiked]}>
+            <Text style={styles.actionText}>{speaking ? '■' : '🔊'}</Text>
           </Pressable>
           <Pressable accessibilityRole="button" onPress={share} style={styles.action}>
             <Text style={styles.actionText}>↗ Share</Text>
