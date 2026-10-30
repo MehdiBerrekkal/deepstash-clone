@@ -96,3 +96,6 @@ export type Highlight = ReaderPosition & {
   note?: string;
   createdAt: string;
 };
+
+/** One day of reading: time in books and cards, pages turned, words read and cards seen. */
+export type DayLog = { seconds: number; pages: number; words: number; cards: number };

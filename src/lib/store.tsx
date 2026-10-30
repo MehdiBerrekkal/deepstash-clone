@@ -5,7 +5,7 @@ import { bundledContent, type Content } from '@/data/content';
 import type { OwnBook } from '@/lib/ownbooks';
 import { supabase } from '@/lib/supabase';
 import type {
-  Bookmark, BookProgress, CardKind, Highlight, Idea, ReaderPosition, ReaderProgress, ReaderSettings, Source, Stash, Streak, Topic,
+  Bookmark, BookProgress, CardKind, DayLog, Highlight, Idea, ReaderPosition, ReaderProgress, ReaderSettings, Source, Stash, Streak, Topic,
 } from '@/lib/types';
 
 const STORAGE_KEY = 'deepstash-clone/user-state/v1';
@@ -31,6 +31,12 @@ type UserState = {
   clips: Idea[];
   /** Highlights in full books, newest first. */
   highlights: Highlight[];
+  /** Reading per local day ("2026-10-30"). */
+  readingLog: Record<string, DayLog>;
+  /** Daily reading goal in minutes. */
+  minuteGoal: number;
+  /** Full books read to the last page: reader id -> date finished. */
+  finishedReaders: Record<string, string>;
   ownBooks: OwnBook[];
   /** Catalog books downloaded to this device, newest first. */
   downloadedBooks: string[];
@@ -64,10 +70,16 @@ type Store = Content &
     addHighlight: (highlight: Omit<Highlight, 'id' | 'createdAt'>) => Highlight;
     updateHighlight: (id: string, patch: Partial<Pick<Highlight, 'color' | 'note' | 'char' | 'to' | 'text'>>) => void;
     removeHighlight: (id: string) => void;
+    logReading: (delta: Partial<DayLog>) => void;
+    setMinuteGoal: (minutes: number) => void;
+    markReaderFinished: (readerId: string) => void;
     addOwnBook: (book: OwnBook) => void;
     removeOwnBook: (id: string) => void;
     markDownloaded: (id: string) => void;
   };
+
+const EMPTY_DAY: DayLog = { seconds: 0, pages: 0, words: 0, cards: 0 };
+const CARD_SECONDS = 30;
 
 const DEFAULT_STASH: Stash = { id: 'saved', name: 'Saved', ideaIds: [], createdAt: new Date(0).toISOString() };
 
@@ -86,6 +98,9 @@ const initialUserState: UserState = {
   bookmarks: {},
   clips: [],
   highlights: [],
+  readingLog: {},
+  minuteGoal: 10,
+  finishedReaders: {},
   ownBooks: [],
   downloadedBooks: [],
 };
@@ -96,7 +111,7 @@ function toIndex<T extends { id: string }>(items: T[]): Record<string, T> {
   return Object.fromEntries(items.map((item) => [item.id, item]));
 }
 
-function localDate(d = new Date()): string {
+export function localDate(d = new Date()): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
@@ -200,10 +215,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const firstTime = !u.readIdeaIds.includes(ideaId);
       const date = localDate();
       const todayCount = u.today.date === date ? u.today.count : 0;
+      const day = u.readingLog[date] ?? EMPTY_DAY;
       return {
         ...u,
         readIdeaIds: [ideaId, ...u.readIdeaIds.filter((id) => id !== ideaId)].slice(0, MAX_READ_HISTORY),
         today: { date, count: todayCount + (firstTime ? 1 : 0) },
+        // A card takes about half a minute to read; count it toward the day's reading time.
+        readingLog: firstTime ? { ...u.readingLog, [date]: { ...day, cards: day.cards + 1, seconds: day.seconds + CARD_SECONDS } } : u.readingLog,
       };
     });
   }, []);
@@ -290,6 +308,26 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setUser((u) => ({ ...u, highlights: u.highlights.filter((h) => h.id !== id) }));
   }, []);
 
+  const logReading = useCallback((delta: Partial<DayLog>) => {
+    setUser((u) => {
+      const date = localDate();
+      const day = u.readingLog[date] ?? EMPTY_DAY;
+      const next: DayLog = {
+        seconds: day.seconds + (delta.seconds ?? 0),
+        pages: day.pages + (delta.pages ?? 0),
+        words: day.words + (delta.words ?? 0),
+        cards: day.cards + (delta.cards ?? 0),
+      };
+      return { ...u, readingLog: { ...u.readingLog, [date]: next }, streak: bumpStreak(u.streak) };
+    });
+  }, []);
+
+  const setMinuteGoal = useCallback((minuteGoal: number) => setUser((u) => ({ ...u, minuteGoal })), []);
+
+  const markReaderFinished = useCallback((readerId: string) => {
+    setUser((u) => (u.finishedReaders[readerId] ? u : { ...u, finishedReaders: { ...u.finishedReaders, [readerId]: new Date().toISOString() } }));
+  }, []);
+
   const addOwnBook = useCallback((book: OwnBook) => setUser((u) => ({ ...u, ownBooks: [book, ...u.ownBooks] })), []);
 
   const removeOwnBook = useCallback((id: string) => {
@@ -355,6 +393,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       addHighlight,
       updateHighlight,
       removeHighlight,
+      logReading,
+      setMinuteGoal,
+      markReaderFinished,
       addOwnBook,
       removeOwnBook,
       markDownloaded,
@@ -362,7 +403,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [
     content, user, ready, indexes, setFollowedTopics, createStash, deleteStash, toggleInStash, toggleLike, markRead, setBookPosition,
     finishBook, toggleFavoriteBook, setDailyGoal, resetProgress, setReaderSettings, setReaderPosition, toggleBookmark, removeBookmark,
-    saveClip, addHighlight, updateHighlight, removeHighlight, addOwnBook, removeOwnBook, markDownloaded,
+    saveClip, addHighlight, updateHighlight, removeHighlight, logReading, setMinuteGoal, markReaderFinished, addOwnBook, removeOwnBook, markDownloaded,
   ]);
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

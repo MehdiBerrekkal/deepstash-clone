@@ -2,7 +2,7 @@ import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator, FlatList, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions,
+  ActivityIndicator, AppState, FlatList, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions,
   type GestureResponderEvent, type LayoutChangeEvent, type TextStyle,
 } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
@@ -17,6 +17,7 @@ import { LISTEN_RATES, useListen, voicesFor, type ListenVoice, type Sentence, ty
 import { loadOwnBook } from '@/lib/ownbooks';
 import { findPage, pageStart, paginate, type Page } from '@/lib/paginate';
 import { searchBook, type BookHit } from '@/lib/search';
+import { CHARS_PER_WORD, DEFAULT_WPM, formatDuration, readingSpeed } from '@/lib/stats';
 import { useStore } from '@/lib/store';
 import type { Highlight, ReaderFont, ReaderPosition, ReaderTheme } from '@/lib/types';
 
@@ -57,6 +58,7 @@ export default function FullReaderScreen() {
 function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; start?: ReaderPosition }) {
   const readerId = `${kind === 'own' ? 'own' : 'classic'}:${id}`;
   const { readerSettings, setReaderSettings, readerProgress, setReaderPosition, bookmarks, toggleBookmark, removeBookmark, highlights } = useStore();
+  const { logReading, markReaderFinished, readingLog } = useStore();
   const [rawBook, setBook] = useState<FullBook | null>(null);
   // Typeset once, before paginating, so page offsets line up with the text that's drawn.
   const book = useMemo<FullBook | null>(
@@ -229,6 +231,45 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
     return () => globalThis.removeEventListener('keydown', onKey);
   }, [step]);
 
+  // Reading time: counted in 15-second ticks while you're turning pages (or listening) and the app is in front.
+  const lastActive = useRef(0);
+  const playing = useRef(false);
+  useEffect(() => {
+    playing.current = listen.playing;
+  }, [listen.playing]);
+  useEffect(() => {
+    if (!book) return;
+    const tick = setInterval(() => {
+      const visible = Platform.OS === 'web' ? globalThis.document?.visibilityState !== 'hidden' : AppState.currentState === 'active';
+      if (visible && (playing.current || Date.now() - lastActive.current < 120_000)) logReading({ seconds: 15 });
+    }, 15_000);
+    return () => clearInterval(tick);
+  }, [book, logReading]);
+
+  // Characters before each page, for words read and time left.
+  const charsBefore = useMemo(() => {
+    const out = [0];
+    for (const p of pages) out.push(out[out.length - 1] + p.pieces.reduce((n, piece) => n + piece.to - piece.from, 0));
+    return out;
+  }, [pages]);
+
+  // Pages turned forward count as read; reaching the last page finishes the book.
+  const seen = useRef<{ pages: Page[]; index: number } | null>(null);
+  useEffect(() => {
+    const before = seen.current;
+    seen.current = { pages, index: current };
+    lastActive.current = Date.now();
+    if (!pages.length || !before || before.pages !== pages) return;
+    const step = current - before.index;
+    if (step > 0 && step <= 2) {
+      logReading({ pages: step, words: Math.round((charsBefore[current] - charsBefore[before.index]) / CHARS_PER_WORD) });
+    }
+    if (current >= pages.length - (spread ? 2 : 1)) markReaderFinished(readerId);
+  }, [current, pages, charsBefore, spread, readerId, logReading, markReaderFinished]);
+
+  const wpm = useMemo(() => readingSpeed(readingLog) ?? DEFAULT_WPM, [readingLog]);
+  const minutesLeft = (end: number) => Math.max(0, charsBefore[end] - charsBefore[current]) / CHARS_PER_WORD / wpm;
+
   const marks = bookmarks[readerId] ?? [];
   const page = pages[current];
   const visible = spread ? [current, current + 1] : [current];
@@ -244,6 +285,7 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
 
   // Tap the outer edges to turn the page, like an e-reader; tap the middle to show or hide the controls.
   const onTap = (e: GestureResponderEvent) => {
+    lastActive.current = Date.now();
     const x = e.nativeEvent.pageX;
     if (x < window.width * 0.22) step(-1);
     else if (x > window.width * 0.78) step(1);
@@ -363,6 +405,12 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
           <Text style={[styles.pageLabel, { color: theme.soft }]}>
             {pageLabel} of {pages.length} · {percent}%
           </Text>
+          {page && (
+            <Text style={[styles.pageLabel, { color: theme.soft }]}>
+              {formatDuration(minutesLeft(chapterStarts[page.chapter + 1] ?? pages.length))} left in chapter ·{' '}
+              {formatDuration(minutesLeft(pages.length))} in book
+            </Text>
+          )}
         </Animated.View>
       )}
 

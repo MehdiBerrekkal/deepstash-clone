@@ -1,32 +1,39 @@
 import { useLayoutEffect, useState } from 'react';
-import { FlatList, StyleSheet, Text, View, type LayoutChangeEvent, type ListViewToken } from 'react-native';
-import { useNavigation } from 'expo-router';
+import { FlatList, Pressable, StyleSheet, Text, View, type LayoutChangeEvent, type ListViewToken } from 'react-native';
+import { router, useNavigation } from 'expo-router';
 
+import { GoalRing } from '@/components/GoalRing';
 import { IdeaCard } from '@/components/IdeaCard';
 import { KindFilter } from '@/components/KindFilter';
-import { useFeed, useStore } from '@/lib/store';
+import { minutesOf } from '@/lib/stats';
+import { localDate, useFeed, useStore } from '@/lib/store';
 import { colors } from '@/lib/theme';
 import type { CardKind, Idea } from '@/lib/types';
 
 export default function FeedScreen() {
   const [kind, setKind] = useState<CardKind | null>(null);
   const feed = useFeed(kind);
-  const { streak, today, dailyGoal, markRead } = useStore();
+  const { streak, markRead, readingLog, minuteGoal } = useStore();
+  const minutes = minutesOf(readingLog[localDate()]);
   const navigation = useNavigation();
   const [height, setHeight] = useState(0);
 
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
-        <View style={styles.headerRight}>
+        <Pressable
+          accessibilityLabel={`${minutes} of ${minuteGoal} minutes read today. Open your stats.`}
+          onPress={() => router.push('/profile')}
+          style={styles.headerRight}>
+          <GoalRing progress={minutes / minuteGoal} size={30} stroke={3.5} label={minutes >= minuteGoal ? '✓' : String(minutes)} />
           <Text style={styles.goal}>
-            {Math.min(today.count, dailyGoal)}/{dailyGoal} today
+            {minutes >= minuteGoal ? 'Goal met' : `${minuteGoal - minutes} min to go`}
           </Text>
           <Text style={styles.streak}>🔥 {streak.count}</Text>
-        </View>
+        </Pressable>
       ),
     });
-  }, [navigation, streak.count, today.count, dailyGoal]);
+  }, [navigation, streak.count, minutes, minuteGoal]);
 
   // FlatList doesn't allow this callback to change after mount; markRead is stable.
   const [onViewable] = useState(() => ({ viewableItems }: { viewableItems: ListViewToken[] }) => {
