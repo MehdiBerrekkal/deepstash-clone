@@ -79,7 +79,9 @@ function walk(dir) {
     `<link rel="apple-touch-icon" href="${base}pwa/icon-180.png">`,
     '<meta name="apple-mobile-web-app-capable" content="yes">',
     '<meta name="mobile-web-app-capable" content="yes">',
-    '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">',
+    // A solid status bar coloured by theme-color, which the app sets to match each screen (light, dark, the
+    // reader's paper). Unlike "black-translucent", its clock stays readable on light backgrounds.
+    '<meta name="apple-mobile-web-app-status-bar-style" content="default">',
     `<meta name="apple-mobile-web-app-title" content="${NAME}">`,
     `<meta name="theme-color" content="${BACKGROUND}">`,
     `<style>html,body{background:${BACKGROUND};overscroll-behavior:none}</style>`,

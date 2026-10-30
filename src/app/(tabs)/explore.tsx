@@ -11,7 +11,7 @@ import { classicAsSource } from '@/lib/classicSource';
 import { classics } from '@/lib/fullbook';
 import { matchesAll } from '@/lib/search';
 import { useStore } from '@/lib/store';
-import { colors } from '@/lib/theme';
+import { colors, onCardScope } from '@/lib/theme';
 import type { CardKind, Highlight, Idea, Source } from '@/lib/types';
 
 const PAGE = 60;
@@ -86,7 +86,7 @@ export default function ExploreScreen() {
               <Pressable
                 key={topic.id}
                 onPress={() => router.push({ pathname: '/topic/[id]', params: { id: topic.id } })}
-                style={[styles.topic, { backgroundColor: topic.color }]}>
+                style={[styles.topic, onCardScope, { backgroundColor: topic.color }]}>
                 <Text style={styles.topicEmoji}>{topic.emoji}</Text>
                 <Text style={styles.topicName}>{topic.name}</Text>
               </Pressable>

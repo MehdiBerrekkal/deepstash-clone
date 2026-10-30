@@ -7,6 +7,7 @@ import { classicById } from '@/lib/fullbook';
 import type { OwnBook } from '@/lib/ownbooks';
 import { NEW_PER_DAY, schedule, type Grade, type ReviewState } from '@/lib/review';
 import { supabase } from '@/lib/supabase';
+import type { Appearance } from '@/lib/theme';
 import type {
   Bookmark, BookProgress, CardKind, DayLog, Highlight, Idea, ReaderPosition, ReaderProgress, ReaderSettings, Source, Stash, Streak, Topic,
 } from '@/lib/types';
@@ -46,6 +47,8 @@ type UserState = {
   reviewNew: { date: string; count: number };
   /** Cards you marked "Not interested": hidden, and their topics ranked lower. */
   notInterested: string[];
+  /** Light, dark, or follow the device ("auto"). */
+  appearance: Appearance;
   ownBooks: OwnBook[];
   /** Catalog books downloaded to this device, newest first. */
   downloadedBooks: string[];
@@ -86,6 +89,7 @@ type Store = Content &
     reviewQueue: string[];
     gradeReview: (key: string, grade: Grade) => void;
     setNotInterested: (ideaId: string, hide: boolean) => void;
+    setAppearance: (appearance: Appearance) => void;
     addOwnBook: (book: OwnBook) => void;
     removeOwnBook: (id: string) => void;
     markDownloaded: (id: string) => void;
@@ -117,6 +121,7 @@ const initialUserState: UserState = {
   reviews: {},
   reviewNew: { date: '', count: 0 },
   notInterested: [],
+  appearance: 'auto',
   ownBooks: [],
   downloadedBooks: [],
 };
@@ -360,6 +365,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  // Changing the app's appearance also lets the reader follow it again (drops a manual reader theme).
+  const setAppearance = useCallback((appearance: Appearance) => {
+    setUser((u) => ({ ...u, appearance, readerSettings: { ...u.readerSettings, themeOverride: undefined } }));
+  }, []);
+
   const addOwnBook = useCallback((book: OwnBook) => setUser((u) => ({ ...u, ownBooks: [book, ...u.ownBooks] })), []);
 
   const removeOwnBook = useCallback((id: string) => {
@@ -438,6 +448,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       reviewQueue,
       gradeReview,
       setNotInterested,
+      setAppearance,
       addOwnBook,
       removeOwnBook,
       markDownloaded,
@@ -445,7 +456,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [
     content, user, ready, indexes, setFollowedTopics, createStash, deleteStash, toggleInStash, toggleLike, markRead, setBookPosition,
     finishBook, toggleFavoriteBook, setDailyGoal, resetProgress, setReaderSettings, setReaderPosition, toggleBookmark, removeBookmark,
-    saveClip, addHighlight, updateHighlight, removeHighlight, logReading, setMinuteGoal, markReaderFinished, gradeReview, setNotInterested, addOwnBook, removeOwnBook, markDownloaded,
+    saveClip, addHighlight, updateHighlight, removeHighlight, logReading, setMinuteGoal, markReaderFinished, gradeReview, setNotInterested, setAppearance, addOwnBook, removeOwnBook, markDownloaded,
   ]);
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

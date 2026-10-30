@@ -6,7 +6,7 @@ import { CardBody, POEM_PREVIEW_LINES } from '@/components/CardBody';
 import { haptic } from '@/lib/haptics';
 import { speakOnce } from '@/lib/listen';
 import { useStore } from '@/lib/store';
-import { cardKindById, colors, sourceKindLabel } from '@/lib/theme';
+import { cardKindById, colors, onCardScope, sourceKindLabel } from '@/lib/theme';
 import type { Idea } from '@/lib/types';
 
 type Props = {
@@ -63,7 +63,7 @@ export function IdeaCard({ idea, height, counter, hideSource = false, scrollable
 
   return (
     <View style={[styles.page, { height }]}>
-      <View style={[styles.card, { backgroundColor: topic?.color ?? colors.surface }]}>
+      <View style={[styles.card, topic && onCardScope, { backgroundColor: topic?.color ?? colors.surface }]}>
         <View style={styles.header}>
           <View style={styles.headerText}>
             <Text style={styles.topic}>{topic ? `${topic.emoji}  ${topic.name}` : ''}</Text>

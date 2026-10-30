@@ -6,7 +6,7 @@ import { FavoriteButton } from '@/components/FavoriteButton';
 import { Shelf } from '@/components/Shelf';
 import { classicBySourceId, classicReaderId } from '@/lib/fullbook';
 import { useStore } from '@/lib/store';
-import { colors, readMinutes, serif, sourceKindLabel } from '@/lib/theme';
+import { colors, onCardScope, readMinutes, serif, sourceKindLabel } from '@/lib/theme';
 
 export default function BookScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -34,7 +34,7 @@ export default function BookScreen() {
     <>
       <Stack.Screen options={{ title: '' }} />
       <ScrollView contentContainerStyle={styles.container}>
-        <View style={[styles.hero, { backgroundColor: topic?.color ?? colors.surface }]}>
+        <View style={[styles.hero, topic && onCardScope, { backgroundColor: topic?.color ?? colors.surface }]}>
           <BookCover book={book} width={140} favoriteKey={null} onPress={() => read(progress?.finishedAt ? 0 : progress?.position ?? 0)} />
           <Text style={styles.title}>{book.title}</Text>
           <Text style={styles.author}>

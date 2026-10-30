@@ -8,7 +8,7 @@ import { classicAsSource } from '@/lib/classicSource';
 import { downloadCatalogBook } from '@/lib/downloads';
 import { classicById, classicReaderId, formatYear, loadClassic, readMinutesForWords, type FullBook } from '@/lib/fullbook';
 import { useStore } from '@/lib/store';
-import { colors, serif } from '@/lib/theme';
+import { colors, onCardScope, serif } from '@/lib/theme';
 
 export default function ClassicScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -52,7 +52,7 @@ export default function ClassicScreen() {
     <>
       <Stack.Screen options={{ title: '' }} />
       <ScrollView contentContainerStyle={styles.container}>
-        <View style={[styles.hero, { backgroundColor: topic?.color ?? colors.surface }]}>
+        <View style={[styles.hero, topic && onCardScope, { backgroundColor: topic?.color ?? colors.surface }]}>
           <BookCover book={classicAsSource(classic)} width={140} favoriteKey={null} onPress={open} fraction={progress?.fraction} />
           <Text style={styles.title}>{classic.title}</Text>
           <Text style={styles.author}>

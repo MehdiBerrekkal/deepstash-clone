@@ -6,7 +6,8 @@ import { EBGaramond_400Regular, EBGaramond_400Regular_Italic, EBGaramond_600Semi
 import { Literata_400Regular, Literata_400Regular_Italic, Literata_600SemiBold } from '@expo-google-fonts/literata';
 import { Platform } from 'react-native';
 
-import type { HighlightColor, ReaderFont, ReaderTheme } from '@/lib/types';
+import type { Scheme } from '@/lib/theme';
+import type { HighlightColor, ReaderFont, ReaderSettings, ReaderTheme } from '@/lib/types';
 
 /** Fonts loaded once at startup (see src/app/_layout.tsx). */
 export const bookFonts = {
@@ -130,4 +131,19 @@ export function measuredCharWidth(fontFamily: string): number | null {
   } catch {
     return null;
   }
+}
+
+/** The reader's paper: a hand-picked theme if any, else Night when the app is dark and the chosen light paper otherwise. */
+export function readerThemeFor(settings: ReaderSettings, scheme: Scheme): ReaderTheme {
+  if (settings.themeOverride) return settings.themeOverride;
+  if (scheme === 'dark') return 'dark';
+  return settings.theme === 'sepia' ? 'sepia' : 'light';
+}
+
+/** The settings change for choosing a reader theme by hand (Aa panel or the sun/moon button). */
+export function chooseReaderTheme(settings: ReaderSettings, scheme: Scheme, pick: ReaderTheme): Partial<ReaderSettings> {
+  const light = pick === 'dark' ? undefined : pick;
+  const next = { ...settings, ...(light ? { theme: light } : {}), themeOverride: undefined };
+  // Only keep an override when it differs from what the app's appearance would give.
+  return { ...(light ? { theme: light } : {}), themeOverride: readerThemeFor(next, scheme) === pick ? undefined : pick };
 }

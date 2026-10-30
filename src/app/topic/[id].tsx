@@ -6,7 +6,7 @@ import { BookGrid } from '@/components/BookGrid';
 import { IdeaRow } from '@/components/IdeaRow';
 import { KindFilter } from '@/components/KindFilter';
 import { useStore } from '@/lib/store';
-import { colors } from '@/lib/theme';
+import { colors, onCardScope } from '@/lib/theme';
 import type { CardKind } from '@/lib/types';
 
 export default function TopicScreen() {
@@ -38,7 +38,7 @@ export default function TopicScreen() {
         contentContainerStyle={styles.list}
         ListHeaderComponent={
           <View style={styles.header}>
-            <View style={[styles.banner, { backgroundColor: topic.color }]}>
+            <View style={[styles.banner, onCardScope, { backgroundColor: topic.color }]}>
               <Text style={styles.emoji}>{topic.emoji}</Text>
               <Text style={styles.name}>{topic.name}</Text>
               <Text style={styles.meta}>

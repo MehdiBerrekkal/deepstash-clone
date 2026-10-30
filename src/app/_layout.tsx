@@ -1,15 +1,14 @@
 import { Stack } from 'expo-router';
 import { useFonts } from 'expo-font';
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { Platform } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { CelebrationHost } from '@/components/Celebration';
+import { AppearanceSync, usePalette } from '@/lib/appearance';
 import { bookFonts } from '@/lib/bookType';
 import { WebSafeArea } from '@/lib/safeArea';
 import { StoreProvider } from '@/lib/store';
-import { colors } from '@/lib/theme';
 
 export default function RootLayout() {
   // Book fonts for the reader; text falls back to system fonts until they finish loading.
@@ -22,13 +21,8 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
     <WebSafeArea>
     <StoreProvider>
-      <StatusBar style="light" />
-      <Stack
-        screenOptions={{
-          headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.text,
-          contentStyle: { backgroundColor: colors.background },
-        }}>
+      <AppearanceSync />
+      <ThemedStack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="idea/[id]" options={{ title: 'Card', presentation: 'modal' }} />
@@ -42,10 +36,25 @@ export default function RootLayout() {
         <Stack.Screen name="favorites" options={{ title: 'Favorites' }} />
         <Stack.Screen name="highlights" options={{ title: 'Highlights' }} />
         <Stack.Screen name="review" options={{ title: 'Review' }} />
-      </Stack>
+      </ThemedStack>
       <CelebrationHost />
     </StoreProvider>
     </WebSafeArea>
     </GestureHandlerRootView>
+  );
+}
+
+/** The app's stack, coloured for the current light/dark scheme. */
+function ThemedStack({ children }: { children: ReactNode }) {
+  const palette = usePalette();
+  return (
+    <Stack
+      screenOptions={{
+        headerStyle: { backgroundColor: palette.background },
+        headerTintColor: palette.text,
+        contentStyle: { backgroundColor: palette.background },
+      }}>
+      {children}
+    </Stack>
   );
 }

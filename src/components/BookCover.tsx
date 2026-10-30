@@ -4,7 +4,7 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { FavoriteButton } from '@/components/FavoriteButton';
 import { useStore } from '@/lib/store';
-import { colors, serif } from '@/lib/theme';
+import { colors, onCardScope, serif } from '@/lib/theme';
 import type { Source } from '@/lib/types';
 
 type Props = {
@@ -50,7 +50,7 @@ export function BookCover({
         accessibilityLabel={`${book.title} by ${book.author}`}
         onPress={onPress ?? (() => router.push({ pathname: '/book/[id]', params: { id: book.id } }))}
         style={{ width }}>
-        <View style={[styles.cover, { width, height, backgroundColor: topic?.color ?? colors.surface }]}>
+        <View style={[styles.cover, onCardScope, { width, height, backgroundColor: topic?.color ?? colors.surface }]}>
           <View style={styles.spine} />
           <Text style={[styles.title, { fontSize: Math.max(11, width / 8) }]} numberOfLines={5}>
             {book.title}

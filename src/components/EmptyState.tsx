@@ -3,17 +3,18 @@ import { Pressable, StyleSheet, Text } from 'react-native';
 import Animated, { FadeInUp } from 'react-native-reanimated';
 import Svg, { Circle, Ellipse, G, Line, Path, Rect } from 'react-native-svg';
 
+import { usePalette } from '@/lib/appearance';
 import { displayFont } from '@/lib/bookType';
 import { colors } from '@/lib/theme';
 
 type Art = 'books' | 'heart' | 'pen' | 'brain' | 'search';
 
-const ACCENT = colors.accent;
 const INK = '#3A3F4B';
 const PAPER = '#F4EBDD';
 
 /** Small hand-drawn style scenes for empty screens. */
 function Illustration({ art }: { art: Art }) {
+  const ACCENT = usePalette().accent;
   return (
     <Svg width={180} height={140} viewBox="0 0 180 140">
       <Ellipse cx={90} cy={124} rx={70} ry={9} fill="rgba(255,255,255,0.05)" />

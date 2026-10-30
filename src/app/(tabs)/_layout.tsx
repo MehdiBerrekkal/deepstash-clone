@@ -4,7 +4,7 @@ import { Text, type ColorValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useStore } from '@/lib/store';
-import { colors } from '@/lib/theme';
+import { usePalette } from '@/lib/appearance';
 
 const icon = (glyph: string) =>
   function TabIcon({ color }: { color: ColorValue }) {
@@ -15,6 +15,8 @@ const icon = (glyph: string) =>
 export default function TabsLayout() {
   const { ready, followedTopicIds } = useStore();
   const insets = useSafeAreaInsets();
+  // Real colours (not CSS variables): navigation tints icons with them.
+  const colors = usePalette();
 
   if (!ready) return null;
   if (followedTopicIds.length === 0) return <Redirect href="/onboarding" />;

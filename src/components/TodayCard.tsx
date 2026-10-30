@@ -9,7 +9,7 @@ import { classicAsSource } from '@/lib/classicSource';
 import { classicById } from '@/lib/fullbook';
 import { DEFAULT_WPM, formatDuration, minutesOf, readingSpeed } from '@/lib/stats';
 import { localDate, useStore } from '@/lib/store';
-import { colors } from '@/lib/theme';
+import { colors, onCardScope } from '@/lib/theme';
 
 export type ContinueBook = { title: string; author: string; cover?: string; fraction: number; words: number; open: () => void };
 
@@ -62,7 +62,7 @@ export function TodayCard({ height, book }: { height: number; book: ContinueBook
 
   return (
     <View style={[styles.page, { height }]}>
-      <LinearGradient colors={['#2A2118', '#15171D']} style={styles.card}>
+      <LinearGradient colors={['#2A2118', '#15171D']} style={[styles.card, onCardScope]}>
         <Animated.Text entering={FadeInDown.duration(400)} style={styles.greeting}>
           {greeting()}
         </Animated.Text>

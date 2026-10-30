@@ -9,16 +9,21 @@ import { classicAsSource } from '@/lib/classicSource';
 import { classicById } from '@/lib/fullbook';
 import { calendarWeeks, compactNumber, formatDuration, minutesOf, readingSpeed, readingStreak } from '@/lib/stats';
 import { localDate, useStore } from '@/lib/store';
-import { colors } from '@/lib/theme';
+import { colors, type Appearance } from '@/lib/theme';
 
 const GOALS = [5, 10, 20, 30];
+const APPEARANCES: { id: Appearance; label: string }[] = [
+  { id: 'auto', label: '◐ Automatic' },
+  { id: 'light', label: '☀︎ Light' },
+  { id: 'dark', label: '☾ Dark' },
+];
 const WEEKS = 18;
 const DAY_LETTERS = ['M', '', 'W', '', 'F', '', 'S'];
 
 export default function ProfileScreen() {
   const {
     streak, readIdeaIds, likedIdeaIds, stashes, bookProgress, sourceById, topics, followedTopicIds, topicById, resetProgress,
-    highlights, readingLog, minuteGoal, setMinuteGoal, finishedReaders, reviewQueue, reviews,
+    highlights, readingLog, minuteGoal, setMinuteGoal, finishedReaders, reviewQueue, reviews, appearance, setAppearance,
   } = useStore();
   const [confirmReset, setConfirmReset] = useState(false);
 
@@ -77,6 +82,23 @@ export default function ProfileScreen() {
             ))}
           </View>
         </View>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.heading}>Appearance</Text>
+        <View style={styles.segment}>
+          {APPEARANCES.map((a) => (
+            <Pressable
+              key={a.id}
+              accessibilityLabel={`Appearance ${a.label}`}
+              accessibilityState={{ selected: appearance === a.id }}
+              onPress={() => setAppearance(a.id)}
+              style={[styles.segmentItem, appearance === a.id && styles.segmentOn]}>
+              <Text style={[styles.segmentText, appearance === a.id && styles.segmentTextOn]}>{a.label}</Text>
+            </Pressable>
+          ))}
+        </View>
+        <Text style={styles.muted}>Automatic follows your iPhone&apos;s light/dark setting. Books switch to Night paper in dark mode.</Text>
       </View>
 
       <View style={styles.card}>
@@ -214,6 +236,11 @@ const styles = StyleSheet.create({
   card: { padding: 20, borderRadius: 20, backgroundColor: colors.surface, gap: 10 },
   heading: { color: colors.text, fontSize: 18, fontWeight: '800' },
   today: { flexDirection: 'row', alignItems: 'center', gap: 18 },
+  segment: { flexDirection: 'row', gap: 6, padding: 4, borderRadius: 14, backgroundColor: colors.surfaceRaised },
+  segmentItem: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 10 },
+  segmentOn: { backgroundColor: colors.accent },
+  segmentText: { color: colors.text, fontWeight: '700' },
+  segmentTextOn: { color: colors.onAccent },
   todayText: { flex: 1, gap: 6 },
   small: { color: colors.muted, fontSize: 11, fontWeight: '600' },
   heatmap: { flexDirection: 'row', gap: 3 },

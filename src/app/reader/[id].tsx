@@ -14,13 +14,14 @@ import { HighlightSheet } from '@/components/HighlightSheet';
 import { PageFlip, type PageFlipHandle } from '@/components/PageFlip';
 import { Scrubber } from '@/components/Scrubber';
 import { VoicePicker } from '@/components/VoicePicker';
-import { BOOK_THEMES, HIGHLIGHT_COLORS, READER_FONTS, bookFonts, measuredCharWidth, chapterLabel, displayFont, displayItalic, typeset, type BookTheme } from '@/lib/bookType';
+import { BOOK_THEMES, HIGHLIGHT_COLORS, READER_FONTS, bookFonts, chooseReaderTheme, measuredCharWidth, readerThemeFor, chapterLabel, displayFont, displayItalic, typeset, type BookTheme } from '@/lib/bookType';
 import { classicAsSource } from '@/lib/classicSource';
 import { classicById, loadClassic, type FullBook } from '@/lib/fullbook';
 import { LISTEN_RATES, useListen, type Sentence, type SleepTimer } from '@/lib/listen';
 import { isNatural, naturalVoiceInfo } from '@/lib/neuralVoice';
 import { loadOwnBook } from '@/lib/ownbooks';
 import { findPage, pageStart, paginate, type Page } from '@/lib/paginate';
+import { useScheme } from '@/lib/appearance';
 import { celebrate } from '@/lib/celebrate';
 import { setScreenColor } from '@/lib/safeArea';
 import { searchBook, type BookHit } from '@/lib/search';
@@ -86,7 +87,12 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
   const [anchor, setAnchor] = useState<ReaderPosition | null>(() => start ?? readerProgress[readerId] ?? null);
   const bookHighlights = useMemo(() => highlights.filter((h) => h.readerId === readerId), [highlights, readerId]);
 
-  const theme = BOOK_THEMES[readerSettings.theme] ?? BOOK_THEMES.light;
+  // The paper follows the app's light/dark appearance unless a theme was picked here by hand.
+  const scheme = useScheme();
+  const themeKey = readerThemeFor(readerSettings, scheme);
+  const theme = BOOK_THEMES[themeKey] ?? BOOK_THEMES.light;
+  const pickTheme = (t: ReaderTheme) => setReaderSettings(chooseReaderTheme(readerSettings, scheme, t));
+  const [bottomBarHeight, setBottomBarHeight] = useState(0);
   // The cover shown while the book opens.
   const [opening] = useState(() => {
     const meta = kind === 'own' ? undefined : classicById[id];
@@ -302,6 +308,11 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
   const percent = pages.length > 1 ? Math.round((current / (pages.length - 1)) * 100) : 100;
   const pageLabel = spread && current + 1 < pages.length ? `Pages ${current + 1}–${current + 2}` : `Page ${current + 1}`;
 
+  // The player sits just above the controls when they're shown, otherwise low over the home indicator
+  // (the page number hides while it's there, so it never covers text).
+  const playerBottom = chrome && bottomBarHeight ? bottomBarHeight + 8 : Math.max(8, insets.bottom - 18);
+  const hideFolio = !!listen.sentence;
+
   const onLayout = (e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
     if (Math.abs(width - size.width) > 1 || Math.abs(height - size.height) > 1) setSize({ width, height });
@@ -335,6 +346,7 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
       spoken={listen.sentence}
       highlights={bookHighlights}
       found={found}
+      hideFolio={hideFolio}
     />
   );
 
@@ -403,6 +415,12 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
             style={styles.iconButton}>
             <Text style={[styles.icon, { color: markedHere ? '#B5492F' : theme.chromeText }]}>{markedHere ? '★' : '☆'}</Text>
           </Pressable>
+          <Pressable
+            accessibilityLabel={themeKey === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            onPress={() => pickTheme(themeKey === 'dark' ? (readerSettings.theme === 'sepia' ? 'sepia' : 'light') : 'dark')}
+            style={styles.iconButton}>
+            <Text style={[styles.icon, { color: theme.chromeText, fontSize: 19 }]}>{themeKey === 'dark' ? '☀︎' : '☾'}</Text>
+          </Pressable>
           <Pressable accessibilityLabel="Text size, font and theme" onPress={() => setPanel('settings')} style={styles.iconButton}>
             <Text style={[styles.aa, { color: theme.chromeText, fontFamily: displayFont }]}>Aa</Text>
           </Pressable>
@@ -413,6 +431,7 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
         <Animated.View
           entering={FadeIn.duration(180)}
           exiting={FadeOut.duration(260)}
+          onLayout={(e) => setBottomBarHeight(e.nativeEvent.layout.height)}
           style={[styles.bottomBar, { backgroundColor: theme.chrome, paddingBottom: insets.bottom + 8, borderTopColor: theme.rule }]}>
           <Scrubber
             theme={theme}
@@ -441,7 +460,7 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
         <Animated.View
           entering={FadeIn.duration(200)}
           exiting={FadeOut.duration(200)}
-          style={[styles.listenNotice, { backgroundColor: theme.ink, bottom: (chrome ? 136 : 74) + insets.bottom }]}>
+          style={[styles.listenNotice, { backgroundColor: theme.ink, bottom: playerBottom + (listen.sentence ? 58 : 0) }]}>
           {listen.loading !== null ? (
             <>
               <Text style={[styles.listenNoticeText, { color: theme.paper }]}>
@@ -464,7 +483,7 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
           entering={FadeIn.duration(200)}
           style={[
             styles.listenBar,
-            { backgroundColor: theme.chrome, borderColor: theme.rule, bottom: (chrome ? 74 : 12) + insets.bottom },
+            { backgroundColor: theme.chrome, borderColor: theme.rule, bottom: playerBottom },
           ]}>
           <Pressable accessibilityLabel="Previous sentence" onPress={() => listenControl(() => listen.skip(-1))} style={styles.listenButton}>
             <Text style={[styles.listenIcon, { color: theme.chromeText }]}>⏮</Text>
@@ -497,6 +516,12 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
             onPress={() => setPanel('sleep')}
             style={[styles.listenChip, { borderColor: listen.sleep ? theme.ink : theme.rule }]}>
             <Text style={[styles.listenChipText, { color: theme.chromeText }]}>{sleepLabel(listen.sleep)}</Text>
+          </Pressable>
+          <Pressable
+            accessibilityLabel={themeKey === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            onPress={() => pickTheme(themeKey === 'dark' ? (readerSettings.theme === 'sepia' ? 'sepia' : 'light') : 'dark')}
+            style={styles.listenButton}>
+            <Text style={[styles.listenIcon, { color: theme.chromeText }]}>{themeKey === 'dark' ? '☀︎' : '☾'}</Text>
           </Pressable>
           <Pressable accessibilityLabel="Stop listening" onPress={listen.close} style={styles.listenButton}>
             <Text style={[styles.listenIcon, { color: theme.soft }]}>✕</Text>
@@ -581,13 +606,24 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
                 <Pressable
                   key={t}
                   accessibilityLabel={`Theme ${BOOK_THEMES[t].label}`}
-                  onPress={() => setReaderSettings({ theme: t })}
-                  style={[styles.choice, { backgroundColor: BOOK_THEMES[t].paper, borderColor: t === readerSettings.theme ? theme.ink : theme.rule }]}>
+                  onPress={() => pickTheme(t)}
+                  style={[styles.choice, { backgroundColor: BOOK_THEMES[t].paper, borderColor: t === themeKey ? theme.ink : theme.rule }]}>
                   <Text style={{ color: BOOK_THEMES[t].ink, fontFamily: font.regular, fontSize: 18 }}>Aa</Text>
                   <Text style={{ color: BOOK_THEMES[t].soft, fontSize: 12 }}>{BOOK_THEMES[t].label}</Text>
                 </Pressable>
               ))}
             </View>
+            {readerSettings.themeOverride ? (
+              <Pressable accessibilityLabel="Match the app's appearance" onPress={() => setReaderSettings({ themeOverride: undefined })}>
+                <Text style={[styles.hint, { color: theme.ink, textDecorationLine: 'underline' }]}>
+                  ↺ Follow the app&apos;s light/dark setting again
+                </Text>
+              </Pressable>
+            ) : (
+              <Text style={[styles.hint, { color: theme.soft }]}>
+                Follows the app&apos;s light/dark setting (You → Appearance). Picking a paper here overrides it.
+              </Text>
+            )}
             <Text style={[styles.hint, { color: theme.soft }]}>
               Drag a page or tap the edges to turn it, and tap the middle to show or hide these controls. Pinch to zoom, turn
               your phone sideways for an open book, and long-press a paragraph to save it.
@@ -756,11 +792,13 @@ type BookPageProps = {
   highlights: Highlight[];
   /** A search result to point out on the page. */
   found?: BookHit | null;
+  /** Hide the page number (while the listen player covers that spot). */
+  hideFolio?: boolean;
 };
 
 /** One printed page: running head, text block (or chapter opener), and folio, on toned paper. */
 function BookPage({
-  book, page, index, width, height, margin, spreadSide, theme, fontKey, fontSize, lineHeight, openerSink, onTap, onLongPressParagraph, spoken, highlights, found,
+  book, page, index, width, height, margin, spreadSide, theme, fontKey, fontSize, lineHeight, openerSink, onTap, onLongPressParagraph, spoken, highlights, found, hideFolio,
 }: BookPageProps) {
   const font = READER_FONTS[fontKey];
   const chapter = book.chapters[page.chapter];
@@ -843,13 +881,15 @@ function BookPage({
         })}
       </View>
 
-      <Text
-        style={[
-          styles.folio,
-          { color: theme.soft, fontFamily: displayItalic, left: margin, right: margin, textAlign: spreadSide === 'left' ? 'left' : spreadSide === 'right' ? 'right' : 'center' },
-        ]}>
-        {index + 1}
-      </Text>
+      {!hideFolio && (
+        <Text
+          style={[
+            styles.folio,
+            { color: theme.soft, fontFamily: displayItalic, left: margin, right: margin, textAlign: spreadSide === 'left' ? 'left' : spreadSide === 'right' ? 'right' : 'center' },
+          ]}>
+          {index + 1}
+        </Text>
+      )}
     </Pressable>
   );
 }
@@ -883,9 +923,9 @@ const SLEEP_OPTIONS: { label: string; minutes?: number }[] = [
 ];
 
 function sleepLabel(sleep: SleepTimer) {
-  if (!sleep) return '☾';
-  if (sleep.kind === 'chapter') return '☾ Ch.';
-  return `☾ ${Math.max(1, Math.round((sleep.until - Date.now()) / 60_000))}m`;
+  if (!sleep) return '⏲ Sleep';
+  if (sleep.kind === 'chapter') return '⏲ Ch.';
+  return `⏲ ${Math.max(1, Math.round((sleep.until - Date.now()) / 60_000))}m`;
 }
 
 const styles = StyleSheet.create({
@@ -926,8 +966,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
     borderRadius: 999,
     borderWidth: StyleSheet.hairlineWidth,
     shadowColor: '#000',
@@ -936,9 +976,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 6,
   },
-  listenButton: { width: 34, height: 40, alignItems: 'center', justifyContent: 'center' },
+  listenButton: { width: 32, height: 40, alignItems: 'center', justifyContent: 'center' },
   listenIcon: { fontSize: 16 },
-  playButton: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  playButton: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   playIcon: { fontSize: 16, fontWeight: '800' },
   listenNotice: { position: 'absolute', left: 16, right: 16, alignSelf: 'center', maxWidth: 520, borderRadius: 14, padding: 12, gap: 8 },
   listenNoticeText: { fontSize: 13, fontWeight: '600', lineHeight: 18 },

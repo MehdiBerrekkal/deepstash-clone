@@ -9,7 +9,8 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PageFlip, type PageFlipHandle } from '@/components/PageFlip';
 import { PdfEngine, type PdfApi } from '@/components/PdfEngine';
 import { Scrubber } from '@/components/Scrubber';
-import { BOOK_THEMES, displayFont, displayItalic } from '@/lib/bookType';
+import { useScheme } from '@/lib/appearance';
+import { BOOK_THEMES, displayFont, displayItalic, readerThemeFor } from '@/lib/bookType';
 import { classicById } from '@/lib/fullbook';
 import { myBookPdfAssets } from '@/lib/myBooks';
 import { loadPdfData } from '@/lib/ownbooks';
@@ -53,7 +54,8 @@ function PdfBook({ id, source }: { id: string; source: 'own' | 'private' }) {
   const readerId = `pdf:${source}:${id}`;
   const { ownBooks, readerSettings, readerProgress, setReaderPosition } = useStore();
   const title = source === 'own' ? ownBooks.find((b) => b.id === id)?.title ?? 'PDF' : classicById[id]?.title ?? 'PDF';
-  const theme = BOOK_THEMES[readerSettings.theme] ?? BOOK_THEMES.light;
+  const scheme = useScheme();
+  const theme = BOOK_THEMES[readerThemeFor(readerSettings, scheme)] ?? BOOK_THEMES.light;
   const [api, setApi] = useState<PdfApi | null>(null);
   const [count, setCount] = useState(0);
   const [ratio, setRatio] = useState(1.414);

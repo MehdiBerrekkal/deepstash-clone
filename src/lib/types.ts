@@ -72,7 +72,10 @@ export type ReaderTheme = 'light' | 'sepia' | 'dark';
 export type ReaderFont = 'literata' | 'garamond' | 'sans';
 
 export type ReaderSettings = {
+  /** The paper for light reading (Paper or Sepia); Night is used when the app is dark. */
   theme: ReaderTheme;
+  /** A theme picked by hand in the reader, which wins over the app's appearance until it changes. */
+  themeOverride?: ReaderTheme;
   fontSize: number;
   font?: ReaderFont;
   listenRate?: number;

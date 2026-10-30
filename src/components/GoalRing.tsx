@@ -3,7 +3,8 @@ import { StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedProps, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
 
-import { colors } from '@/lib/theme';
+import { usePalette } from '@/lib/appearance';
+import { colors as themeColors } from '@/lib/theme';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -20,7 +21,11 @@ type Props = {
 };
 
 /** A circular progress ring that fills smoothly, for the daily reading goal. */
-export function GoalRing({ progress, size, stroke = Math.max(3, size / 10), color = colors.accent, track = colors.border, label, sublabel }: Props) {
+export function GoalRing({ progress, size, stroke = Math.max(3, size / 10), color: colorProp, track: trackProp, label, sublabel }: Props) {
+  // SVG needs real colour values, not CSS variables.
+  const colors = usePalette();
+  const color = colorProp ?? colors.accent;
+  const track = trackProp ?? colors.border;
   const r = (size - stroke) / 2;
   const length = 2 * Math.PI * r;
   const reduced = useReducedMotion();
@@ -63,5 +68,5 @@ export function GoalRing({ progress, size, stroke = Math.max(3, size / 10), colo
 const styles = StyleSheet.create({
   center: { alignItems: 'center', justifyContent: 'center' },
   label: { fontWeight: '800' },
-  sub: { color: colors.muted, fontWeight: '600', marginTop: -2 },
+  sub: { color: themeColors.muted, fontWeight: '600', marginTop: -2 },
 });

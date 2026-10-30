@@ -4,7 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-
 
 import { CardBody } from '@/components/CardBody';
 import { useStore } from '@/lib/store';
-import { colors, sourceKindLabel } from '@/lib/theme';
+import { colors, onCardScope, sourceKindLabel } from '@/lib/theme';
 
 export default function IdeaScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -26,7 +26,7 @@ export default function IdeaScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <View style={[styles.card, { backgroundColor: topic?.color ?? colors.surface }]}>
+      <View style={[styles.card, topic && onCardScope, { backgroundColor: topic?.color ?? colors.surface }]}>
         <Text style={styles.topic}>{topic ? `${topic.emoji}  ${topic.name}` : ''}</Text>
         <CardBody idea={idea} />
         {source && (
