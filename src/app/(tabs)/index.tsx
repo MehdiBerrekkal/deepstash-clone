@@ -13,7 +13,7 @@ import type { CardKind, Idea } from '@/lib/types';
 export default function FeedScreen() {
   const [kind, setKind] = useState<CardKind | null>(null);
   const feed = useFeed(kind);
-  const { streak, markRead, readingLog, minuteGoal } = useStore();
+  const { streak, markRead, readingLog, minuteGoal, reviewQueue } = useStore();
   const minutes = minutesOf(readingLog[localDate()]);
   const navigation = useNavigation();
   const [height, setHeight] = useState(0);
@@ -45,6 +45,18 @@ export default function FeedScreen() {
   return (
     <View style={styles.container}>
       <KindFilter value={kind} onChange={setKind} />
+      {reviewQueue.length > 0 && (
+        <Pressable accessibilityLabel="Start today's review" onPress={() => router.push('/review')} style={styles.review}>
+          <Text style={styles.reviewIcon}>🧠</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.reviewTitle}>Today&apos;s review</Text>
+            <Text style={styles.reviewSub}>
+              {reviewQueue.length} {reviewQueue.length === 1 ? 'idea' : 'ideas'} to recall · about {Math.max(1, Math.round(reviewQueue.length * 0.4))} min
+            </Text>
+          </View>
+          <Text style={styles.reviewGo}>Start ›</Text>
+        </Pressable>
+      )}
       <View style={styles.list} onLayout={onLayout}>
         {height > 0 && (
           <FlatList
@@ -75,4 +87,21 @@ const styles = StyleSheet.create({
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 12, marginRight: 16 },
   goal: { color: colors.muted, fontSize: 13, fontWeight: '600' },
   streak: { color: colors.accent, fontWeight: '700', fontSize: 16 },
+  review: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginHorizontal: 16,
+    marginBottom: 4,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 16,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: 'rgba(242,184,75,0.35)',
+  },
+  reviewIcon: { fontSize: 22 },
+  reviewTitle: { color: colors.text, fontWeight: '800', fontSize: 15 },
+  reviewSub: { color: colors.muted, fontSize: 13 },
+  reviewGo: { color: colors.accent, fontWeight: '800' },
 });

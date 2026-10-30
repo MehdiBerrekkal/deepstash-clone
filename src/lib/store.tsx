@@ -3,6 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 
 import { bundledContent, type Content } from '@/data/content';
 import type { OwnBook } from '@/lib/ownbooks';
+import { NEW_PER_DAY, schedule, type Grade, type ReviewState } from '@/lib/review';
 import { supabase } from '@/lib/supabase';
 import type {
   Bookmark, BookProgress, CardKind, DayLog, Highlight, Idea, ReaderPosition, ReaderProgress, ReaderSettings, Source, Stash, Streak, Topic,
@@ -37,6 +38,10 @@ type UserState = {
   minuteGoal: number;
   /** Full books read to the last page: reader id -> date finished. */
   finishedReaders: Record<string, string>;
+  /** Spaced-repetition state per item: "idea:<id>" (stashed card) or "hl:<id>" (highlight). */
+  reviews: Record<string, ReviewState>;
+  /** New items started per day, to cap how many arrive at once. */
+  reviewNew: { date: string; count: number };
   ownBooks: OwnBook[];
   /** Catalog books downloaded to this device, newest first. */
   downloadedBooks: string[];
@@ -73,6 +78,9 @@ type Store = Content &
     logReading: (delta: Partial<DayLog>) => void;
     setMinuteGoal: (minutes: number) => void;
     markReaderFinished: (readerId: string) => void;
+    /** Today's review queue: items due, then a few new ones. */
+    reviewQueue: string[];
+    gradeReview: (key: string, grade: Grade) => void;
     addOwnBook: (book: OwnBook) => void;
     removeOwnBook: (id: string) => void;
     markDownloaded: (id: string) => void;
@@ -101,6 +109,8 @@ const initialUserState: UserState = {
   readingLog: {},
   minuteGoal: 10,
   finishedReaders: {},
+  reviews: {},
+  reviewNew: { date: '', count: 0 },
   ownBooks: [],
   downloadedBooks: [],
 };
@@ -328,6 +338,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setUser((u) => (u.finishedReaders[readerId] ? u : { ...u, finishedReaders: { ...u.finishedReaders, [readerId]: new Date().toISOString() } }));
   }, []);
 
+  const gradeReview = useCallback((key: string, grade: Grade) => {
+    const date = localDate();
+    setUser((u) => {
+      const isNew = !u.reviews[key];
+      const started = u.reviewNew.date === date ? u.reviewNew.count : 0;
+      return { ...u, reviews: { ...u.reviews, [key]: schedule(u.reviews[key], grade, date) }, reviewNew: { date, count: started + (isNew ? 1 : 0) } };
+    });
+  }, []);
+
   const addOwnBook = useCallback((book: OwnBook) => setUser((u) => ({ ...u, ownBooks: [book, ...u.ownBooks] })), []);
 
   const removeOwnBook = useCallback((id: string) => {
@@ -366,6 +385,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const savedIds = new Set(user.stashes.flatMap((s) => s.ideaIds));
     const favoriteSet = new Set(user.favoriteBooks);
     const today = user.today.date === localDate() ? user.today : { date: localDate(), count: 0 };
+    // Review: everything stashed or highlighted is an item; due ones first (oldest first), then today's share of new ones.
+    const date = localDate();
+    const items = [...[...savedIds].map((id) => `idea:${id}`), ...user.highlights.map((h) => `hl:${h.id}`)];
+    const due = items.filter((k) => user.reviews[k] && user.reviews[k].due <= date).sort((a, b) => user.reviews[a].due.localeCompare(user.reviews[b].due));
+    const newLeft = Math.max(0, NEW_PER_DAY - (user.reviewNew.date === date ? user.reviewNew.count : 0));
+    const fresh = items.filter((k) => !user.reviews[k]).slice(0, newLeft);
+    const reviewQueue = [...due, ...fresh];
     return {
       ...content,
       ...user,
@@ -396,6 +422,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       logReading,
       setMinuteGoal,
       markReaderFinished,
+      reviewQueue,
+      gradeReview,
       addOwnBook,
       removeOwnBook,
       markDownloaded,
@@ -403,7 +431,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [
     content, user, ready, indexes, setFollowedTopics, createStash, deleteStash, toggleInStash, toggleLike, markRead, setBookPosition,
     finishBook, toggleFavoriteBook, setDailyGoal, resetProgress, setReaderSettings, setReaderPosition, toggleBookmark, removeBookmark,
-    saveClip, addHighlight, updateHighlight, removeHighlight, logReading, setMinuteGoal, markReaderFinished, addOwnBook, removeOwnBook, markDownloaded,
+    saveClip, addHighlight, updateHighlight, removeHighlight, logReading, setMinuteGoal, markReaderFinished, gradeReview, addOwnBook, removeOwnBook, markDownloaded,
   ]);
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

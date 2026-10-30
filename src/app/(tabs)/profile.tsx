@@ -18,7 +18,7 @@ const DAY_LETTERS = ['M', '', 'W', '', 'F', '', 'S'];
 export default function ProfileScreen() {
   const {
     streak, readIdeaIds, likedIdeaIds, stashes, bookProgress, sourceById, topics, followedTopicIds, topicById, resetProgress,
-    highlights, readingLog, minuteGoal, setMinuteGoal, finishedReaders,
+    highlights, readingLog, minuteGoal, setMinuteGoal, finishedReaders, reviewQueue, reviews,
   } = useStore();
   const [confirmReset, setConfirmReset] = useState(false);
 
@@ -119,6 +119,18 @@ export default function ProfileScreen() {
           </View>
         ))}
       </View>
+
+      <Pressable accessibilityLabel="Review" onPress={() => router.push('/review')} style={styles.card}>
+        <View style={styles.rowBetween}>
+          <Text style={styles.heading}>🧠 Smart review</Text>
+          <Text style={styles.link}>{reviewQueue.length ? `${reviewQueue.length} due ›` : 'Open ›'}</Text>
+        </View>
+        <Text style={styles.muted}>
+          {Object.keys(reviews).length
+            ? `${Object.keys(reviews).length} ideas and highlights in rotation. Each comes back just before you'd forget it.`
+            : 'Stashed ideas and highlights come back on a spaced schedule so they stick.'}
+        </Text>
+      </Pressable>
 
       <Pressable accessibilityLabel="All highlights" onPress={() => router.push('/highlights')} style={styles.card}>
         <View style={styles.rowBetween}>
