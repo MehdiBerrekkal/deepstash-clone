@@ -1,0 +1,49 @@
+# Builds the web app from the committed code and publishes it to GitHub Pages (gh-pages branch).
+# Building here, not on a laptop, means private books in my-books/ (git-ignored) can never be included.
+name: Deploy web app
+
+on:
+  push:
+    branches: [books-library, main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deploy-web
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      WEB_BASE_URL: /deepstash-clone
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Export the web app
+        run: npx expo export -p web
+
+      - name: Make it installable and offline-ready
+        run: node scripts/pwa.js
+
+      - name: Check nothing private is in the build
+        run: |
+          if grep -rIl --include='*.js' -e '"origin":"private"' -e "origin:\"private\"" dist; then
+            echo "Private books found in the build"; exit 1
+          fi
+
+      - uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          publish_branch: gh-pages
+          force_orphan: true

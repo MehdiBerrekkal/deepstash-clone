@@ -21,7 +21,11 @@
     "web": {
       "favicon": "./assets/favicon.png",
       "output": "single",
-      "bundler": "metro"
+      "bundler": "metro",
+      "name": "DeepStach",
+      "shortName": "DeepStach",
+      "themeColor": "#0F1115",
+      "backgroundColor": "#0F1115"
     },
     "plugins": [
       "expo-router",
