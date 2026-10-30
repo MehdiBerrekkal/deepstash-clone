@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { BookCover } from '@/components/BookCover';
+import { EmptyState } from '@/components/EmptyState';
 import { IdeaRow } from '@/components/IdeaRow';
 import { KindFilter } from '@/components/KindFilter';
 import { HIGHLIGHT_COLORS } from '@/lib/bookType';
@@ -162,16 +163,17 @@ export default function ExploreScreen() {
         keyboardShouldPersistTaps="handled"
         ListHeaderComponent={header()}
         ListEmptyComponent={
-          <View style={styles.emptyBox}>
-            <Text style={styles.emptyIcon}>{scope === 'highlights' ? '✎' : '⌕'}</Text>
-            <Text style={styles.empty}>
-              {scope === 'highlights' && !highlights.length
-                ? 'No highlights yet. Long-press a paragraph in any full book to make one.'
+          <EmptyState
+            art={scope === 'highlights' ? 'pen' : 'search'}
+            title={scope === 'highlights' && !highlights.length ? 'No highlights yet' : 'No matches'}
+            text={
+              scope === 'highlights' && !highlights.length
+                ? 'Long-press a paragraph in any full book to make one.'
                 : books.length || marks.length
-                  ? 'No cards match, but see the books above.'
-                  : 'Nothing matches that search. Try fewer words.'}
-            </Text>
-          </View>
+                  ? 'No cards match, but see the results above.'
+                  : 'Nothing matches that search. Try fewer or different words.'
+            }
+          />
         }
       />
     </View>
@@ -253,7 +255,4 @@ const styles = StyleSheet.create({
   bar: { width: 4, borderRadius: 2, marginVertical: -12, marginLeft: -12 },
   quote: { color: colors.text, fontFamily: 'Literata_400Regular_Italic', fontSize: 15, lineHeight: 22 },
   note: { color: colors.accent, fontSize: 13 },
-  emptyBox: { alignItems: 'center', gap: 8, marginTop: 40, paddingHorizontal: 24 },
-  emptyIcon: { fontSize: 40, color: colors.muted },
-  empty: { color: colors.muted, textAlign: 'center', lineHeight: 21 },
 });

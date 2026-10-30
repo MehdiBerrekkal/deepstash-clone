@@ -8,14 +8,17 @@ import {
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { BookOpening } from '@/components/BookOpening';
 import { HighlightSheet } from '@/components/HighlightSheet';
 import { PageFlip, type PageFlipHandle } from '@/components/PageFlip';
 import { Scrubber } from '@/components/Scrubber';
 import { BOOK_THEMES, HIGHLIGHT_COLORS, READER_FONTS, chapterLabel, displayFont, displayItalic, typeset, type BookTheme } from '@/lib/bookType';
+import { classicAsSource } from '@/lib/classicSource';
 import { classicById, loadClassic, type FullBook } from '@/lib/fullbook';
 import { LISTEN_RATES, useListen, voicesFor, type ListenVoice, type Sentence, type SleepTimer } from '@/lib/listen';
 import { loadOwnBook } from '@/lib/ownbooks';
 import { findPage, pageStart, paginate, type Page } from '@/lib/paginate';
+import { celebrate } from '@/lib/celebrate';
 import { searchBook, type BookHit } from '@/lib/search';
 import { CHARS_PER_WORD, DEFAULT_WPM, formatDuration, readingSpeed } from '@/lib/stats';
 import { useStore } from '@/lib/store';
@@ -58,7 +61,7 @@ export default function FullReaderScreen() {
 function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; start?: ReaderPosition }) {
   const readerId = `${kind === 'own' ? 'own' : 'classic'}:${id}`;
   const { readerSettings, setReaderSettings, readerProgress, setReaderPosition, bookmarks, toggleBookmark, removeBookmark, highlights } = useStore();
-  const { logReading, markReaderFinished, readingLog } = useStore();
+  const { logReading, markReaderFinished, readingLog, finishedReaders } = useStore();
   const [rawBook, setBook] = useState<FullBook | null>(null);
   // Typeset once, before paginating, so page offsets line up with the text that's drawn.
   const book = useMemo<FullBook | null>(
@@ -80,6 +83,16 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
   const bookHighlights = useMemo(() => highlights.filter((h) => h.readerId === readerId), [highlights, readerId]);
 
   const theme = BOOK_THEMES[readerSettings.theme] ?? BOOK_THEMES.light;
+  // The cover shown while the book opens.
+  const [opening] = useState(() => {
+    const meta = kind === 'own' ? undefined : classicById[id];
+    const src = meta ? classicAsSource(meta) : undefined;
+    return {
+      title: meta?.title ?? '',
+      author: meta?.author ?? '',
+      coverUri: src?.coverUrl ?? (src?.coverId ? `https://covers.openlibrary.org/b/id/${src.coverId}-L.jpg` : undefined),
+    };
+  });
   const fontKey: ReaderFont = readerSettings.font ?? 'literata';
   const font = READER_FONTS[fontKey];
   const fontSize = readerSettings.fontSize;
@@ -264,8 +277,11 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
     if (step > 0 && step <= 2) {
       logReading({ pages: step, words: Math.round((charsBefore[current] - charsBefore[before.index]) / CHARS_PER_WORD) });
     }
-    if (current >= pages.length - (spread ? 2 : 1)) markReaderFinished(readerId);
-  }, [current, pages, charsBefore, spread, readerId, logReading, markReaderFinished]);
+    if (step > 0 && current >= pages.length - (spread ? 2 : 1) && !finishedReaders[readerId]) {
+      markReaderFinished(readerId);
+      celebrate({ emoji: '📖', title: 'Book finished!', subtitle: `You read ${book?.title ?? 'it'} to the last page.` });
+    }
+  }, [current, pages, charsBefore, spread, readerId, logReading, markReaderFinished, finishedReaders, book]);
 
   const wpm = useMemo(() => readingSpeed(readingLog) ?? DEFAULT_WPM, [readingLog]);
   const minutesLeft = (end: number) => Math.max(0, charsBefore[end] - charsBefore[current]) / CHARS_PER_WORD / wpm;
@@ -326,7 +342,6 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
           ) : !book || !pages.length ? (
             <View style={styles.center}>
               <ActivityIndicator color={theme.soft} />
-              <Text style={[styles.message, { color: theme.soft, fontFamily: displayItalic }]}>Opening the book…</Text>
             </View>
           ) : (
             <PageFlip
@@ -685,6 +700,8 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
           </SafeAreaView>
         </View>
       </Modal>
+
+      {!error && <BookOpening {...opening} theme={theme} open={!!book && pages.length > 0} />}
 
       {marking && book && (
         <HighlightSheet

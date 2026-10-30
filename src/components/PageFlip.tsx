@@ -7,6 +7,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
+import { haptic } from '@/lib/haptics';
+
 export type PageFlipHandle = {
   /** Animate a turn forward (1) or back (-1), as for a tap or arrow key. */
   turn: (dir: 1 | -1) => void;
@@ -55,7 +57,10 @@ export const PageFlip = forwardRef<PageFlipHandle, Props>(function PageFlip(
     busy.set(false);
   }, [index, spread, progress, busy]);
 
-  const commit = (dir: number) => onIndexChange(index + dir);
+  const commit = (dir: number) => {
+    haptic.tick();
+    onIndexChange(index + dir);
+  };
 
   const animateTo = (target: number, from: number) => {
     'worklet';

@@ -5,6 +5,7 @@ import { router, useNavigation } from 'expo-router';
 import { GoalRing } from '@/components/GoalRing';
 import { IdeaCard } from '@/components/IdeaCard';
 import { KindFilter } from '@/components/KindFilter';
+import { TodayCard, useContinueReading } from '@/components/TodayCard';
 import { minutesOf } from '@/lib/stats';
 import { localDate, useFeed, useStore } from '@/lib/store';
 import { colors } from '@/lib/theme';
@@ -16,6 +17,10 @@ export default function FeedScreen() {
   const feed = useFeed(kind);
   const { streak, markRead, readingLog, minuteGoal, reviewQueue, setNotInterested } = useStore();
   const [undo, setUndo] = useState<string | null>(null);
+  const continueBook = useContinueReading();
+  // The first page is "Today" (your book, goal and review) when there's something to show and no filter is on.
+  const showToday = !kind && (!!continueBook || reviewQueue.length > 0);
+  const data: (FeedItem | 'today')[] = showToday ? ['today', ...feed] : feed;
   useEffect(() => {
     if (!undo) return;
     const t = setTimeout(() => setUndo(null), 5000);
@@ -33,9 +38,7 @@ export default function FeedScreen() {
           onPress={() => router.push('/profile')}
           style={styles.headerRight}>
           <GoalRing progress={minutes / minuteGoal} size={30} stroke={3.5} label={minutes >= minuteGoal ? '✓' : String(minutes)} />
-          <Text style={styles.goal}>
-            {minutes >= minuteGoal ? 'Goal met' : `${minuteGoal - minutes} min to go`}
-          </Text>
+          <Text style={styles.goal}>{minutes >= minuteGoal ? 'Goal met' : `${minuteGoal - minutes} min to go`}</Text>
           <Text style={styles.streak}>🔥 {streak.count}</Text>
         </Pressable>
       ),
@@ -44,7 +47,7 @@ export default function FeedScreen() {
 
   // FlatList doesn't allow this callback to change after mount; markRead is stable.
   const [onViewable] = useState(() => ({ viewableItems }: { viewableItems: ListViewToken[] }) => {
-    for (const v of viewableItems) if (v.isViewable && v.item) markRead((v.item as FeedItem).idea.id);
+    for (const v of viewableItems) if (v.isViewable && v.item && v.item !== 'today') markRead((v.item as FeedItem).idea.id);
   });
 
   const onLayout = (e: LayoutChangeEvent) => setHeight(e.nativeEvent.layout.height);
@@ -52,35 +55,27 @@ export default function FeedScreen() {
   return (
     <View style={styles.container}>
       <KindFilter value={kind} onChange={setKind} />
-      {reviewQueue.length > 0 && (
-        <Pressable accessibilityLabel="Start today's review" onPress={() => router.push('/review')} style={styles.review}>
-          <Text style={styles.reviewIcon}>🧠</Text>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.reviewTitle}>Today&apos;s review</Text>
-            <Text style={styles.reviewSub}>
-              {reviewQueue.length} {reviewQueue.length === 1 ? 'idea' : 'ideas'} to recall · about {Math.max(1, Math.round(reviewQueue.length * 0.4))} min
-            </Text>
-          </View>
-          <Text style={styles.reviewGo}>Start ›</Text>
-        </Pressable>
-      )}
       <View style={styles.list} onLayout={onLayout}>
         {height > 0 && (
           <FlatList
             key={kind ?? 'all'}
-            data={feed}
-            keyExtractor={(item) => item.idea.id}
-            renderItem={({ item }) => (
-              <IdeaCard
-                idea={item.idea}
-                height={height}
-                reason={item.reason}
-                onNotInterested={() => {
-                  setNotInterested(item.idea.id, true);
-                  setUndo(item.idea.id);
-                }}
-              />
-            )}
+            data={data}
+            keyExtractor={(item) => (item === 'today' ? 'today' : item.idea.id)}
+            renderItem={({ item }) =>
+              item === 'today' ? (
+                <TodayCard height={height} book={continueBook} />
+              ) : (
+                <IdeaCard
+                  idea={item.idea}
+                  height={height}
+                  reason={item.reason}
+                  onNotInterested={() => {
+                    setNotInterested(item.idea.id, true);
+                    setUndo(item.idea.id);
+                  }}
+                />
+              )
+            }
             pagingEnabled
             snapToInterval={height}
             snapToAlignment="start"
@@ -117,20 +112,6 @@ const styles = StyleSheet.create({
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 12, marginRight: 16 },
   goal: { color: colors.muted, fontSize: 13, fontWeight: '600' },
   streak: { color: colors.accent, fontWeight: '700', fontSize: 16 },
-  review: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginHorizontal: 16,
-    marginBottom: 4,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 16,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: 'rgba(242,184,75,0.35)',
-  },
-  reviewIcon: { fontSize: 22 },
   toast: {
     position: 'absolute',
     left: 16,
@@ -146,7 +127,4 @@ const styles = StyleSheet.create({
   },
   toastText: { flex: 1, color: colors.background, fontWeight: '600' },
   toastUndo: { color: '#B5492F', fontWeight: '800' },
-  reviewTitle: { color: colors.text, fontWeight: '800', fontSize: 15 },
-  reviewSub: { color: colors.muted, fontSize: 13 },
-  reviewGo: { color: colors.accent, fontWeight: '800' },
 });

@@ -3,7 +3,9 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
+import { EmptyState } from '@/components/EmptyState';
 import { HIGHLIGHT_COLORS, displayFont, displayItalic } from '@/lib/bookType';
+import { haptic } from '@/lib/haptics';
 import { GRADES, intervalLabel, schedule, type Grade } from '@/lib/review';
 import { localDate, useStore } from '@/lib/store';
 import { cardKindById, colors } from '@/lib/theme';
@@ -33,6 +35,7 @@ export default function ReviewScreen() {
   const done = at >= session.length;
 
   const grade = (g: Grade) => {
+    haptic.tap();
     gradeReview(key, g);
     setTally((t) => ({ ...t, [g]: t[g] + 1 }));
     if (g === 'again') setSession((s) => [...s, key]);
@@ -42,6 +45,20 @@ export default function ReviewScreen() {
 
   if (!session.length || done) {
     const reviewed = Object.values(tally).reduce((a, b) => a + b, 0);
+    if (!reviewed) {
+      return (
+        <View style={[styles.container, styles.finish]}>
+          <Stack.Screen options={{ title: 'Review' }} />
+          <EmptyState
+            art="brain"
+            title="All caught up"
+            text="Nothing is due right now. Stash ideas from the feed or highlight passages in full books, and they come back here on a smart schedule."
+            action="Back to the feed"
+            onAction={() => router.replace('/')}
+          />
+        </View>
+      );
+    }
     return (
       <View style={styles.container}>
         <Stack.Screen options={{ title: 'Review' }} />

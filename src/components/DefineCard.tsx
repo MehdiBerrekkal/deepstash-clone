@@ -1,7 +1,8 @@
 import * as Speech from 'expo-speech';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { SkeletonText } from '@/components/Skeleton';
 import { displayFont } from '@/lib/bookType';
 import { cleanWord, define, wiktionaryUrl, type Lookup } from '@/lib/dictionary';
 import { colors } from '@/lib/theme';
@@ -38,7 +39,9 @@ export function DefineCard({ word, language, onBack }: Props) {
       {lookup?.status === 'found' && !!lookup.entry.phonetic && <Text style={styles.phonetic}>{lookup.entry.phonetic}</Text>}
 
       {!lookup ? (
-        <ActivityIndicator color={colors.accent} style={{ marginVertical: 24 }} />
+        <View style={{ marginVertical: 12 }}>
+          <SkeletonText lines={4} lineHeight={22} />
+        </View>
       ) : lookup.status === 'offline' ? (
         <Text style={styles.muted}>
           The dictionary can&apos;t be reached right now. Check your connection and try again. Words you&apos;ve looked up before still

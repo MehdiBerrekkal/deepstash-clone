@@ -5,6 +5,7 @@ import { Platform } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import { CelebrationHost } from '@/components/Celebration';
 import { bookFonts } from '@/lib/bookType';
 import { StoreProvider } from '@/lib/store';
 import { colors } from '@/lib/theme';
@@ -40,6 +41,7 @@ export default function RootLayout() {
         <Stack.Screen name="highlights" options={{ title: 'Highlights' }} />
         <Stack.Screen name="review" options={{ title: 'Review' }} />
       </Stack>
+      <CelebrationHost />
     </StoreProvider>
     </GestureHandlerRootView>
   );

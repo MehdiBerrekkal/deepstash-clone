@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Share, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 import { CardBody, POEM_PREVIEW_LINES } from '@/components/CardBody';
+import { haptic } from '@/lib/haptics';
 import { speakOnce } from '@/lib/listen';
 import { useStore } from '@/lib/store';
 import { cardKindById, colors, sourceKindLabel } from '@/lib/theme';
@@ -114,7 +115,10 @@ export function IdeaCard({ idea, height, counter, hideSource = false, scrollable
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={liked ? 'Unlike' : 'Like'}
-            onPress={() => toggleLike(idea.id)}
+            onPress={() => {
+              if (!liked) haptic.tap();
+              toggleLike(idea.id);
+            }}
             style={[styles.action, styles.actionSmall, liked && styles.actionLiked]}>
             <Text style={styles.actionText}>{liked ? '♥' : '♡'}</Text>
           </Pressable>

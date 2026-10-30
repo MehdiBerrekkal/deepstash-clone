@@ -2,6 +2,7 @@ import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { EmptyState } from '@/components/EmptyState';
 import { QuoteImage } from '@/components/QuoteImage';
 import { HIGHLIGHT_COLORS, displayFont } from '@/lib/bookType';
 import { copyText, highlightsMarkdown, shareTextFile } from '@/lib/share';
@@ -102,15 +103,17 @@ export default function HighlightsScreen() {
           </View>
         }
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <Text style={styles.emptyIcon}>✎</Text>
-            <Text style={styles.emptyTitle}>{inBook.length ? 'Nothing matches' : 'No highlights yet'}</Text>
-            <Text style={styles.muted}>
-              {inBook.length
+          <EmptyState
+            art={inBook.length ? 'search' : 'pen'}
+            title={inBook.length ? 'Nothing matches' : 'No highlights yet'}
+            text={
+              inBook.length
                 ? 'Try another colour or search.'
-                : 'In any full book, long-press a paragraph, pick the sentences and choose a colour. Your notes live here too.'}
-            </Text>
-          </View>
+                : 'In any full book, long-press a paragraph, pick the sentences and choose a colour. Your notes live here too.'
+            }
+            action={inBook.length ? undefined : 'Find a book'}
+            onAction={() => router.push('/library')}
+          />
         }
         renderItem={({ item: h }) => (
           <Pressable onPress={() => open(h)} style={styles.item}>
@@ -168,7 +171,4 @@ const styles = StyleSheet.create({
   meta: { color: colors.muted, fontSize: 12 },
   itemActions: { flexDirection: 'row', gap: 18 },
   link: { color: colors.muted, fontWeight: '700', fontSize: 13 },
-  empty: { alignItems: 'center', gap: 8, paddingVertical: 48, paddingHorizontal: 24 },
-  emptyIcon: { fontSize: 44, color: colors.accent },
-  emptyTitle: { color: colors.text, fontSize: 20, fontWeight: '800' },
 });

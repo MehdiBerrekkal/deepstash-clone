@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 import { BookCover } from '@/components/BookCover';
+import { EmptyState } from '@/components/EmptyState';
 import { FavoriteButton } from '@/components/FavoriteButton';
 import { classicAsSource } from '@/lib/classicSource';
 import { classicById } from '@/lib/fullbook';
@@ -34,12 +35,13 @@ export default function FavoritesScreen() {
   if (covers.length === 0 && files.length === 0) {
     return (
       <View style={styles.empty}>
-        <Text style={styles.emptyHeart}>♡</Text>
-        <Text style={styles.emptyTitle}>No favorites yet</Text>
-        <Text style={styles.emptyText}>Tap the heart on any book cover or book page and it shows up here.</Text>
-        <Pressable onPress={() => router.replace('/library')} style={styles.button}>
-          <Text style={styles.buttonText}>Browse the Library</Text>
-        </Pressable>
+        <EmptyState
+          art="heart"
+          title="No favorites yet"
+          text="Tap the heart on any book cover or book page and it shows up here."
+          action="Browse the Library"
+          onAction={() => router.replace('/library')}
+        />
       </View>
     );
   }
@@ -94,9 +96,4 @@ const styles = StyleSheet.create({
   fileTitle: { color: colors.text, fontWeight: '700', flex: 1 },
   fileHeart: { width: 36, height: 36 },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 10, backgroundColor: colors.background },
-  emptyHeart: { color: '#FF6B81', fontSize: 48 },
-  emptyTitle: { color: colors.text, fontSize: 20, fontWeight: '800' },
-  emptyText: { color: colors.muted, fontSize: 15, textAlign: 'center', lineHeight: 22 },
-  button: { marginTop: 8, paddingVertical: 12, paddingHorizontal: 24, borderRadius: 999, backgroundColor: colors.accent },
-  buttonText: { color: colors.onAccent, fontWeight: '800' },
 });
