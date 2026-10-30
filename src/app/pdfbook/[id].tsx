@@ -2,7 +2,7 @@ import { Asset } from 'expo-asset';
 import { File } from 'expo-file-system';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Image, Platform, Pressable, StyleSheet, Text, View, useWindowDimensions, type GestureResponderEvent, type LayoutChangeEvent } from 'react-native';
+import { ActivityIndicator, Image, Platform, Pressable, StyleSheet, Text, View, type GestureResponderEvent, type LayoutChangeEvent } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -68,7 +68,6 @@ function PdfBook({ id, source }: { id: string; source: 'own' | 'private' }) {
   const flip = useRef<PageFlipHandle>(null);
   const queue = useRef<Promise<unknown>>(Promise.resolve());
   const requested = useRef(new Set<string>());
-  const window = useWindowDimensions();
   const insets = useSafeAreaInsets();
 
   const spread = size.width > size.height && size.width >= SPREAD_MIN_WIDTH;
@@ -141,13 +140,8 @@ function PdfBook({ id, source }: { id: string; source: 'own' | 'private' }) {
     return () => globalThis.removeEventListener('keydown', onKey);
   }, [step]);
 
-  const onTap = (e: GestureResponderEvent) => {
-    const x = e.nativeEvent.pageX;
-    if (zoom > 1) return setChrome((c) => !c);
-    if (x < window.width * 0.22) step(-1);
-    else if (x > window.width * 0.78) step(1);
-    else setChrome((c) => !c);
-  };
+  // Pages turn only with a swipe, like a book; a tap shows or hides the controls.
+  const onTap = (_e: GestureResponderEvent) => setChrome((c) => !c);
 
   const onLayout = (e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
@@ -205,6 +199,7 @@ function PdfBook({ id, source }: { id: string; source: 'own' | 'private' }) {
               onIndexChange={(next) => goTo(spread ? next * 2 : next)}
               renderPage={renderPage}
               shade={theme.shade}
+              paper={theme.paper}
               onPinchEnd={(scale) => setZoom((z) => Math.min(3, Math.max(1, Math.round(z * scale * 10) / 10)))}
             />
           )}

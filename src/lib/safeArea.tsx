@@ -22,20 +22,23 @@ function readEnvInsets(): EdgeInsets {
   return insets;
 }
 
-/** Known iPhone safe areas by screen height (portrait points), for when the browser reports none. */
+/**
+ * Known iPhone safe areas, for a home-screen app whose browser reports none. Whether the status bar sits over the
+ * page is read from the real layout (the page filling the whole screen), not from the meta tag, because iOS keeps
+ * the status-bar style from when the icon was added.
+ */
 function iPhoneFallback(width: number, height: number): EdgeInsets | null {
   const nav = globalThis.navigator as Navigator & { standalone?: boolean };
   const standalone = nav?.standalone === true || globalThis.matchMedia?.('(display-mode: standalone)').matches;
   if (!standalone || !/iPhone/.test(nav?.userAgent ?? '')) return null;
-  // Only a translucent status bar sits over the page; a solid one takes its own space.
-  const translucent = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')?.getAttribute('content') === 'black-translucent';
   const long = Math.max(globalThis.screen?.width ?? 0, globalThis.screen?.height ?? 0);
-  if (long < 812) return { top: translucent ? 20 : 0, bottom: 0, left: 0, right: 0 }; // Home-button iPhones.
+  const portrait = width < height;
+  // Under a translucent status bar the page is as tall as the screen; a solid bar takes its own strip.
+  const overStatusBar = portrait && globalThis.innerHeight >= long - 2;
+  if (long < 812) return { top: overStatusBar ? 20 : 0, bottom: 0, left: 0, right: 0 }; // Home-button iPhones.
   // Dynamic Island models (14 Pro and later, 15, 16, 17) vs. notch models.
   const side = [852, 874, 932, 956].includes(long) ? 59 : long === 812 ? 44 : 47;
-  return width < height
-    ? { top: translucent ? side : 0, bottom: 34, left: 0, right: 0 }
-    : { top: 0, bottom: 21, left: side, right: side };
+  return portrait ? { top: overStatusBar ? side : 0, bottom: 34, left: 0, right: 0 } : { top: 0, bottom: 21, left: side, right: side };
 }
 
 export function WebSafeArea({ children }: { children: ReactNode }) {
@@ -65,8 +68,16 @@ export function WebSafeArea({ children }: { children: ReactNode }) {
     left: Math.max(base.left, measured?.left ?? 0),
     right: Math.max(base.right, measured?.right ?? 0),
   };
-  const fallback = insets.bottom === 0 && insets.left === 0 && insets.right === 0 ? iPhoneFallback(width, height) : null;
-  if (fallback) insets = fallback;
+  // Fill in any edge the browser left at zero (it can report some edges and not others).
+  const fallback = iPhoneFallback(width, height);
+  if (fallback) {
+    insets = {
+      top: insets.top || fallback.top,
+      bottom: insets.bottom || fallback.bottom,
+      left: insets.left || fallback.left,
+      right: insets.right || fallback.right,
+    };
+  }
   return <SafeAreaInsetsContext.Provider value={insets}>{children}</SafeAreaInsetsContext.Provider>;
 }
 

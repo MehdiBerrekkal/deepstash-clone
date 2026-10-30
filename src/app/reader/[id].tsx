@@ -3,7 +3,7 @@ import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator, AppState, FlatList, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions,
+  ActivityIndicator, AppState, FlatList, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View,
   type GestureResponderEvent, type LayoutChangeEvent, type TextStyle,
 } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
@@ -32,7 +32,7 @@ import type { Highlight, ReaderFont, ReaderPosition, ReaderTheme } from '@/lib/t
 const MIN_FONT = 13;
 const MAX_FONT = 30;
 /** Room above the text for the running head, and below it for the page number. */
-const HEAD = 42;
+const HEAD = 50;
 const FOOT = 40;
 /** Open-book view when the reading area is landscape and wide enough for two pages. */
 const SPREAD_MIN_WIDTH = 700;
@@ -81,7 +81,6 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
   const [marking, setMarking] = useState<{ chapter: number; para: number } | null>(null);
   const [chrome, setChrome] = useState(true);
   const flip = useRef<PageFlipHandle>(null);
-  const window = useWindowDimensions();
   const insets = useSafeAreaInsets();
   // The position survives re-pagination, so changing the text size keeps your place.
   const [anchor, setAnchor] = useState<ReaderPosition | null>(() => start ?? readerProgress[readerId] ?? null);
@@ -327,13 +326,10 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
     if (Math.abs(width - size.width) > 1 || Math.abs(height - size.height) > 1) setSize({ width, height });
   };
 
-  // Tap the outer edges to turn the page, like an e-reader; tap the middle to show or hide the controls.
-  const onTap = (e: GestureResponderEvent) => {
+  // Pages turn only with a swipe, like a book; a tap anywhere shows or hides the controls.
+  const onTap = (_e: GestureResponderEvent) => {
     lastActive.current = Date.now();
-    const x = e.nativeEvent.pageX;
-    if (x < window.width * 0.22) step(-1);
-    else if (x > window.width * 0.78) step(1);
-    else setChrome((c) => !c);
+    setChrome((c) => !c);
   };
 
   const renderPage = (index: number, width: number) => (
@@ -383,6 +379,7 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
               onIndexChange={onLeafChange}
               renderPage={renderPage}
               shade={theme.shade}
+              paper={theme.paper}
               onPinchEnd={(scale) => changeFont(fontSize * scale)}
             />
           )}
@@ -638,7 +635,7 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
               </Text>
             )}
             <Text style={[styles.hint, { color: theme.soft }]}>
-              Drag a page or tap the edges to turn it, and tap the middle to show or hide these controls. Pinch to zoom, turn
+              Swipe a page to turn it, and tap anywhere to show or hide these controls. Pinch to zoom, turn
               your phone sideways for an open book, and long-press a paragraph to save it.
             </Text>
           </Pressable>
