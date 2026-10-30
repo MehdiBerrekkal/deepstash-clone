@@ -2,7 +2,7 @@ import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions,
+  ActivityIndicator, FlatList, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions,
   type GestureResponderEvent, type LayoutChangeEvent, type TextStyle,
 } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
@@ -16,6 +16,7 @@ import { classicById, loadClassic, type FullBook } from '@/lib/fullbook';
 import { LISTEN_RATES, useListen, voicesFor, type ListenVoice, type Sentence, type SleepTimer } from '@/lib/listen';
 import { loadOwnBook } from '@/lib/ownbooks';
 import { findPage, pageStart, paginate, type Page } from '@/lib/paginate';
+import { searchBook, type BookHit } from '@/lib/search';
 import { useStore } from '@/lib/store';
 import type { Highlight, ReaderFont, ReaderPosition, ReaderTheme } from '@/lib/types';
 
@@ -64,7 +65,9 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
   );
   const [error, setError] = useState<string | null>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
-  const [panel, setPanel] = useState<null | 'settings' | 'contents' | 'voice' | 'sleep'>(null);
+  const [panel, setPanel] = useState<null | 'settings' | 'contents' | 'voice' | 'sleep' | 'search'>(null);
+  const [query, setQuery] = useState('');
+  const [found, setFound] = useState<BookHit | null>(null);
   const [marking, setMarking] = useState<{ chapter: number; para: number } | null>(null);
   const [chrome, setChrome] = useState(true);
   const flip = useRef<PageFlipHandle>(null);
@@ -127,6 +130,13 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
   const anchorPage = pages.length && anchor ? findPage(pages, anchor) : 0;
   const leaf = spread ? Math.floor(anchorPage / 2) : anchorPage;
   const current = spread ? leaf * 2 : leaf;
+
+  const [hits, setHits] = useState<BookHit[] | null>(null);
+  useEffect(() => {
+    if (!book) return;
+    const t = setTimeout(() => setHits(query.trim().length >= 2 ? searchBook(book, query) : null), 250);
+    return () => clearTimeout(t);
+  }, [book, query]);
 
   const chapterStarts = useMemo(() => {
     const starts: number[] = [];
@@ -196,6 +206,7 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
     (next: number) => {
       if (!autoTurn.current) following.current = false;
       autoTurn.current = false;
+      setFound(null);
       goTo(spread ? next * 2 : next);
     },
     [goTo, spread],
@@ -257,6 +268,7 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
       onLongPressParagraph={(chapter, para) => setMarking({ chapter, para })}
       spoken={listen.sentence}
       highlights={bookHighlights}
+      found={found}
     />
   );
 
@@ -312,6 +324,9 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
           </View>
           <Pressable accessibilityLabel={listen.sentence ? 'Listening controls' : 'Listen to this book'} onPress={toggleListen} style={styles.iconButton}>
             <Text style={[styles.icon, { color: listen.sentence ? '#B5492F' : theme.chromeText }]}>{listen.playing ? '❚❚' : '🎧'}</Text>
+          </Pressable>
+          <Pressable accessibilityLabel="Search in this book" onPress={() => setPanel('search')} style={styles.iconButton}>
+            <Text style={[styles.icon, { color: theme.chromeText, fontSize: 20 }]}>⌕</Text>
           </Pressable>
           <Pressable accessibilityLabel="Contents and bookmarks" onPress={() => setPanel('contents')} style={styles.iconButton}>
             <Text style={[styles.icon, { color: theme.chromeText }]}>☰</Text>
@@ -500,6 +515,63 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
         </Pressable>
       </Modal>
 
+      <Modal visible={panel === 'search'} transparent animationType="slide" onRequestClose={() => setPanel(null)}>
+        <View style={[styles.full, { backgroundColor: theme.paper }]}>
+          <SafeAreaView style={{ flex: 1 }}>
+            <View style={styles.contentsHeader}>
+              <TextInput
+                accessibilityLabel="Search text"
+                autoFocus
+                value={query}
+                onChangeText={setQuery}
+                placeholder={`Search in ${book?.title ?? 'this book'}`}
+                placeholderTextColor={theme.soft}
+                returnKeyType="search"
+                style={[styles.searchInput, { color: theme.ink, borderColor: theme.rule, fontFamily: font.regular }]}
+              />
+              <Pressable accessibilityLabel="Close search" onPress={() => setPanel(null)} style={styles.iconButton}>
+                <Text style={[styles.icon, { color: theme.ink }]}>✕</Text>
+              </Pressable>
+            </View>
+            {hits && (
+              <Text style={[styles.section, { color: theme.soft, marginHorizontal: 20 }]}>
+                {hits.length >= 300 ? '300+ results' : `${hits.length} ${hits.length === 1 ? 'result' : 'results'}`}
+              </Text>
+            )}
+            <FlatList
+              data={hits ?? []}
+              keyExtractor={(h) => `${h.chapter}.${h.para}.${h.char}`}
+              contentContainerStyle={styles.contentsList}
+              keyboardShouldPersistTaps="handled"
+              ListEmptyComponent={
+                <Text style={[styles.hint, { color: theme.soft, marginTop: 24, textAlign: 'center' }]}>
+                  {hits ? 'No matches. Check the spelling or try a shorter phrase.' : 'Type a word or phrase to find every place it appears.'}
+                </Text>
+              }
+              renderItem={({ item: h }) => (
+                <Pressable
+                  onPress={() => {
+                    setPanel(null);
+                    following.current = false;
+                    setFound(h);
+                    goTo(findPage(pages, h));
+                  }}
+                  style={[styles.hitRow, { borderColor: theme.rule }]}>
+                  <Text style={{ color: theme.soft, fontSize: 12, fontFamily: displayFont }} numberOfLines={1}>
+                    {(book?.chapters[h.chapter]?.title ?? '').toUpperCase()} · PAGE {findPage(pages, h) + 1}
+                  </Text>
+                  <Text style={{ color: theme.ink, fontFamily: font.regular, fontSize: 15, lineHeight: 22 }}>
+                    {h.before}
+                    <Text style={{ backgroundColor: theme.highlight, fontFamily: font.bold }}>{h.match}</Text>
+                    {h.after}
+                  </Text>
+                </Pressable>
+              )}
+            />
+          </SafeAreaView>
+        </View>
+      </Modal>
+
       <Modal visible={panel === 'contents'} transparent animationType="slide" onRequestClose={() => setPanel(null)}>
         <View style={[styles.full, { backgroundColor: theme.paper }]}>
           <SafeAreaView style={{ flex: 1 }}>
@@ -599,11 +671,13 @@ type BookPageProps = {
   /** The sentence being read aloud, highlighted where it falls on this page. */
   spoken?: Sentence | null;
   highlights: Highlight[];
+  /** A search result to point out on the page. */
+  found?: BookHit | null;
 };
 
 /** One printed page: running head, text block (or chapter opener), and folio, on toned paper. */
 function BookPage({
-  book, page, index, width, height, margin, spreadSide, theme, fontKey, fontSize, lineHeight, openerSink, onTap, onLongPressParagraph, spoken, highlights,
+  book, page, index, width, height, margin, spreadSide, theme, fontKey, fontSize, lineHeight, openerSink, onTap, onLongPressParagraph, spoken, highlights, found,
 }: BookPageProps) {
   const font = READER_FONTS[fontKey];
   const chapter = book.chapters[page.chapter];
@@ -652,6 +726,9 @@ function BookPage({
           const marks: Mark[] = highlights
             .filter((h) => h.chapter === page.chapter && h.para === piece.para && h.to > piece.from && h.char < piece.to)
             .map((h) => ({ from: h.char, to: h.to, color: HIGHLIGHT_COLORS[h.color].fill, note: !!h.note }));
+          if (found && found.chapter === page.chapter && found.para === piece.para) {
+            marks.push({ from: found.char, to: found.char + found.length, color: theme.found, spoken: true });
+          }
           if (spoken && spoken.chapter === page.chapter && spoken.para === piece.para) {
             marks.push({ from: spoken.from, to: spoken.to, color: theme.highlight, spoken: true });
           }
@@ -797,4 +874,6 @@ const styles = StyleSheet.create({
   section: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 16, marginBottom: 4 },
   contentsRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth },
   contentsText: { flex: 1, fontSize: 17 },
+  searchInput: { flex: 1, fontSize: 17, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 12, borderWidth: 1, marginRight: 6 },
+  hitRow: { paddingVertical: 12, gap: 4, borderBottomWidth: StyleSheet.hairlineWidth },
 });

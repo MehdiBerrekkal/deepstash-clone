@@ -37,7 +37,7 @@ export const READER_FONTS: Record<ReaderFont, { label: string; regular: string; 
  * paper: the page; desk: what's behind an open book; ink/soft: text and secondary text; rule: hairlines and
  * ornaments; shade: page-turn and fold shadows; vignette: the faint darkening toward a page's edges.
  */
-export type BookTheme = { label: string; paper: string; desk: string; ink: string; soft: string; rule: string; shade: string; vignette: string; chrome: string; chromeText: string; highlight: string };
+export type BookTheme = { label: string; paper: string; desk: string; ink: string; soft: string; rule: string; shade: string; vignette: string; chrome: string; chromeText: string; highlight: string; found: string };
 
 export const BOOK_THEMES: Record<ReaderTheme, BookTheme> = {
   light: {
@@ -52,6 +52,7 @@ export const BOOK_THEMES: Record<ReaderTheme, BookTheme> = {
     chrome: 'rgba(251,247,238,0.97)',
     chromeText: '#1C1712',
     highlight: 'rgba(214,170,60,0.32)',
+    found: 'rgba(230,120,40,0.45)',
   },
   sepia: {
     label: 'Sepia',
@@ -65,6 +66,7 @@ export const BOOK_THEMES: Record<ReaderTheme, BookTheme> = {
     chrome: 'rgba(241,228,200,0.97)',
     chromeText: '#2E2214',
     highlight: 'rgba(190,130,40,0.30)',
+    found: 'rgba(210,100,30,0.45)',
   },
   dark: {
     label: 'Night',
@@ -78,6 +80,7 @@ export const BOOK_THEMES: Record<ReaderTheme, BookTheme> = {
     chrome: 'rgba(27,25,22,0.97)',
     chromeText: '#DCD3C4',
     highlight: 'rgba(200,160,80,0.28)',
+    found: 'rgba(230,130,60,0.45)',
   },
 };
 

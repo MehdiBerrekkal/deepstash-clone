@@ -3,16 +3,19 @@ import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 import { cardKinds, colors } from '@/lib/theme';
 import type { CardKind } from '@/lib/types';
 
-type Props = {
-  value: CardKind | null;
-  onChange: (kind: CardKind | null) => void;
+type Props<T extends string> = {
+  value: CardKind | NoInfer<T> | null;
+  onChange: (kind: CardKind | NoInfer<T> | null) => void;
+  /** More pills after the card kinds (e.g. Books, Highlights in search). */
+  extras?: { id: T; label: string }[];
 };
 
-/** Pills for All / Book ideas / Quotes / Poems / Knowledge. */
-export function KindFilter({ value, onChange }: Props) {
-  const options: { id: CardKind | null; label: string }[] = [
+/** Pills for All / Book ideas / Quotes / Poems / Knowledge, plus any extras. */
+export function KindFilter<T extends string = never>({ value, onChange, extras = [] }: Props<T>) {
+  const options: { id: CardKind | T | null; label: string }[] = [
     { id: null, label: 'All' },
     ...cardKinds.map((k) => ({ id: k.id, label: `${k.emoji} ${k.plural}` })),
+    ...extras,
   ];
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scroll} contentContainerStyle={styles.row}>
