@@ -4,6 +4,7 @@ import { Directory, File, Paths } from 'expo-file-system';
 import { Platform } from 'react-native';
 
 import { parseEpub } from '@/lib/epub';
+import { webStore } from '@/lib/webStore';
 import type { FullBook } from '@/lib/fullbook';
 
 /**
@@ -68,21 +69,27 @@ export async function pickOwnBook(): Promise<OwnBook | null> {
   }
 
   const book = await parseEpub(await readBytes(asset), name);
-  memory.set(id, book);
-  const json = JSON.stringify(book);
-  if (Platform.OS === 'web') {
-    // Browser storage is small; if the book doesn't fit it stays readable until the page is closed.
-    await AsyncStorage.setItem(WEB_KEY(id), json).catch(() => {});
-  } else {
-    await new File(folder(), `${id}.json`).write(json);
-  }
+  await saveBook(id, book);
   return { id, kind: 'epub', fileName: name, title: book.title, author: book.author, addedAt };
 }
 
-export async function loadOwnBook(id: string): Promise<FullBook | null> {
+/** Keeps a parsed book on the device: in the app's documents folder on iOS and Android, browser storage on the web. */
+export async function saveBook(id: string, book: FullBook): Promise<void> {
+  memory.set(id, book);
+  const json = JSON.stringify(book);
+  if (Platform.OS === 'web') {
+    // IndexedDB holds whole books; if the browser blocks it, the book stays readable until the page is closed.
+    await webStore.set(WEB_KEY(id), json);
+  } else {
+    await new File(folder(), `${id}.json`).write(json);
+  }
+}
+
+export async function loadSavedBook(id: string): Promise<FullBook | null> {
   if (memory.has(id)) return memory.get(id)!;
   let json: string | null = null;
-  if (Platform.OS === 'web') json = await AsyncStorage.getItem(WEB_KEY(id)).catch(() => null);
+  // Older versions kept small EPUBs in localStorage; still read those.
+  if (Platform.OS === 'web') json = (await webStore.get(WEB_KEY(id))) ?? (await AsyncStorage.getItem(WEB_KEY(id)).catch(() => null));
   else {
     const file = new File(folder(), `${id}.json`);
     if (file.exists) json = await file.text();
@@ -92,6 +99,8 @@ export async function loadOwnBook(id: string): Promise<FullBook | null> {
   memory.set(id, book);
   return book;
 }
+
+export const loadOwnBook = loadSavedBook;
 
 /** Web only: the object URL of a PDF picked in this session. */
 export function webPdfUrl(id: string): string | undefined {
@@ -109,6 +118,7 @@ export async function previewPdf(book: OwnBook): Promise<void> {
 export async function deleteOwnBookFiles(book: OwnBook): Promise<void> {
   memory.delete(book.id);
   if (Platform.OS === 'web') {
+    await webStore.remove(WEB_KEY(book.id));
     await AsyncStorage.removeItem(WEB_KEY(book.id)).catch(() => {});
     const url = webPdfUrls.get(book.id);
     if (url?.startsWith('blob:')) URL.revokeObjectURL(url);

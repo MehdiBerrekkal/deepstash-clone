@@ -7,13 +7,13 @@ import { BookGrid } from '@/components/BookGrid';
 import { FavoriteButton } from '@/components/FavoriteButton';
 import { Shelf } from '@/components/Shelf';
 import { classicAsSource } from '@/lib/classicSource';
-import { classicReaderId, classics } from '@/lib/fullbook';
+import { classicReaderId, classics, type Classic } from '@/lib/fullbook';
 import { deleteOwnBookFiles, pickOwnBook, previewPdf, type OwnBook } from '@/lib/ownbooks';
 import { useStore } from '@/lib/store';
 import { colors } from '@/lib/theme';
 
 export default function LibraryScreen() {
-  const { sources, topics, followedTopicIds, bookProgress, sourceById, readerProgress, ownBooks, addOwnBook, removeOwnBook, favoriteBooks } = useStore();
+  const { sources, topics, followedTopicIds, bookProgress, sourceById, readerProgress, ownBooks, addOwnBook, removeOwnBook, favoriteBooks, downloadedBooks } = useStore();
   const navigation = useNavigation();
   const [query, setQuery] = useState('');
   const [opening, setOpening] = useState(false);
@@ -48,13 +48,17 @@ export default function LibraryScreen() {
     [],
   );
 
-  // Classics you've started come first.
-  const sortedClassics = useMemo(
-    () =>
-      classics.filter((c) => c.origin !== 'private').sort(
-        (a, b) => (readerProgress[classicReaderId(b.id)]?.updatedAt ?? '').localeCompare(readerProgress[classicReaderId(a.id)]?.updatedAt ?? ''),
-      ),
-    [readerProgress],
+  // Full books on shelves by kind; on each shelf, books you've started come first.
+  const classicShelves = useMemo(() => {
+    const started = (c: Classic) => readerProgress[classicReaderId(c.id)]?.updatedAt ?? '';
+    const ready = classics.filter((c) => c.origin !== 'private' && c.origin !== 'catalog');
+    return SHELVES.map((s) => ({ ...s, items: ready.filter((c) => shelfOf(c) === s.id).sort((a, b) => started(b).localeCompare(started(a))) })).filter(
+      (s) => s.items.length > 0,
+    );
+  }, [readerProgress]);
+  const toDownload = useMemo(
+    () => classics.filter((c) => c.origin === 'catalog').sort((a, b) => Number(downloadedBooks.includes(b.id)) - Number(downloadedBooks.includes(a.id))),
+    [downloadedBooks],
   );
 
   const openOwn = async (book: OwnBook) => {
@@ -134,7 +138,10 @@ export default function LibraryScreen() {
           {myBooks.length > 0 && <ClassicShelf title="🔒 My books" items={myBooks} />}
           {recentlyAdded.length > 0 && <ClassicShelf title="✨ Recently added" items={recentlyAdded} />}
           <Shelf title="Continue reading" books={shelves.inProgress} />
-          <ClassicShelf title="📚 Free classics · read the full book" items={sortedClassics} />
+          {classicShelves.map((s) => (
+            <ClassicShelf key={s.id} title={s.title} items={s.items} />
+          ))}
+          <ClassicShelf title="⬇ More full books · free to download" items={toDownload} />
           <Shelf title="🎁 Free from the author" books={shelves.free} />
           <View style={styles.own}>
             <Text style={styles.ownTitle}>Your books</Text>
@@ -187,11 +194,32 @@ export default function LibraryScreen() {
   );
 }
 
+/** Shelves for full books. Older bundled books have no shelf field, so they're placed by topic. */
+const SHELVES: { id: NonNullable<Classic['shelf']>; title: string }[] = [
+  { id: 'wisdom', title: '🏛️ Wisdom & philosophy · full books' },
+  { id: 'lives', title: '🌱 Lives & self-improvement' },
+  { id: 'novels', title: '📖 Great novels & stories' },
+  { id: 'ideas', title: '💡 Big ideas & science' },
+  { id: 'poetry', title: '🪶 Poetry & plays' },
+  { id: 'french', title: '🇫🇷 En français' },
+];
+const NOVELS = new Set(['frankenstein', 'pride-and-prejudice', 'alice-in-wonderland', 'little-brother', 'down-and-out']);
+
+function shelfOf(c: Classic): NonNullable<Classic['shelf']> {
+  if (c.shelf) return c.shelf;
+  if (NOVELS.has(c.id)) return 'novels';
+  if (c.topicId === 'poetry') return 'poetry';
+  if (['philosophy', 'mindfulness', 'leadership'].includes(c.topicId)) return 'wisdom';
+  if (c.topicId === 'science') return 'ideas';
+  return 'lives';
+}
+
 const NEW_DAYS = 7;
 const isNew = (addedAt?: string) => !!addedAt && Date.now() - new Date(addedAt).getTime() < NEW_DAYS * 24 * 60 * 60 * 1000;
 
 function ClassicShelf({ title, items }: { title: string; items: typeof classics }) {
-  const { readerProgress } = useStore();
+  const { readerProgress, downloadedBooks } = useStore();
+  if (items.length === 0) return null;
   return (
     <View style={styles.shelf}>
       <Text style={styles.shelfTitle}>{title}</Text>
@@ -211,7 +239,13 @@ function ClassicShelf({ title, items }: { title: string; items: typeof classics 
               fraction={fraction}
               favoriteKey={classicReaderId(item.id)}
               badge={isNew(item.addedAt) ? 'NEW' : undefined}
-              subtitle={fraction != null ? `${Math.round(fraction * 100)}% read` : item.author}
+              subtitle={
+                fraction != null
+                  ? `${Math.round(fraction * 100)}% read`
+                  : item.origin === 'catalog' && !downloadedBooks.includes(item.id)
+                    ? '⬇ Free download'
+                    : item.author
+              }
               onPress={() => router.push({ pathname: '/classic/[id]', params: { id: item.id } })}
             />
           );

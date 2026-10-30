@@ -30,6 +30,8 @@ type UserState = {
   /** Passages saved from the full-book reader, stored as quote cards so stashes can hold them. */
   clips: Idea[];
   ownBooks: OwnBook[];
+  /** Catalog books downloaded to this device, newest first. */
+  downloadedBooks: string[];
 };
 
 type Store = Content &
@@ -59,6 +61,7 @@ type Store = Content &
     saveClip: (clip: Omit<Idea, 'id' | 'kind'>) => Idea;
     addOwnBook: (book: OwnBook) => void;
     removeOwnBook: (id: string) => void;
+    markDownloaded: (id: string) => void;
   };
 
 const DEFAULT_STASH: Stash = { id: 'saved', name: 'Saved', ideaIds: [], createdAt: new Date(0).toISOString() };
@@ -78,6 +81,7 @@ const initialUserState: UserState = {
   bookmarks: {},
   clips: [],
   ownBooks: [],
+  downloadedBooks: [],
 };
 
 const StoreContext = createContext<Store | null>(null);
@@ -282,6 +286,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const markDownloaded = useCallback(
+    (id: string) => setUser((u) => ({ ...u, downloadedBooks: [id, ...u.downloadedBooks.filter((d) => d !== id)] })),
+    [],
+  );
+
   const indexes = useMemo(() => {
     const ideasBySource: Record<string, Idea[]> = {};
     for (const idea of content.ideas) {
@@ -325,11 +334,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       saveClip,
       addOwnBook,
       removeOwnBook,
+      markDownloaded,
     };
   }, [
     content, user, ready, indexes, setFollowedTopics, createStash, deleteStash, toggleInStash, toggleLike, markRead, setBookPosition,
     finishBook, toggleFavoriteBook, setDailyGoal, resetProgress, setReaderSettings, setReaderPosition, toggleBookmark, removeBookmark,
-    saveClip, addOwnBook, removeOwnBook,
+    saveClip, addOwnBook, removeOwnBook, markDownloaded,
   ]);
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

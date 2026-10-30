@@ -40,6 +40,9 @@ function parseChapter(html: string, fallbackTitle: string) {
     .split(/<\/?(?:p|div|h[1-6]|li|blockquote|section|tr|pre)\b[^>]*>/i)
     .map((chunk) => stripTags(chunk).replace(new RegExp(`\\s*${BREAK}\\s*`, 'g'), '\n').trim())
     .filter((p) => p.length > 0);
+  // The heading is shown as the chapter title, so don't repeat it as the first paragraph.
+  const norm = (s: string) => s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '');
+  while (paragraphs.length && norm(paragraphs[0]) && norm(title).startsWith(norm(paragraphs[0]))) paragraphs.shift();
   return { title: title.slice(0, 120), paragraphs };
 }
 

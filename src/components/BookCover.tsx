@@ -58,10 +58,10 @@ export function BookCover({
           <Text style={[styles.author, { fontSize: Math.max(9, width / 13) }]} numberOfLines={2}>
             {book.author}
           </Text>
-          {book.coverId && !failed && (
+          {(book.coverUrl || book.coverId) && !failed && (
             <Image
               source={{
-                uri: `https://covers.openlibrary.org/b/id/${book.coverId}-M.jpg`,
+                uri: book.coverUrl ?? `https://covers.openlibrary.org/b/id/${book.coverId}-M.jpg`,
               }}
               style={StyleSheet.absoluteFill}
               resizeMode="cover"

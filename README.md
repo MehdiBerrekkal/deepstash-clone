@@ -16,7 +16,8 @@ Built with Expo (React Native + Expo Router), so the same code runs on iOS, Andr
 - **You:** daily reading goal, streak, cards read, books finished, likes and stashes.
 - **Like and share** any card.
 - **Full-book reader:** 28 complete books to read in the app. Pages turn like paper (drag to turn, tap the edges or use the arrow keys), and turning the phone sideways shows two pages like an open book with a fold down the middle. It also has pinch-to-zoom and text size, light, sepia and dark themes, a table of contents, bookmarks, and resume where you stopped. Long-press a paragraph to save it to a stash.
-  - **Free classics:** 26 public-domain books from Project Gutenberg, such as Meditations, The Art of War, Tao Te Ching, Walden and Pride and Prejudice, all in public-domain translations.
+  - **Free classics:** 94 complete public-domain books on themed shelves (wisdom and philosophy, lives and self-improvement, great novels, big ideas and science, poetry and plays, and 13 French classics in French). They come from Standard Ebooks and Project Gutenberg, all in public-domain translations by translators who died more than 70 years ago.
+  - **More to download:** 42 longer classics, such as The Wealth of Nations, Plato's Dialogues, Crime and Punishment, Les Misérables and Don Quixote. Each downloads on demand from Standard Ebooks and is then kept on the device (IndexedDB on the web).
   - **Free from the author:** two Cory Doctorow novels he released under Creative Commons, bundled with their license. Eight more free books (The Almanack of Naval Ravikant, Pro Git, Shape Up, OpenStax textbooks and others) link to their official pages, because their licenses don't allow copying them into the app.
 - **Your own books:** open a DRM-free EPUB or PDF from your device. EPUBs open in the reader. PDFs open in the system viewer, or in the browser on the web. Files stay on the device and are never uploaded.
 - **Modern books** link to Open Library to find or borrow the full book.
@@ -41,7 +42,7 @@ npx expo start        # press w for web, or scan the QR code with Expo Go
 
 To add or edit books, change `src/data/library/<topic>.json` and run `npm run seed:sql` to regenerate `supabase/seed.sql`. Run `node scripts/fetch-covers.js` to look up covers for new books. Quotes, poems and knowledge cards live in `src/data/quotes.json`, `poems.json` and `facts.json`.
 
-Full books live in `src/data/classics/`. Each one is a `.txt` asset that holds the chapters as JSON and loads only when it's opened. `metro.config.js` registers the `.txt` extension. To add or rebuild books, edit the list in `scripts/build-classics.js` and run `node scripts/build-classics.js`. Only add books that are public domain or under a license that allows redistribution, and include that license.
+Full books live in `src/data/classics/`. Each one is a `.txt` asset that holds the chapters as JSON and loads only when it's opened. `metro.config.js` registers the `.txt` extension. To add or rebuild books, edit the lists in `scripts/build-classics.js` (Gutenberg text) or `scripts/build-library.js` (Standard Ebooks and Gutenberg EPUBs, plus the download catalog), then run the script. Only add books that are public domain or under a license that allows redistribution, and include that license.
 
 To add a free-to-share EPUB (public domain or Creative Commons), put it in `books/` with a small JSON file next to it and run `npm run books`. See [books/README.md](books/README.md).
 

@@ -15,5 +15,6 @@ export function classicAsSource(c: Classic): Source {
     description: '',
     year: c.year,
     coverId: coverIds[`classic:${c.id}`] ?? c.coverId,
+    coverUrl: c.coverUrl,
   };
 }

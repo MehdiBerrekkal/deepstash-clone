@@ -26,6 +26,8 @@ export type Source = {
   description: string;
   year?: number;
   coverId?: number;
+  /** A direct cover image, used before Open Library. */
+  coverUrl?: string;
   free?: FreeOffer;
 };
 
