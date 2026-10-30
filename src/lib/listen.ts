@@ -63,10 +63,29 @@ export function sentenceAt(book: FullBook, pos: BookPosition): Sentence | null {
     for (let p = c === pos.chapter ? pos.para : 0; p < paras.length; p++) {
       const minEnd = c === pos.chapter && p === pos.para ? pos.char : 0;
       const s = sentencesOf(book, c, p).find((r) => r.to > minEnd);
-      if (s) return { chapter: c, para: p, ...s };
+      // Starting mid-sentence (a page that begins mid-sentence) reads from there, not from the previous page.
+      if (s) return { chapter: c, para: p, from: Math.max(s.from, minEnd), to: s.to };
     }
   }
   return null;
+}
+
+/**
+ * The first piece to read when you press play: a long sentence is cut at an early comma (or after about eight
+ * words), so the natural voice can start speaking sooner; the rest of the sentence follows as the next piece.
+ */
+export function leadPiece(book: FullBook, s: Sentence): Sentence {
+  const text = (book.chapters[s.chapter]?.paragraphs[s.para] ?? '').slice(s.from, s.to);
+  const words = [...text.matchAll(/\S+\s*/g)];
+  // At a chapter start the title is read first, so keep the first words fewer.
+  const max = s.para === 0 && s.from === 0 ? 4 : 8;
+  if (words.length <= max + 3) return s;
+  let end = 0;
+  for (let i = 0; i < max; i++) {
+    end += words[i][0].length;
+    if (i >= 2 && /[,;:—–]\s*$/.test(words[i][0])) return { ...s, to: s.from + end };
+  }
+  return { ...s, to: s.from + end };
 }
 
 export function nextSentence(book: FullBook, s: Sentence): Sentence | null {
@@ -245,6 +264,8 @@ export function useListen(book: FullBook | null, { rate, voice: chosen, language
   /** Download progress of the natural voice (0..1) while it loads, else null. */
   const [loading, setLoading] = useState<number | null>(null);
   const [systemOnly, setSystemOnly] = useState(false);
+  /** True from pressing play until the natural voice actually starts. */
+  const [preparing, setPreparing] = useState(false);
   const naturalChoices = naturalVoicesFor(language);
   const naturalAvailable = naturalChoices.length > 0 && naturalSupported();
 
@@ -303,17 +324,14 @@ export function useListen(book: FullBook | null, { rate, voice: chosen, language
   // Natural voice: sentences are generated a little ahead and played back to back.
   const clips = useRef(new Map<string, Promise<Clip>>());
   const stalls = useRef(0);
-  useEffect(() => {
-    if (!playing || !sentence || !book || !natural) return;
-    let cancelled = false;
-    let stop = () => {};
-    let pause: ReturnType<typeof setTimeout> | undefined;
-    const clipFor = (s: Sentence) => {
-      const key = `${naturalVoice}|${sentenceKey(s)}`;
+  const clipFor = useCallback(
+    (s: Sentence) => {
+      const key = `${naturalVoice}|${sentenceKey(s)}-${s.to}`;
       let clip = clips.current.get(key);
-      if (!clip) {
+      if (!clip && book) {
         const text = spokenText(book, s, language);
         clip = synthesize(text || '.', naturalVoice);
+        clip.catch(() => clips.current.delete(key));
         clips.current.set(key, clip);
         // Keep memory small: forget old clips.
         if (clips.current.size > 12) {
@@ -322,8 +340,16 @@ export function useListen(book: FullBook | null, { rate, voice: chosen, language
           clips.current.delete(oldest);
         }
       }
-      return clip;
-    };
+      return clip!;
+    },
+    [book, language, naturalVoice],
+  );
+
+  useEffect(() => {
+    if (!playing || !sentence || !book || !natural) return;
+    let cancelled = false;
+    let stop = () => {};
+    let pause: ReturnType<typeof setTimeout> | undefined;
     const giveUp = (reason: string) => {
       setSystemOnly(true);
       setLoading(null);
@@ -362,6 +388,7 @@ export function useListen(book: FullBook | null, { rate, voice: chosen, language
         if (ahead) clipFor(ahead).catch(() => {});
       }
       const playback = playClip(clip, rate);
+      setPreparing(false);
       stop = playback.stop;
       try {
         await playback.done;
@@ -389,7 +416,28 @@ export function useListen(book: FullBook | null, { rate, voice: chosen, language
       clearTimeout(pause);
       stop();
     };
-  }, [playing, sentence, book, rate, naturalVoice, language, sleep, natural, onNaturalFailed]);
+  }, [playing, sentence, book, rate, naturalVoice, language, sleep, natural, onNaturalFailed, clipFor]);
+
+  // Start the natural voice as soon as a book is open (it takes a few seconds), so it's ready when you press play.
+  useEffect(() => {
+    if (natural) loadNatural(naturalVoice).catch(() => {});
+  }, [natural, naturalVoice]);
+
+  /**
+   * Get ready to read from a position without playing: load the natural voice and generate the first piece,
+   * so pressing play starts at once. Cheap to call often; does nothing for system voices.
+   */
+  const warm = useCallback(
+    (from: BookPosition) => {
+      if (!book || !natural || playing) return;
+      const s = sentenceAt(book, from);
+      if (!s) return;
+      loadNatural(naturalVoice)
+        .then(() => clipFor(leadPiece(book, s)))
+        .catch(() => {});
+    },
+    [book, natural, playing, naturalVoice, clipFor],
+  );
 
   // A new voice choice gets a fresh chance.
   useEffect(() => {
@@ -416,15 +464,20 @@ export function useListen(book: FullBook | null, { rate, voice: chosen, language
       if (!s) return;
       unlockAudio();
       setFinished(false);
-      setSentence(s);
+      setSentence(leadPiece(book, s));
+      setPreparing(!!natural);
       setPlaying(true);
     },
-    [book],
+    [book, natural],
   );
-  const play = useCallback((on: boolean) => {
-    if (on) unlockAudio();
-    setPlaying(on);
-  }, []);
+  const play = useCallback(
+    (on: boolean) => {
+      if (on) unlockAudio();
+      setPreparing(on && !!natural);
+      setPlaying(on);
+    },
+    [natural],
+  );
   const skip = useCallback(
     (dir: 1 | -1) => {
       if (!book) return;
@@ -434,6 +487,7 @@ export function useListen(book: FullBook | null, { rate, voice: chosen, language
     [book],
   );
   const close = useCallback(() => {
+    setPreparing(false);
     setPlaying(false);
     setSentence(null);
     setSleep(null);
@@ -446,9 +500,9 @@ export function useListen(book: FullBook | null, { rate, voice: chosen, language
   return useMemo(
     () => ({
       sentence, playing, sleep, finished, natural, naturalVoice, loading, notice, naturalAvailable, naturalCached: cached,
-      start, skip, close, setPlaying: play, setSleep, dismissNotice: () => setNotice(null), tryNatural,
+      preparing: preparing && playing, start, skip, close, setPlaying: play, setSleep, dismissNotice: () => setNotice(null), tryNatural, warm,
     }),
-    [sentence, playing, sleep, finished, natural, naturalVoice, loading, notice, naturalAvailable, cached, start, skip, close, play, tryNatural],
+    [sentence, playing, sleep, finished, natural, naturalVoice, loading, notice, naturalAvailable, cached, preparing, start, skip, close, play, tryNatural, warm],
   );
 }
 

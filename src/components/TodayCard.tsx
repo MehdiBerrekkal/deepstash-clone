@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useEffect } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
@@ -7,11 +8,12 @@ import { GoalRing } from '@/components/GoalRing';
 import { displayFont, displayItalic } from '@/lib/bookType';
 import { classicAsSource } from '@/lib/classicSource';
 import { classicById } from '@/lib/fullbook';
+import { prewarmNatural } from '@/lib/neuralVoice';
 import { DEFAULT_WPM, formatDuration, minutesOf, readingSpeed } from '@/lib/stats';
 import { localDate, useStore } from '@/lib/store';
 import { colors, onCardScope } from '@/lib/theme';
 
-export type ContinueBook = { title: string; author: string; cover?: string; fraction: number; words: number; open: () => void };
+export type ContinueBook = { title: string; author: string; cover?: string; fraction: number; words: number; language: string; open: () => void };
 
 /** The book you were reading most recently and haven't finished, if any. */
 export function useContinueReading(): ContinueBook | null {
@@ -29,6 +31,7 @@ export function useContinueReading(): ContinueBook | null {
         cover: src.coverUrl ?? (src.coverId ? `https://covers.openlibrary.org/b/id/${src.coverId}-L.jpg` : undefined),
         fraction: p.fraction,
         words: c.words,
+        language: c.lang ?? 'en',
         open: () => router.push({ pathname: '/reader/[id]', params: { id: c.id, kind: 'classic' } }),
       };
     }
@@ -40,6 +43,7 @@ export function useContinueReading(): ContinueBook | null {
           author: b.author,
           fraction: p.fraction,
           words: 0,
+          language: 'en',
           open: () => router.push({ pathname: '/reader/[id]', params: { id: b.id, kind: 'own' } }),
         };
       }
@@ -55,7 +59,13 @@ const greeting = () => {
 
 /** The first page of the For you feed: continue your book, your goal for today and today's review. */
 export function TodayCard({ height, book }: { height: number; book: ContinueBook | null }) {
-  const { readingLog, minuteGoal, streak, reviewQueue } = useStore();
+  const { readingLog, minuteGoal, streak, reviewQueue, readerSettings } = useStore();
+  // You'll likely continue this book: get its voice ready in the background.
+  useEffect(() => {
+    if (!book) return;
+    const t = setTimeout(() => prewarmNatural(readerSettings.voice, book.language, readerSettings.naturalOff), 2000);
+    return () => clearTimeout(t);
+  }, [book, readerSettings.voice, readerSettings.naturalOff]);
   const minutes = minutesOf(readingLog[localDate()]);
   const wpm = readingSpeed(readingLog) ?? DEFAULT_WPM;
   const left = book && book.words ? formatDuration((book.words * (1 - book.fraction)) / wpm) : null;

@@ -7,13 +7,18 @@ import { FavoriteButton } from '@/components/FavoriteButton';
 import { classicAsSource } from '@/lib/classicSource';
 import { downloadCatalogBook } from '@/lib/downloads';
 import { classicById, classicReaderId, formatYear, loadClassic, readMinutesForWords, type FullBook } from '@/lib/fullbook';
+import { prewarmNatural } from '@/lib/neuralVoice';
 import { useStore } from '@/lib/store';
 import { colors, onCardScope, serif } from '@/lib/theme';
 
 export default function ClassicScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { topicById, readerProgress, sourceById, downloadedBooks, markDownloaded } = useStore();
+  const { topicById, readerProgress, sourceById, downloadedBooks, markDownloaded, readerSettings } = useStore();
   const classic = classicById[id];
+  // You may be about to read or listen: get the natural voice ready in the background.
+  useEffect(() => {
+    if (classic) prewarmNatural(readerSettings.voice, classic.lang ?? 'en', readerSettings.naturalOff);
+  }, [classic, readerSettings.voice, readerSettings.naturalOff]);
   const [book, setBook] = useState<FullBook | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);

@@ -188,3 +188,13 @@ export function playClip(clip: Clip, rate = 1): { done: Promise<void>; stop: () 
     },
   };
 }
+
+/**
+ * Starts the natural voice in the background (for example on a book's page or the Home "Continue reading" card)
+ * when it's the voice in use and already downloaded, so Listen starts quickly once the book is open.
+ */
+export function prewarmNatural(chosen: string | undefined, language = 'en', naturalOff = false) {
+  if (!naturalSupported()) return;
+  const voice = isNatural(chosen) ? chosen! : !chosen && !naturalOff ? `${NATURAL_PREFIX}${naturalVoicesFor(language)[0]?.id}` : null;
+  if (voice && naturalDownloaded(voice)) loadNatural(voice).catch(() => {});
+}

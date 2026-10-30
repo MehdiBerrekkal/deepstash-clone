@@ -224,6 +224,15 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
     },
     [],
   );
+  // While you read, get the voice ready for this page so pressing play starts at once.
+  const warm = listen.warm;
+  useEffect(() => {
+    const target = pages[current];
+    if (!target) return;
+    const t = setTimeout(() => warm(pageStart(target)), 150);
+    return () => clearTimeout(t);
+  }, [pages, current, warm]);
+
   const toggleListen = useCallback(() => {
     following.current = true;
     if (listen.sentence) listen.setPlaying(!listen.playing);
@@ -492,7 +501,11 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
             accessibilityLabel={listen.playing ? 'Pause' : 'Play'}
             onPress={() => listenControl(() => listen.setPlaying(!listen.playing))}
             style={[styles.playButton, { backgroundColor: theme.ink }]}>
-            <Text style={[styles.playIcon, { color: theme.paper }]}>{listen.playing ? '❚❚' : '▶'}</Text>
+            {listen.preparing ? (
+              <ActivityIndicator size="small" color={theme.paper} accessibilityLabel="Preparing voice" />
+            ) : (
+              <Text style={[styles.playIcon, { color: theme.paper }]}>{listen.playing ? '❚❚' : '▶'}</Text>
+            )}
           </Pressable>
           <Pressable accessibilityLabel="Next sentence" onPress={() => listenControl(() => listen.skip(1))} style={styles.listenButton}>
             <Text style={[styles.listenIcon, { color: theme.chromeText }]}>⏭</Text>
