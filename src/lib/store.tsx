@@ -5,7 +5,7 @@ import { bundledContent, type Content } from '@/data/content';
 import type { OwnBook } from '@/lib/ownbooks';
 import { supabase } from '@/lib/supabase';
 import type {
-  Bookmark, BookProgress, CardKind, Idea, ReaderPosition, ReaderProgress, ReaderSettings, Source, Stash, Streak, Topic,
+  Bookmark, BookProgress, CardKind, Highlight, Idea, ReaderPosition, ReaderProgress, ReaderSettings, Source, Stash, Streak, Topic,
 } from '@/lib/types';
 
 const STORAGE_KEY = 'deepstash-clone/user-state/v1';
@@ -29,6 +29,8 @@ type UserState = {
   bookmarks: Record<string, Bookmark[]>;
   /** Passages saved from the full-book reader, stored as quote cards so stashes can hold them. */
   clips: Idea[];
+  /** Highlights in full books, newest first. */
+  highlights: Highlight[];
   ownBooks: OwnBook[];
   /** Catalog books downloaded to this device, newest first. */
   downloadedBooks: string[];
@@ -59,6 +61,9 @@ type Store = Content &
     toggleBookmark: (readerId: string, position: ReaderPosition, label: string) => void;
     removeBookmark: (readerId: string, bookmarkId: string) => void;
     saveClip: (clip: Omit<Idea, 'id' | 'kind'>) => Idea;
+    addHighlight: (highlight: Omit<Highlight, 'id' | 'createdAt'>) => Highlight;
+    updateHighlight: (id: string, patch: Partial<Pick<Highlight, 'color' | 'note' | 'char' | 'to' | 'text'>>) => void;
+    removeHighlight: (id: string) => void;
     addOwnBook: (book: OwnBook) => void;
     removeOwnBook: (id: string) => void;
     markDownloaded: (id: string) => void;
@@ -80,6 +85,7 @@ const initialUserState: UserState = {
   readerProgress: {},
   bookmarks: {},
   clips: [],
+  highlights: [],
   ownBooks: [],
   downloadedBooks: [],
 };
@@ -270,6 +276,20 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return idea;
   }, []);
 
+  const addHighlight = useCallback((h: Omit<Highlight, 'id' | 'createdAt'>) => {
+    const highlight: Highlight = { ...h, id: `hl-${Date.now().toString(36)}`, createdAt: new Date().toISOString() };
+    setUser((u) => ({ ...u, highlights: [highlight, ...u.highlights] }));
+    return highlight;
+  }, []);
+
+  const updateHighlight = useCallback((id: string, patch: Partial<Highlight>) => {
+    setUser((u) => ({ ...u, highlights: u.highlights.map((h) => (h.id === id ? { ...h, ...patch } : h)) }));
+  }, []);
+
+  const removeHighlight = useCallback((id: string) => {
+    setUser((u) => ({ ...u, highlights: u.highlights.filter((h) => h.id !== id) }));
+  }, []);
+
   const addOwnBook = useCallback((book: OwnBook) => setUser((u) => ({ ...u, ownBooks: [book, ...u.ownBooks] })), []);
 
   const removeOwnBook = useCallback((id: string) => {
@@ -332,6 +352,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       toggleBookmark,
       removeBookmark,
       saveClip,
+      addHighlight,
+      updateHighlight,
+      removeHighlight,
       addOwnBook,
       removeOwnBook,
       markDownloaded,
@@ -339,7 +362,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [
     content, user, ready, indexes, setFollowedTopics, createStash, deleteStash, toggleInStash, toggleLike, markRead, setBookPosition,
     finishBook, toggleFavoriteBook, setDailyGoal, resetProgress, setReaderSettings, setReaderPosition, toggleBookmark, removeBookmark,
-    saveClip, addOwnBook, removeOwnBook, markDownloaded,
+    saveClip, addHighlight, updateHighlight, removeHighlight, addOwnBook, removeOwnBook, markDownloaded,
   ]);
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

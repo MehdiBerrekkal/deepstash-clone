@@ -8,16 +8,16 @@ import {
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { HighlightSheet } from '@/components/HighlightSheet';
 import { PageFlip, type PageFlipHandle } from '@/components/PageFlip';
 import { Scrubber } from '@/components/Scrubber';
-import { BOOK_THEMES, READER_FONTS, chapterLabel, displayFont, displayItalic, typeset, type BookTheme } from '@/lib/bookType';
+import { BOOK_THEMES, HIGHLIGHT_COLORS, READER_FONTS, chapterLabel, displayFont, displayItalic, typeset, type BookTheme } from '@/lib/bookType';
 import { classicById, loadClassic, type FullBook } from '@/lib/fullbook';
 import { LISTEN_RATES, useListen, voicesFor, type ListenVoice, type Sentence, type SleepTimer } from '@/lib/listen';
 import { loadOwnBook } from '@/lib/ownbooks';
 import { findPage, pageStart, paginate, type Page } from '@/lib/paginate';
 import { useStore } from '@/lib/store';
-import { colors } from '@/lib/theme';
-import type { Idea, ReaderFont, ReaderPosition, ReaderTheme } from '@/lib/types';
+import type { Highlight, ReaderFont, ReaderPosition, ReaderTheme } from '@/lib/types';
 
 const MIN_FONT = 13;
 const MAX_FONT = 30;
@@ -37,7 +37,7 @@ const hyphenate = Platform.select<TextStyle>({
 
 /** Paginated full-book reader for bundled classics (kind=classic) and the user's own EPUBs (kind=own). */
 export default function FullReaderScreen() {
-  const { id, kind } = useLocalSearchParams<{ id: string; kind?: 'classic' | 'own' }>();
+  const { id, kind, at } = useLocalSearchParams<{ id: string; kind?: 'classic' | 'own'; at?: string }>();
   const { ready } = useStore();
   // Wait for saved progress to load (e.g. when the reader is opened from a link) so it resumes in the right place.
   if (!ready) {
@@ -48,12 +48,14 @@ export default function FullReaderScreen() {
       </View>
     );
   }
-  return <Reader id={id} kind={kind} />;
+  const [chapter, para, char] = (at ?? '').split('.').map(Number);
+  const start = at && [chapter, para, char].every(Number.isFinite) ? { chapter, para, char } : undefined;
+  return <Reader key={at ?? ''} id={id} kind={kind} start={start} />;
 }
 
-function Reader({ id, kind }: { id: string; kind?: 'classic' | 'own' }) {
+function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; start?: ReaderPosition }) {
   const readerId = `${kind === 'own' ? 'own' : 'classic'}:${id}`;
-  const { readerSettings, setReaderSettings, readerProgress, setReaderPosition, bookmarks, toggleBookmark, removeBookmark } = useStore();
+  const { readerSettings, setReaderSettings, readerProgress, setReaderPosition, bookmarks, toggleBookmark, removeBookmark, highlights } = useStore();
   const [rawBook, setBook] = useState<FullBook | null>(null);
   // Typeset once, before paginating, so page offsets line up with the text that's drawn.
   const book = useMemo<FullBook | null>(
@@ -63,13 +65,14 @@ function Reader({ id, kind }: { id: string; kind?: 'classic' | 'own' }) {
   const [error, setError] = useState<string | null>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [panel, setPanel] = useState<null | 'settings' | 'contents' | 'voice' | 'sleep'>(null);
-  const [clip, setClip] = useState<{ text: string; position: ReaderPosition } | null>(null);
+  const [marking, setMarking] = useState<{ chapter: number; para: number } | null>(null);
   const [chrome, setChrome] = useState(true);
   const flip = useRef<PageFlipHandle>(null);
   const window = useWindowDimensions();
   const insets = useSafeAreaInsets();
   // The position survives re-pagination, so changing the text size keeps your place.
-  const [anchor, setAnchor] = useState<ReaderPosition | null>(() => readerProgress[readerId] ?? null);
+  const [anchor, setAnchor] = useState<ReaderPosition | null>(() => start ?? readerProgress[readerId] ?? null);
+  const bookHighlights = useMemo(() => highlights.filter((h) => h.readerId === readerId), [highlights, readerId]);
 
   const theme = BOOK_THEMES[readerSettings.theme] ?? BOOK_THEMES.light;
   const fontKey: ReaderFont = readerSettings.font ?? 'literata';
@@ -251,8 +254,9 @@ function Reader({ id, kind }: { id: string; kind?: 'classic' | 'own' }) {
       lineHeight={lineHeight}
       openerSink={openerSink}
       onTap={onTap}
-      onLongPressParagraph={(text, position) => setClip({ text, position })}
+      onLongPressParagraph={(chapter, para) => setMarking({ chapter, para })}
       spoken={listen.sentence}
+      highlights={bookHighlights}
     />
   );
 
@@ -506,6 +510,20 @@ function Reader({ id, kind }: { id: string; kind?: 'classic' | 'own' }) {
               </Pressable>
             </View>
             <ScrollView contentContainerStyle={styles.contentsList}>
+              {bookHighlights.length > 0 && (
+                <Pressable
+                  accessibilityLabel="All highlights in this book"
+                  onPress={() => {
+                    setPanel(null);
+                    router.push({ pathname: '/highlights', params: { book: readerId } });
+                  }}
+                  style={[styles.contentsRow, { borderColor: theme.rule }]}>
+                  <Text style={[styles.contentsText, { color: theme.ink, fontFamily: font.bold }]}>
+                    ✎ Highlights and notes ({bookHighlights.length})
+                  </Text>
+                  <Text style={{ color: theme.soft }}>›</Text>
+                </Pressable>
+              )}
               {marks.length > 0 && (
                 <>
                   <Text style={[styles.section, { color: theme.soft }]}>Bookmarks</Text>
@@ -548,15 +566,16 @@ function Reader({ id, kind }: { id: string; kind?: 'classic' | 'own' }) {
         </View>
       </Modal>
 
-      {/* Keyed so each long-press starts with a fresh sheet. */}
-      <ClipSheet
-        key={clip ? `${clip.position.chapter}-${clip.position.para}` : 'none'}
-        clip={clip}
-        book={book}
-        bookId={id}
-        kind={kind}
-        onClose={() => setClip(null)}
-      />
+      {marking && book && (
+        <HighlightSheet
+          key={`${marking.chapter}-${marking.para}`}
+          at={marking}
+          book={book}
+          readerId={readerId}
+          topicId={kind === 'own' ? '' : classicById[id]?.topicId ?? ''}
+          onClose={() => setMarking(null)}
+        />
+      )}
     </View>
   );
 }
@@ -575,14 +594,15 @@ type BookPageProps = {
   lineHeight: number;
   openerSink: number;
   onTap: (e: GestureResponderEvent) => void;
-  onLongPressParagraph: (text: string, position: ReaderPosition) => void;
+  onLongPressParagraph: (chapter: number, para: number) => void;
   /** The sentence being read aloud, highlighted where it falls on this page. */
   spoken?: Sentence | null;
+  highlights: Highlight[];
 };
 
 /** One printed page: running head, text block (or chapter opener), and folio, on toned paper. */
 function BookPage({
-  book, page, index, width, height, margin, spreadSide, theme, fontKey, fontSize, lineHeight, openerSink, onTap, onLongPressParagraph, spoken,
+  book, page, index, width, height, margin, spreadSide, theme, fontKey, fontSize, lineHeight, openerSink, onTap, onLongPressParagraph, spoken, highlights,
 }: BookPageProps) {
   const font = READER_FONTS[fontKey];
   const chapter = book.chapters[page.chapter];
@@ -628,17 +648,21 @@ function BookPage({
           const firstOfChapter = piece.para === 0 && piece.from === 0;
           // Book convention: no indent on a chapter's first paragraph, indents (not gaps) between the rest.
           const indent = piece.from === 0 && !firstOfChapter && !(opener && i === 0) && !slice.includes('\n');
-          const position = { chapter: page.chapter, para: piece.para, char: 0 };
-          const mark = spoken && spoken.chapter === page.chapter && spoken.para === piece.para ? spoken : null;
-          // Draws the slice from an offset, with the sentence being read aloud highlighted.
-          const run = (start: number) => (mark ? highlightRuns(text, piece.from + start, piece.to, mark, theme.highlight) : slice.slice(start));
+          const marks: Mark[] = highlights
+            .filter((h) => h.chapter === page.chapter && h.para === piece.para && h.to > piece.from && h.char < piece.to)
+            .map((h) => ({ from: h.char, to: h.to, color: HIGHLIGHT_COLORS[h.color].fill, note: !!h.note }));
+          if (spoken && spoken.chapter === page.chapter && spoken.para === piece.para) {
+            marks.push({ from: spoken.from, to: spoken.to, color: theme.highlight, spoken: true });
+          }
+          // Draws the slice from an offset, with highlights and the sentence being read aloud.
+          const run = (start: number) => (marks.length ? paintRuns(text, piece.from + start, piece.to, marks, theme.soft) : slice.slice(start));
           return (
             <Pressable
               key={`${index}-${piece.para}-${piece.from}`}
-              accessibilityHint="Long-press to save this passage"
+              accessibilityHint="Long-press to highlight, add a note or share"
               delayLongPress={450}
               onPress={onTap}
-              onLongPress={() => onLongPressParagraph(text, position)}>
+              onLongPress={() => onLongPressParagraph(page.chapter, piece.para)}>
               <Text style={[body, hyphenate, { marginBottom: lineHeight * 0.15 }]} android_hyphenationFrequency="full">
                 {opener && i === 0 ? (
                   <>
@@ -669,18 +693,23 @@ function BookPage({
   );
 }
 
-/** Splits text[from, to) into plain and highlighted runs around a sentence. */
-function highlightRuns(text: string, from: number, to: number, s: Sentence, color: string) {
-  const a = Math.min(Math.max(s.from, from), to);
-  const b = Math.min(Math.max(s.to, from), to);
-  if (a >= b) return text.slice(from, to);
-  return (
-    <>
-      {text.slice(from, a)}
-      <Text style={{ backgroundColor: color }}>{text.slice(a, b)}</Text>
-      {text.slice(b, to)}
-    </>
-  );
+type Mark = { from: number; to: number; color: string; note?: boolean; spoken?: boolean };
+
+/** Splits text[from, to) into runs coloured by the highlights over them; the spoken sentence wins. A ✎ marks notes. */
+function paintRuns(text: string, from: number, to: number, marks: Mark[], noteColor: string) {
+  const cuts = [...new Set([from, to, ...marks.flatMap((m) => [m.from, m.to]).filter((x) => x > from && x < to)])].sort((a, b) => a - b);
+  const runs = [];
+  for (let i = 0; i < cuts.length - 1; i++) {
+    const [a, b] = [cuts[i], cuts[i + 1]];
+    const over = marks.filter((m) => m.from < b && m.to > a);
+    const top = over.find((m) => m.spoken) ?? over[over.length - 1];
+    const chunk = text.slice(a, b);
+    runs.push(top ? <Text key={a} style={{ backgroundColor: top.color }}>{chunk}</Text> : chunk);
+    for (const m of marks) {
+      if (m.note && m.to === b) runs.push(<Text key={`n${a}`} style={{ color: noteColor, fontSize: 12 }}> ✎</Text>);
+    }
+  }
+  return <>{runs}</>;
 }
 
 /** minutes: undefined turns the timer off, 0 means the end of the chapter. */
@@ -696,66 +725,6 @@ function sleepLabel(sleep: SleepTimer) {
   if (!sleep) return '☾';
   if (sleep.kind === 'chapter') return '☾ Ch.';
   return `☾ ${Math.max(1, Math.round((sleep.until - Date.now()) / 60_000))}m`;
-}
-
-/** Long-press a paragraph to save it as a quote card in a stash. */
-function ClipSheet({
-  clip, book, bookId, kind, onClose,
-}: {
-  clip: { text: string; position: ReaderPosition } | null;
-  book: FullBook | null;
-  bookId: string;
-  kind?: string;
-  onClose: () => void;
-}) {
-  const { stashes, saveClip, toggleInStash } = useStore();
-  const [saved, setSaved] = useState<Idea | null>(null);
-  const [savedTo, setSavedTo] = useState<string[]>([]);
-
-  if (!clip || !book) return null;
-  const passage = clip.text.length > 700 ? `${clip.text.slice(0, 700).replace(/\s+\S*$/, '')}…` : clip.text;
-
-  const save = (stashId: string) => {
-    const idea =
-      saved ??
-      saveClip({
-        topicId: kind === 'own' ? '' : classicById[bookId]?.topicId ?? '',
-        title: '',
-        body: passage,
-        author: book.author,
-        cite: `${book.title}, ${book.chapters[clip.position.chapter]?.title ?? ''}`.replace(/, $/, ''),
-      });
-    setSaved(idea);
-    if (!savedTo.includes(stashId)) {
-      toggleInStash(stashId, idea.id);
-      setSavedTo((s) => [...s, stashId]);
-    }
-  };
-
-  return (
-    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={[styles.sheet, { backgroundColor: colors.surface, borderColor: colors.border }]} onPress={() => {}}>
-          <Text style={[styles.sheetTitle, { color: colors.text, fontFamily: displayFont }]}>Save this passage</Text>
-          <ScrollView style={styles.passageBox}>
-            <Text style={styles.passage}>“{passage}”</Text>
-          </ScrollView>
-          {stashes.map((s) => {
-            const done = savedTo.includes(s.id);
-            return (
-              <Pressable key={s.id} onPress={() => save(s.id)} style={styles.stashRow}>
-                <Text style={styles.stashName}>{s.name}</Text>
-                <Text style={{ color: done ? colors.accent : colors.muted }}>{done ? '★ Saved' : '☆'}</Text>
-              </Pressable>
-            );
-          })}
-          <Pressable onPress={onClose} style={styles.doneButton}>
-            <Text style={styles.doneText}>{savedTo.length ? 'Done' : 'Cancel'}</Text>
-          </Pressable>
-        </Pressable>
-      </Pressable>
-    </Modal>
-  );
 }
 
 const styles = StyleSheet.create({
@@ -827,10 +796,4 @@ const styles = StyleSheet.create({
   section: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 1.5, marginTop: 16, marginBottom: 4 },
   contentsRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth },
   contentsText: { flex: 1, fontSize: 17 },
-  passageBox: { maxHeight: 180 },
-  passage: { color: colors.text, fontFamily: 'Literata_400Regular_Italic', fontSize: 16, lineHeight: 25 },
-  stashRow: { flexDirection: 'row', justifyContent: 'space-between', padding: 14, borderRadius: 12, backgroundColor: colors.surfaceRaised },
-  stashName: { color: colors.text, fontSize: 16 },
-  doneButton: { alignItems: 'center', paddingVertical: 14, borderRadius: 999, backgroundColor: colors.accent },
-  doneText: { color: colors.onAccent, fontWeight: '800' },
 });

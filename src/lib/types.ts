@@ -79,3 +79,20 @@ export type ReaderPosition = { chapter: number; para: number; char: number };
 export type ReaderProgress = ReaderPosition & { fraction: number; updatedAt: string };
 
 export type Bookmark = ReaderPosition & { id: string; label: string; createdAt: string };
+
+export type HighlightColor = 'yellow' | 'green' | 'blue' | 'pink';
+
+/** A highlighted passage in a full book, with an optional note. readerId is "classic:<id>" or "own:<id>". */
+export type Highlight = ReaderPosition & {
+  id: string;
+  readerId: string;
+  bookTitle: string;
+  author: string;
+  chapterTitle: string;
+  /** End of the passage in the same paragraph (char is the start). */
+  to: number;
+  text: string;
+  color: HighlightColor;
+  note?: string;
+  createdAt: string;
+};

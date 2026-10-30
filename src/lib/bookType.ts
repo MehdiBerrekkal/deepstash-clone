@@ -6,7 +6,7 @@ import { EBGaramond_400Regular, EBGaramond_400Regular_Italic, EBGaramond_600Semi
 import { Literata_400Regular, Literata_400Regular_Italic, Literata_600SemiBold } from '@expo-google-fonts/literata';
 import { Platform } from 'react-native';
 
-import type { ReaderFont, ReaderTheme } from '@/lib/types';
+import type { HighlightColor, ReaderFont, ReaderTheme } from '@/lib/types';
 
 /** Fonts loaded once at startup (see src/app/_layout.tsx). */
 export const bookFonts = {
@@ -100,3 +100,11 @@ export function chapterLabel(title: string): { kicker?: string; title: string } 
   const kicker = `${m[1][0].toUpperCase()}${m[1].slice(1).toLowerCase()} ${m[2].toUpperCase()}`;
   return m[3] ? { kicker, title: m[3] } : { title: kicker };
 }
+
+/** Highlighter inks, translucent so they work on every paper. */
+export const HIGHLIGHT_COLORS: Record<HighlightColor, { label: string; fill: string; solid: string }> = {
+  yellow: { label: 'Yellow', fill: 'rgba(245,200,66,0.45)', solid: '#E9B93A' },
+  green: { label: 'Green', fill: 'rgba(120,190,110,0.42)', solid: '#6FB062' },
+  blue: { label: 'Blue', fill: 'rgba(100,160,230,0.40)', solid: '#5E97D6' },
+  pink: { label: 'Pink', fill: 'rgba(235,120,160,0.40)', solid: '#DE6E98' },
+};

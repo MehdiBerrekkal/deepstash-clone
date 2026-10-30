@@ -12,7 +12,7 @@ const GOALS = [5, 10, 20, 50];
 export default function ProfileScreen() {
   const {
     streak, today, dailyGoal, setDailyGoal, readIdeaIds, likedIdeaIds, stashes, bookProgress, sourceById,
-    topics, followedTopicIds, topicById, resetProgress,
+    topics, followedTopicIds, topicById, resetProgress, highlights,
   } = useStore();
   const [confirmReset, setConfirmReset] = useState(false);
 
@@ -57,6 +57,23 @@ export default function ProfileScreen() {
           </View>
         ))}
       </View>
+
+      <Pressable accessibilityLabel="All highlights" onPress={() => router.push('/highlights')} style={styles.card}>
+        <View style={styles.rowBetween}>
+          <Text style={styles.heading}>✎ Highlights and notes</Text>
+          <Text style={styles.link}>Open ›</Text>
+        </View>
+        <Text style={styles.muted}>
+          {highlights.length
+            ? `${highlights.length} ${highlights.length === 1 ? 'highlight' : 'highlights'} in ${new Set(highlights.map((h) => h.readerId)).size} ${new Set(highlights.map((h) => h.readerId)).size === 1 ? 'book' : 'books'}, ready to search and export.`
+            : 'Long-press a paragraph in any full book to highlight it or add a note.'}
+        </Text>
+        {highlights[0] && (
+          <Text style={styles.latest} numberOfLines={2}>
+            “{highlights[0].text}”
+          </Text>
+        )}
+      </Pressable>
 
       <View style={styles.section}>
         <View style={styles.rowBetween}>
@@ -128,6 +145,7 @@ const styles = StyleSheet.create({
   section: { gap: 10 },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
   link: { color: colors.accent, fontWeight: '700' },
+  latest: { color: colors.text, fontFamily: 'Literata_400Regular_Italic', fontSize: 15, lineHeight: 22, opacity: 0.85 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   shelf: { marginHorizontal: -16 },
   confirm: { gap: 8 },

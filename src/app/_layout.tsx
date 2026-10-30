@@ -37,6 +37,7 @@ export default function RootLayout() {
         <Stack.Screen name="reader/[id]" options={{ headerShown: false }} />
         <Stack.Screen name="pdfbook/[id]" options={{ headerShown: false }} />
         <Stack.Screen name="favorites" options={{ title: 'Favorites' }} />
+        <Stack.Screen name="highlights" options={{ title: 'Highlights' }} />
       </Stack>
     </StoreProvider>
     </GestureHandlerRootView>
