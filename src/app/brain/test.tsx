@@ -7,6 +7,7 @@ import Svg, { Line, Path, Text as SvgText } from 'react-native-svg';
 import { captureRef } from 'react-native-view-shot';
 
 import { OptionView, PromptView, pictureOptions } from '@/components/brain/ItemView';
+import { useLeaveGuard } from '@/components/brain/LeaveGuard';
 import { displayFont } from '@/lib/bookType';
 import { gameById } from '@/lib/brain/catalog';
 import { DOMAINS, domainOf, estimateIQ, percentile, seeded, type Item, type Skill } from '@/lib/brain/core';
@@ -76,6 +77,11 @@ export default function TestScreen() {
   const w = Math.min(width, 620) - 32;
 
   const running = phase === 'item' || phase === 'section';
+  const guard = useLeaveGuard(running, {
+    title: 'Quit the test?',
+    message: 'Your progress in this test will be lost, and the timer can’t be paused.',
+    quitLabel: 'Quit the test',
+  });
   useEffect(() => {
     if (!running) return;
     const t = setInterval(() => setLeft((s) => s - 1), 1000);
@@ -172,6 +178,7 @@ export default function TestScreen() {
     return (
       <View style={[styles.container, styles.center]}>
         <Stack.Screen options={{ title: section.name }} />
+        {guard.sheet}
         <Animated.View entering={FadeInDown.duration(380)} style={styles.sectionIntro}>
           <Text style={[styles.kicker, { color: sectionColor }]}>
             SECTION {items[k]?.section + 1} OF {plan.sections.length}
@@ -197,8 +204,12 @@ export default function TestScreen() {
     return (
       <ScrollView style={styles.container} contentContainerStyle={[styles.page, { width: w + 32, alignSelf: 'center' }]}>
         <Stack.Screen options={{ title: section.name }} />
+        {guard.sheet}
         <View style={styles.hud}>
-          <Text style={styles.hudText}>
+          <Pressable accessibilityLabel="Quit test" onPress={guard.leave} hitSlop={10} style={styles.quitBtn}>
+            <Text style={styles.quitText}>✕</Text>
+          </Pressable>
+          <Text style={[styles.hudText, { flex: 1 }]}>
             Item {k + 1} / {items.length}
           </Text>
           <Text style={[styles.hudClock, left < 60 && { color: '#FF5C70' }]}>{mins}</Text>
@@ -374,7 +385,9 @@ const styles = StyleSheet.create({
   sectionIntro: { width: '100%', maxWidth: 520, gap: 12, alignItems: 'center' },
   sectionTitle: { color: colors.text, fontFamily: displayFont, fontSize: 34, textAlign: 'center' },
   clock: { fontSize: 22, fontWeight: '900', fontVariant: ['tabular-nums'], marginVertical: 8 },
-  hud: { flexDirection: 'row', justifyContent: 'space-between' },
+  hud: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10 },
+  quitBtn: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surfaceRaised },
+  quitText: { color: colors.text, fontWeight: '900' },
   hudText: { color: colors.muted, fontWeight: '800' },
   hudClock: { color: colors.text, fontWeight: '900', fontVariant: ['tabular-nums'] },
   track: { height: 5, borderRadius: 3, backgroundColor: colors.surfaceRaised, overflow: 'hidden' },

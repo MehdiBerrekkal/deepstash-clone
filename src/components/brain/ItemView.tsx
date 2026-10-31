@@ -1,11 +1,11 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { CubeSvg, FigureSvg, FoldSteps, HoleSheet, NetSvg, VoxelSvg } from '@/components/brain/Figures';
+import { CubeSvg, FigureSvg, FoldSteps, HoleSheet, NetSvg, PolySvg, VoxelSvg } from '@/components/brain/Figures';
 import { usePalette } from '@/lib/appearance';
 import type { CodePrompt, InkPrompt, SwitchPrompt } from '@/lib/brain/catalog';
 import type { Item } from '@/lib/brain/core';
 import type { Figure } from '@/lib/brain/figures';
-import type { CubeView, FoldPrompt, HoleSet, NetPrompt, Voxel } from '@/lib/brain/spatial';
+import type { CubeView, FoldPrompt, HoleSet, NetPrompt, Poly, Voxel } from '@/lib/brain/spatial';
 import { colors } from '@/lib/theme';
 
 export function useInk() {
@@ -134,6 +134,15 @@ export function PromptView({ item, width, accent }: { item: Item; width: number;
       </View>
     );
   }
+  if (k === 'rotation2d') {
+    const cells = item.prompt as Poly;
+    return (
+      <View style={[styles.target, { borderColor: accent }]}>
+        <PolySvg cells={cells} size={Math.min(170, width * 0.46)} ink={ink} accent={`${accent}`} frame={Math.max(5, ...(item.options as Poly[]).map((o) => Math.max(...o.map((c) => Math.max(c[0], c[1]) + 1))))} />
+        <Text style={styles.label}>TARGET</Text>
+      </View>
+    );
+  }
   if (k === 'code') {
     const p = item.prompt as CodePrompt;
     return (
@@ -183,6 +192,8 @@ export function OptionView({ item, value, size, accent }: { item: Item; value: u
       return <HoleSheet holes={value as HoleSet} n={(item.prompt as FoldPrompt).n} size={size} ink={ink} />;
     case 'cubenet':
       return <CubeSvg v={value as CubeView} size={size} ink={ink} />;
+    case 'rotation2d':
+      return <PolySvg cells={value as Poly} size={size} ink={ink} accent={accent} frame={Math.max(5, ...(item.options as Poly[]).map((o) => Math.max(...o.map((c) => Math.max(c[0], c[1]) + 1))), ...(item.prompt as Poly).map((c) => Math.max(c[0], c[1]) + 1))} />;
     case 'rotation3d':
       return <VoxelSvg cells={value as Voxel[]} size={size} ink={ink} accent={accent} />;
     case 'ink': {
@@ -200,7 +211,7 @@ export function OptionView({ item, value, size, accent }: { item: Item; value: u
 }
 
 /** Options drawn as pictures sit in a grid of square tiles; text options in full-width rows. */
-export const pictureOptions = (kind: string) => ['matrix', 'analogy', 'folding', 'cubenet', 'rotation3d'].includes(kind);
+export const pictureOptions = (kind: string) => ['matrix', 'analogy', 'folding', 'cubenet', 'rotation3d', 'rotation2d'].includes(kind);
 
 const styles = StyleSheet.create({
   matrix: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, alignSelf: 'center' },

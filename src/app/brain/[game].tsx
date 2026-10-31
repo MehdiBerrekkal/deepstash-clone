@@ -8,6 +8,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { OptionView, PromptView, pictureOptions } from '@/components/brain/ItemView';
+import { useLeaveGuard } from '@/components/brain/LeaveGuard';
 import { displayFont } from '@/lib/bookType';
 import { GAMES, gameById, type GameDef } from '@/lib/brain/catalog';
 import { DOMAINS, domainOf, rankFor, seeded, stair, type Item } from '@/lib/brain/core';
@@ -39,6 +40,12 @@ export default function GameScreen() {
   const [resume, setResume] = useState<BrainRun | null>(null);
   const [before, setBefore] = useState({ xp: 0, best: 0, level: 2 });
   const sound = brain.sound !== false;
+  const resumable = gameById[id]?.type === 'items';
+  const guard = useLeaveGuard(phase === 'countdown' || phase === 'play', {
+    title: 'Leave this game?',
+    message: resumable ? 'Your run is saved after every answer, so you can pick it up later from this game’s page.' : 'This run won’t be scored if you leave now.',
+    quitLabel: resumable ? 'Save & quit' : 'Quit',
+  });
   useEffect(() => {
     setMuted(!sound);
     setVolume(brain.volume ?? 0.7);
@@ -88,6 +95,7 @@ export default function GameScreen() {
     <View style={styles.container}>
       <Stack.Screen options={{ title: game.name }} />
       <Ambient color={dom.color} />
+      {guard.sheet}
       {phase === 'intro' && (
         <ScrollView contentContainerStyle={styles.intro}>
           <Animated.View entering={FadeInDown.duration(380)}>
@@ -160,7 +168,7 @@ export default function GameScreen() {
       {phase === 'play' && (
         <View style={styles.flex}>
           {game.type === 'items' || game.type === 'sprint' ? (
-            <ItemsRun key={run} game={game} resume={resume} save={(r) => patchBrain({ run: r })} {...playProps} />
+            <ItemsRun key={run} game={game} resume={resume} save={(r) => patchBrain({ run: r })} onQuit={guard.quit} {...playProps} />
           ) : game.type === 'nback' ? (
             <NBack key={run} {...playProps} />
           ) : game.type === 'span' ? (
@@ -359,7 +367,7 @@ function Practice({ game, color, onDone }: { game: GameDef; color: string; onDon
 
 // ---------- multiple-choice runs (puzzles and sprints) ----------
 
-function ItemsRun({ game, rating, seed, color, onDone, resume, save }: { game: GameDef; rating: number; seed: string; color: string; onDone: (o: Outcome) => void; resume: BrainRun | null; save: (r: BrainRun) => void }) {
+function ItemsRun({ game, rating, seed, color, onDone, resume, save, onQuit }: { game: GameDef; rating: number; seed: string; color: string; onDone: (o: Outcome) => void; resume: BrainRun | null; save: (r: BrainRun) => void; onQuit: () => void }) {
   const { width } = useWindowDimensions();
   const reduced = useReducedMotion();
   const w = Math.min(width, 620) - 32;
@@ -544,7 +552,7 @@ function ItemsRun({ game, rating, seed, color, onDone, resume, save }: { game: G
             <Pressable accessibilityLabel="Continue" onPress={() => setPaused(false)} style={[styles.primary, styles.full, { backgroundColor: color }]}>
               <Text style={styles.primaryText}>Continue</Text>
             </Pressable>
-            <Pressable accessibilityLabel="Quit" onPress={() => (router.canGoBack() ? router.back() : router.replace('/brain'))} style={[styles.secondary, styles.full]}>
+            <Pressable accessibilityLabel="Quit" onPress={onQuit} style={[styles.secondary, styles.full]}>
               <Text style={styles.secondaryText}>{sprint ? 'Quit' : 'Save and quit'}</Text>
             </Pressable>
           </View>

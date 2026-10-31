@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import Svg, { Circle, G, Line, Path, Polygon, Rect } from 'react-native-svg';
 
 import type { Figure, Outer } from '@/lib/brain/figures';
-import type { CubeView, FoldPrompt, HoleSet, NetPrompt, Symbol, Voxel } from '@/lib/brain/spatial';
+import type { CubeView, FoldPrompt, HoleSet, NetPrompt, Poly, Symbol, Voxel } from '@/lib/brain/spatial';
 
 type Ink = { ink: string; soft: string; paper: string };
 
@@ -230,6 +230,24 @@ export function VoxelSvg({ cells, size, ink, accent }: { cells: Voxel[]; size: n
             <Polygon points={[pt(x, y + 1, z), pt(x + 1, y + 1, z), pt(x + 1, y + 1, z + 1), pt(x, y + 1, z + 1)].join(' ')} fill={accent} opacity={0.45} stroke={ink.ink} strokeWidth={1.2} strokeLinejoin="round" />
           )}
         </G>
+      ))}
+    </Svg>
+  );
+}
+
+// ---------- flat shapes (mental rotation) ----------
+
+/** A flat shape of squares, centred in a fixed frame so every option is drawn at the same scale. */
+export function PolySvg({ cells, size, ink, accent, frame = 5 }: { cells: Poly; size: number; ink: Ink; accent: string; frame?: number }) {
+  const w = Math.max(...cells.map((c) => c[0])) + 1;
+  const h = Math.max(...cells.map((c) => c[1])) + 1;
+  const unit = 100 / Math.max(frame, w, h);
+  const ox = (100 - w * unit) / 2;
+  const oy = (100 - h * unit) / 2;
+  return (
+    <Svg width={size} height={size} viewBox="0 0 100 100">
+      {cells.map(([x, y]) => (
+        <Rect key={`${x},${y}`} x={ox + x * unit + 1} y={oy + y * unit + 1} width={unit - 2} height={unit - 2} rx={unit * 0.12} fill={accent} stroke={ink.ink} strokeWidth={1.6} />
       ))}
     </Svg>
   );

@@ -29,6 +29,10 @@ export type FoundBook = {
   description?: string;
   /** Archive identifier or Standard Ebooks path. */
   ref: string;
+  /** Gutenberg: the file to download, found while checking the book. */
+  file?: string;
+  /** French books: whether this edition has its accents (some 1990s editions don't). */
+  accented?: boolean;
 };
 
 /** Public domain in the EU this year: everyone involved died at least 71 years ago (life + 70, from 1 January). */
@@ -98,26 +102,63 @@ function decodeText(buf: ArrayBuffer, hint = '') {
   return utf8;
 }
 
-async function downloadGutenberg(b: FoundBook, onProgress: (f: number) => void): Promise<FullBook> {
-  const meta = await (await fetch(`https://archive.org/metadata/${b.ref}`)).json();
-  const files = ((meta.files ?? []) as { name: string; size?: string }[]).map((f) => f.name);
-  const html = files.find((f) => /-h\.html?$/i.test(f)) ?? files.find((f) => /\.html?$/i.test(f) && !/_files\//.test(f));
-  const text = files.find((f) => /-0\.txt$/.test(f)) ?? files.find((f) => /-8\.txt$/.test(f)) ?? files.find((f) => /\.txt$/.test(f) && !/_(meta|files)/.test(f));
-  const pick = html ?? text;
-  if (!pick) throw new Error('No readable file was found for this book.');
-  onProgress(0.2);
-  const buf = await fetchWithProgress(`https://archive.org/download/${b.ref}/${pick.split('/').map(encodeURIComponent).join('/')}`, (f) => onProgress(0.2 + f * 0.7));
-  const raw = decodeText(buf, pick);
-  const author = b.authors.join(', ') || 'Unknown author';
-  // "The Project Gutenberg eBook of Du côté de chez Swann, by Marcel Proust" → "Du côté de chez Swann".
-  const fileTitle = (raw.match(/<title>([\s\S]*?)<\/title>/i)?.[1] ?? raw.match(/^Title:\s*(.+)$/m)?.[1] ?? '')
+/**
+ * The text file to download from an Archive item. Only plain-text files there allow downloads from a web app
+ * (the HTML editions don't), so the best text edition is used: UTF-8 ("-0"), then 8-bit with accents ("-8"),
+ * then plain ASCII.
+ */
+async function gutenbergFile(ref: string): Promise<string | null> {
+  const meta = await (await fetch(`https://archive.org/metadata/${ref}`)).json();
+  const files = ((meta.files ?? []) as { name: string }[]).map((f) => f.name).filter((f) => !f.includes('/'));
+  return files.find((f) => /-0\.txt$/.test(f)) ?? files.find((f) => /-8\.txt$/.test(f)) ?? files.find((f) => /\.txt$/.test(f) && !/_(meta|files)/.test(f)) ?? null;
+}
+
+/** The book's real title from Project Gutenberg (the Archive's records lose accents: "C?t?"). */
+async function gutenbergTitle(ref: string): Promise<string | null> {
+  const num = Number(ref.match(/(\d+)gut$/)?.[1]);
+  if (!num) return null;
+  try {
+    const xml = await (await fetch(`https://www.gutenberg.org/ebooks/${num}.opds`)).text();
+    const t = xml.split('<entry>')[1]?.match(/<title>([^<]+)<\/title>/)?.[1];
+    return t ? unescapeHtml(t).replace(/\s+/g, ' ').trim() : null;
+  } catch {
+    return null;
+  }
+}
+const fileUrl = (ref: string, file: string) => `https://archive.org/download/${ref}/${file.split('/').map(encodeURIComponent).join('/')}`;
+
+const NAMED: Record<string, string> = {
+  amp: '&', quot: '"', apos: "'", nbsp: ' ', lt: '<', gt: '>', rsquo: '’', lsquo: '‘', laquo: '«', raquo: '»', mdash: '—', ndash: '–', hellip: '…',
+  eacute: 'é', egrave: 'è', ecirc: 'ê', euml: 'ë', agrave: 'à', acirc: 'â', auml: 'ä', ccedil: 'ç', icirc: 'î', iuml: 'ï', ocirc: 'ô', ouml: 'ö',
+  ugrave: 'ù', ucirc: 'û', uuml: 'ü', oelig: 'œ', aelig: 'æ', Eacute: 'É', Egrave: 'È', Ecirc: 'Ê', Agrave: 'À', Ccedil: 'Ç', OElig: 'Œ',
+};
+/** HTML entities in old Gutenberg files ("C&ocirc;t&eacute;") turned back into letters. */
+const unescapeHtml = (t: string) =>
+  t.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (m, e: string) =>
+    e[0] === '#' ? String.fromCodePoint(e[1] === 'x' || e[1] === 'X' ? parseInt(e.slice(2), 16) : parseInt(e.slice(1), 10)) : NAMED[e] ?? m,
+  );
+
+/** "The Project Gutenberg eBook of Du côté de chez Swann, by Marcel Proust" → "Du côté de chez Swann". */
+function titleFrom(raw: string) {
+  const t = unescapeHtml(raw.match(/<title>([\s\S]*?)<\/title>/i)?.[1] ?? raw.match(/^Title:\s*(.+)$/m)?.[1] ?? '')
     .replace(/\s+/g, ' ')
-    .replace(/^.*?(e-?book|EBook) of\s+/i, '')
+    .replace(/^.*?(e-?book|EBook|Etext) of\s+/i, '')
     .replace(/,\s*by\s+[^,]+$/i, '')
     .replace(/\s*\([^)]*$/, '')
     .replace(/[,;:\s]+$/, '')
     .trim();
-  const title = fileTitle && !/\uFFFD/.test(fileTitle) && fileTitle.length < 140 ? fileTitle : b.title;
+  return t && !/�/.test(t) && !/^new file$/i.test(t) && t.length < 140 ? t : '';
+}
+
+async function downloadGutenberg(b: FoundBook, onProgress: (f: number) => void): Promise<FullBook> {
+  const pick = b.file ?? (await gutenbergFile(b.ref));
+  if (!pick) throw new Error('No readable file was found for this book.');
+  const html = /\.html?$/i.test(pick);
+  onProgress(0.1);
+  const buf = await fetchWithProgress(fileUrl(b.ref, pick), (f) => onProgress(0.1 + f * 0.8));
+  const raw = decodeText(buf, pick);
+  const author = b.authors.join(', ') || 'Unknown author';
+  const title = titleFrom(raw) || b.title;
   const book = html ? parseHtmlBook(raw, title, author) : parsePlainBook(raw, title, author);
   // Drop transcriber credits at the very start.
   const first = book.chapters[0];
@@ -292,6 +333,28 @@ export async function withDeathYears(b: FoundBook): Promise<FoundBook> {
   if (b.people.every((p) => p.died !== undefined)) return b;
   const people = await Promise.all(b.people.map(async (p) => (p.died !== undefined ? p : { ...p, died: await deathYear(p.name) })));
   return { ...b, people };
+}
+
+/**
+ * Checks that a search result can really be downloaded here: public domain in Europe (looking up missing death
+ * years) and, for Gutenberg, a readable file in the Archive. Also reads the true title from the file's first bytes
+ * (the Archive's search index loses accents) and whether a French edition has its accents.
+ * Resolves to the completed book, or null if it can't be offered.
+ */
+export async function confirmFound(b: FoundBook): Promise<FoundBook | null> {
+  try {
+    const full = await withDeathYears(b);
+    if (!publicDomainEU(full.people)) return null;
+    if (full.source === 'standard') return full;
+    const file = await gutenbergFile(full.ref);
+    if (!file) return null;
+    const title = /\?/.test(full.title) || full.lang === 'fr' ? (await gutenbergTitle(full.ref)) ?? full.title.replace(/\?/g, '') : full.title;
+    // A plain ".txt" without "-0"/"-8" is a 7-bit edition: no accents.
+    const accented = full.lang === 'fr' ? /-[08]\.txt$/.test(file) : undefined;
+    return { ...full, file, title, accented };
+  } catch {
+    return null;
+  }
 }
 
 export function downloadFound(b: FoundBook, onProgress: (f: number) => void): Promise<FullBook> {

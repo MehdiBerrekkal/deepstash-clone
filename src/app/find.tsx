@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { usePalette } from '@/lib/appearance';
-import { downloadFound, findBooks, publicDomainEU, withDeathYears, type FoundBook, type Lang } from '@/lib/findBooks';
+import { confirmFound, downloadFound, findBooks, publicDomainEU, withDeathYears, type FoundBook, type Lang } from '@/lib/findBooks';
 import { saveBook } from '@/lib/ownbooks';
 import { useStore } from '@/lib/store';
 import { colors, serif } from '@/lib/theme';
@@ -18,7 +18,9 @@ export default function FindScreen() {
   const { ownBooks, addOwnBook } = useStore();
   const [query, setQuery] = useState('');
   const [lang, setLang] = useState<Lang | 'all'>('all');
-  const [results, setResults] = useState<FoundBook[] | null>(null);
+  // Every candidate from the sources, then each one's check result (the book, or null when it can't be offered).
+  const [candidates, setCandidates] = useState<FoundBook[] | null>(null);
+  const [checked, setChecked] = useState<Record<string, FoundBook | null>>({});
   const [errors, setErrors] = useState<string[]>([]);
   const [searching, setSearching] = useState(false);
   const [open, setOpen] = useState<FoundBook | null>(null);
@@ -33,12 +35,19 @@ export default function FindScreen() {
     try {
       const { books, errors: errs } = await findBooks(text, l);
       if (mine !== searchId.current) return;
-      setResults(books);
+      setCandidates(books);
+      setChecked({});
       setErrors(errs);
-      // Death years for Standard Ebooks authors and translators arrive one by one; update rows as they come.
-      for (const b of books.filter((x) => x.people.some((p) => p.died === undefined)).slice(0, 12)) {
-        withDeathYears(b).then((full) => mine === searchId.current && setResults((rs) => rs?.map((r) => (r.key === full.key ? full : r)) ?? rs));
-      }
+      // Only books that really download here are shown: they appear as their check finishes, a few at a time.
+      let next = 0;
+      const worker = async () => {
+        while (next < books.length && mine === searchId.current) {
+          const b = books[next++];
+          const ok = await confirmFound(b);
+          if (mine === searchId.current) setChecked((c) => ({ ...c, [b.key]: ok }));
+        }
+      };
+      await Promise.all([worker(), worker(), worker(), worker()]);
     } catch (e) {
       if (mine === searchId.current) setErrors([(e as Error).message || 'Search failed. Check your connection.']);
     } finally {
@@ -58,6 +67,13 @@ export default function FindScreen() {
     // Only when the screen opens.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // In the sources' order (Standard Ebooks, then most downloaded), French editions with their accents first.
+  const results = candidates
+    ?.map((b) => checked[b.key])
+    .filter((b): b is FoundBook => !!b)
+    .sort((a, b) => Number(b.accented !== false) - Number(a.accented !== false));
+  const pending = candidates ? candidates.filter((b) => !(b.key in checked)).length : 0;
 
   const downloaded = (b: FoundBook) => ownBooks.find((o) => o.sourceUrl === b.pageUrl);
 
@@ -96,13 +112,13 @@ export default function FindScreen() {
           ))}
         </View>
 
-        {searching && <ActivityIndicator color={colors.accent} style={{ marginTop: 24 }} />}
+        {searching && !results?.length && <ActivityIndicator color={colors.accent} style={{ marginTop: 24 }} />}
         {errors.map((e) => (
           <Text key={e} style={styles.error}>
             {e}
           </Text>
         ))}
-        {!results && !searching && (
+        {!candidates && !searching && (
           <View style={styles.suggest}>
             <Text style={styles.label}>Try</Text>
             <View style={styles.chips}>
@@ -120,15 +136,16 @@ export default function FindScreen() {
             </View>
           </View>
         )}
-        {results && !searching && (
+        {results && (
           <Text style={styles.label}>
-            {results.length ? `${results.length} books` : 'Nothing found. Try an author’s surname or the original title.'}
+            {results.length
+              ? `${results.length} free ${results.length === 1 ? 'book' : 'books'} to download${pending ? ` · checking ${pending} more…` : ''}`
+              : pending
+                ? 'Checking which books can be downloaded…'
+                : 'No downloadable book found. Try an author’s surname or the original title.'}
           </Text>
         )}
-        {!searching &&
-          results?.map((b) => {
-            const pd = publicDomainEU(b.people);
-            const checking = !pd && b.people.some((p) => p.died === undefined) && b.source === 'standard';
+        {results?.map((b) => {
             return (
               <Pressable key={b.key} accessibilityLabel={`Book ${b.title}`} onPress={() => setOpen(b)} style={styles.row}>
                 <Image source={{ uri: b.cover }} style={styles.cover} resizeMode="cover" />
@@ -141,20 +158,14 @@ export default function FindScreen() {
                   </Text>
                   <View style={styles.metaRow}>
                     <Text style={styles.source}>{SOURCE_NAME[b.source]}</Text>
-                    {downloaded(b) ? (
-                      <Text style={[styles.badge, styles.badgeDone]}>In your Library</Text>
-                    ) : pd ? (
-                      <Text style={styles.badge}>Public domain</Text>
-                    ) : (
-                      <Text style={[styles.badge, styles.badgeOff]}>{checking ? 'Checking…' : 'Read online'}</Text>
-                    )}
+                    {downloaded(b) ? <Text style={[styles.badge, styles.badgeDone]}>In your Library</Text> : <Text style={styles.badge}>Public domain</Text>}
                   </View>
                 </View>
               </Pressable>
             );
           })}
         <Text style={styles.foot}>
-          Sources: Project Gutenberg (via the Internet Archive) and Standard Ebooks. A book downloads only when everyone who wrote or translated it died before {year() - 70}, so it’s public domain in Europe. Others open on their site.
+          Sources: Project Gutenberg (via the Internet Archive) and Standard Ebooks. A book downloads only when everyone who wrote or translated it died before {year() - 70}, so it’s public domain in Europe; books that can’t be downloaded here aren’t listed.
         </Text>
       </ScrollView>
       {open && (

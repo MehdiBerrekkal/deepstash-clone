@@ -281,3 +281,85 @@ export function makeRotation3D(d: number, rng: Rng): Item {
     difficulty: d,
   };
 }
+
+// ---------- mental rotation (flat shapes) ----------
+
+/** A flat shape made of grid squares, as [column, row] cells. */
+export type Poly = [number, number][];
+
+const polyKey = (cells: Poly) => {
+  const minX = Math.min(...cells.map((c) => c[0]));
+  const minY = Math.min(...cells.map((c) => c[1]));
+  return cells.map(([x, y]) => `${x - minX},${y - minY}`).sort().join(';');
+};
+const normPoly = (cells: Poly): Poly => {
+  const minX = Math.min(...cells.map((c) => c[0]));
+  const minY = Math.min(...cells.map((c) => c[1]));
+  return cells.map(([x, y]) => [x - minX, y - minY] as [number, number]);
+};
+/** Turns a shape 90° clockwise, k times. */
+const turnPoly = (cells: Poly, k: number): Poly => {
+  let out = cells;
+  for (let i = 0; i < ((k % 4) + 4) % 4; i++) out = out.map(([x, y]) => [-y, x] as [number, number]);
+  return normPoly(out);
+};
+const flipPoly = (cells: Poly): Poly => normPoly(cells.map(([x, y]) => [-x, y] as [number, number]));
+const turns = (cells: Poly) => [0, 1, 2, 3].map((k) => polyKey(turnPoly(cells, k)));
+
+function growPoly(rng: Rng, n: number): Poly {
+  const cells: Poly = [[0, 0]];
+  while (cells.length < n) {
+    const [x, y] = pick(rng, cells);
+    const [dx, dy] = pick(rng, [[1, 0], [-1, 0], [0, 1], [0, -1]] as [number, number][]);
+    const c: [number, number] = [x + dx, y + dy];
+    if (!cells.some((k) => k[0] === c[0] && k[1] === c[1])) cells.push(c);
+  }
+  return normPoly(cells);
+}
+
+/**
+ * Mental rotation with flat shapes: which option is the target only turned (not flipped)? Shapes are asymmetric,
+ * so the mirror image never matches; harder levels use more squares, more options and a moved-square distractor.
+ */
+export function makeRotation2D(d: number, rng: Rng): Item {
+  const n = d <= 2 ? 5 : d <= 5 ? 6 : d <= 8 ? 7 : 8;
+  let shape: Poly;
+  let guard = 0;
+  // Every turn must look different, and the mirror image must not match any turn.
+  do shape = growPoly(rng, n);
+  while ((new Set(turns(shape)).size < 4 || turns(shape).includes(polyKey(flipPoly(shape)))) && guard++ < 200);
+  const own = new Set(turns(shape));
+  const answer = turnPoly(shape, int(rng, 1, 3));
+  const optionCount = d <= 4 ? 4 : 5;
+  const wrong: Poly[] = [];
+  const add = (p: Poly) => {
+    if (wrong.length < optionCount - 1 && !own.has(polyKey(p)) && !wrong.some((w) => polyKey(w) === polyKey(p))) wrong.push(p);
+  };
+  const mirrored = flipPoly(shape);
+  for (const k of shuffle(rng, [0, 1, 2, 3])) add(turnPoly(mirrored, k));
+  // From level 5, one option has a single square moved: close, but a different shape.
+  if (d >= 5) {
+    for (let t = 0; t < 40; t++) {
+      const i = int(rng, 0, shape.length - 1);
+      const rest = shape.filter((_, k) => k !== i);
+      const [x, y] = pick(rng, rest);
+      const [dx, dy] = pick(rng, [[1, 0], [-1, 0], [0, 1], [0, -1]] as [number, number][]);
+      const moved = normPoly([...rest, [x + dx, y + dy]]);
+      if (new Set(moved.map((c) => c.join())).size !== moved.length || own.has(polyKey(moved))) continue;
+      wrong.splice(wrong.length - 1, 1);
+      add(turnPoly(moved, int(rng, 0, 3)));
+      break;
+    }
+  }
+  // Keep the moved-square option in the set even when the mirror turns filled it.
+  const { options, answer: idx } = arrange(rng, answer, wrong.slice(0, optionCount - 1));
+  return {
+    kind: 'rotation2d',
+    ask: 'Which shape is the target, only turned (not flipped)?',
+    prompt: shape,
+    options,
+    answer: idx,
+    explain: 'Turn the target in your head until one corner lines up. The other options are mirror images (flipped over) or have a square moved, so no turn can make them match.',
+    difficulty: d,
+  };
+}

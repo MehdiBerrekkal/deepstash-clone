@@ -56,7 +56,8 @@ type Rule = { attr: Attr; kind: 'constant' | 'progression' | 'distribution' | 'x
  */
 export function makeMatrix(d: number, rng: Rng): Item {
   const count = d <= 2 ? 1 : d <= 4 ? 2 : d <= 7 ? 3 : 4;
-  const pool: Attr[] = shuffle(rng, d <= 3 ? ['outer', 'size', 'fill', 'dots'] : ['outer', 'size', 'fill', 'inner', 'lines', 'dots', 'turn']);
+  // Only clearly visible attributes vary (never size, which is hard to judge on a small screen).
+  const pool: Attr[] = shuffle(rng, d <= 3 ? ['outer', 'fill', 'dots'] : ['outer', 'fill', 'inner', 'lines', 'dots', 'turn']);
   const attrs = pool.slice(0, count);
   if (d >= 6 && !attrs.includes('lines')) attrs[attrs.length - 1] = 'lines';
   const rules: Rule[] = attrs.map((attr) => chooseRule(attr, d, rng));
@@ -98,7 +99,7 @@ function chooseRule(attr: Attr, d: number, rng: Rng): Rule {
       ? d >= 6 ? ['xor', 'or', 'distribution'] : ['distribution', 'constant', 'or']
       : attr === 'dots'
         ? d >= 5 ? ['sum', 'progression', 'distribution'] : ['progression', 'distribution']
-        : attr === 'size' || attr === 'turn'
+        : attr === 'turn'
           ? ['progression', 'distribution']
           : d <= 2 ? ['constant', 'distribution'] : ['distribution', 'distribution', 'constant'];
   const kind = pick(rng, kinds);
@@ -161,7 +162,6 @@ function applyRule(grid: Figure[][], rule: Rule, rng: Rng) {
 function distractors(answer: Figure, rules: Rule[], rng: Rng, n: number): Figure[] {
   const tweaks: ((f: Figure) => Figure)[] = [
     (f) => ({ ...f, outer: pick(rng, SHAPES.filter((s) => s !== f.outer)) }),
-    (f) => ({ ...f, size: ((f.size + pick(rng, [1, 2])) % 3) as Figure['size'] }),
     (f) => ({ ...f, fill: ((f.fill + pick(rng, [1, 2])) % 3) as Fill }),
     (f) => ({ ...f, lines: f.lines ^ pick(rng, [1, 2, 4, 8]) }),
     (f) => ({ ...f, lines: pick(rng, LINE_SETS.filter((l) => l !== f.lines)) }),
@@ -184,7 +184,7 @@ function distractors(answer: Figure, rules: Rule[], rng: Rng, n: number): Figure
   }
   return out;
 }
-const ATTR_OF_TWEAK: Attr[] = ['outer', 'size', 'fill', 'lines', 'lines', 'dots', 'turn', 'inner'];
+const ATTR_OF_TWEAK: Attr[] = ['outer', 'fill', 'lines', 'lines', 'dots', 'turn', 'inner'];
 const isFocus = (i: number, focus: Attr[]) => focus.includes(ATTR_OF_TWEAK[i]);
 
 // ---------- figure analogies ----------
@@ -202,8 +202,6 @@ const TRANSFORMS: Transform[] = [
   { name: 'gets a horizontal line', apply: (f) => ({ ...f, lines: f.lines | 1 }) },
   { name: 'loses its lines', apply: (f) => ({ ...f, lines: 0 }) },
   { name: 'flips its lines to the other diagonal', apply: (f) => ({ ...f, lines: ((f.lines & 2) << 2) | ((f.lines & 8) >> 2) | (f.lines & 5) }) },
-  { name: 'shrinks', apply: (f) => ({ ...f, size: Math.max(0, f.size - 1) as Figure['size'] }) },
-  { name: 'grows', apply: (f) => ({ ...f, size: Math.min(2, f.size + 1) as Figure['size'] }) },
 ];
 
 function randomFigure(rng: Rng): Figure {
