@@ -333,9 +333,11 @@ export function useListen(book: FullBook | null, { rate, voice: chosen, language
         setFinished(true);
         return;
       }
-      if (sleep?.kind === 'chapter' && next.chapter !== sleep.chapter) {
+      // The sleep timer stops between sentences (end of chapter, or once the time is up), never mid-word.
+      if ((sleep?.kind === 'chapter' && next.chapter !== sleep.chapter) || (sleep?.kind === 'time' && Date.now() >= sleep.until)) {
         setPlaying(false);
         setSleep(null);
+        return;
       }
       const gap = gapBefore(sentence, next);
       if (gap) pause = setTimeout(() => !cancelled && setSentence(next), gap / rate);
@@ -436,9 +438,11 @@ export function useListen(book: FullBook | null, { rate, voice: chosen, language
         setFinished(true);
         return;
       }
-      if (sleep?.kind === 'chapter' && next.chapter !== sleep.chapter) {
+      // The sleep timer stops between sentences (end of chapter, or once the time is up), never mid-word.
+      if ((sleep?.kind === 'chapter' && next.chapter !== sleep.chapter) || (sleep?.kind === 'time' && Date.now() >= sleep.until)) {
         setPlaying(false);
         setSleep(null);
+        return;
       }
       const gap = gapBefore(sentence, next);
       if (gap) pause = setTimeout(() => !cancelled && setSentence(next), gap / rate);
@@ -480,10 +484,12 @@ export function useListen(book: FullBook | null, { rate, voice: chosen, language
   // Sleep timer by the clock.
   useEffect(() => {
     if (sleep?.kind !== 'time' || !playing) return;
+    // Normally reading stops at the end of the sentence playing when time runs out (see above); this is a backstop
+    // for a very long sentence.
     const t = setTimeout(() => {
       setPlaying(false);
       setSleep(null);
-    }, Math.max(0, sleep.until - Date.now()));
+    }, Math.max(0, sleep.until - Date.now()) + 25000);
     return () => clearTimeout(t);
   }, [sleep, playing]);
 

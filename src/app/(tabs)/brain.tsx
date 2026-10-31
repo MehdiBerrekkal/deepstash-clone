@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
+import { ProgressChart } from '@/components/brain/ProgressChart';
 import { SkillRadar } from '@/components/brain/SkillRadar';
 import { GoalRing } from '@/components/GoalRing';
 import { displayFont } from '@/lib/bookType';
@@ -125,6 +126,8 @@ export default function BrainScreen() {
               </View>
             ))}
           </View>
+          <Text style={[styles.heroKicker, { marginTop: 10 }]}>YOUR PROGRESS</Text>
+          <ProgressChart history={brain.history ?? []} width={Math.min(width - 72, 640)} />
         </LinearGradient>
       </Animated.View>
 

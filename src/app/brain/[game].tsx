@@ -1,8 +1,8 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Speech from 'expo-speech';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Animated, {
   Easing, FadeIn, FadeInDown, FadeInUp, FadeOut, ZoomIn, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withSequence, withTiming,
 } from 'react-native-reanimated';
@@ -14,6 +14,7 @@ import { GAMES, gameById, type GameDef } from '@/lib/brain/catalog';
 import { DOMAINS, domainOf, rankFor, seeded, stair, type Item } from '@/lib/brain/core';
 import { setMuted, setVolume, sfx } from '@/lib/brain/sfx';
 import { haptic } from '@/lib/haptics';
+import { shareImage } from '@/lib/share';
 import { localDate, useStore, type BrainRun } from '@/lib/store';
 import { colors } from '@/lib/theme';
 
@@ -1067,6 +1068,21 @@ function Results({ game, outcome, before, color, session, onAgain }: { game: Gam
   const { brain } = useStore();
   const xpGain = Math.round(outcome.points / 4) + 10;
   const rank = rankFor(before.xp + xpGain);
+  const card = useRef<ComponentRef<typeof View>>(null);
+  const [sharing, setSharing] = useState(false);
+  const [celebrating, setCelebrating] = useState(true);
+  // A score card image for messages and stories.
+  const shareCard = async () => {
+    setSharing(true);
+    try {
+      const { captureRef } = await import('react-native-view-shot');
+      const uri = await captureRef(card as Parameters<typeof captureRef>[0], { format: 'png', quality: 1, result: Platform.OS === 'web' ? 'data-uri' : 'tmpfile' });
+      await shareImage(uri, `${game.id}-${outcome.points}.png`);
+    } catch {
+      // cancelled or not supported: nothing to do
+    }
+    setSharing(false);
+  };
   const rankedUp = rank.index > rankFor(before.xp).index;
   const best = outcome.points > before.best && outcome.points > 0;
   const acc = outcome.total ? outcome.right / outcome.total : 0;
@@ -1101,7 +1117,9 @@ function Results({ game, outcome, before, color, session, onAgain }: { game: Gam
   const go = (id: string, params: Record<string, string> = {}) => router.replace({ pathname: '/brain/[game]', params: { game: id, ...params } });
 
   return (
+    <>
     <ScrollView contentContainerStyle={styles.results}>
+      <View ref={card} collapsable={false} style={styles.shareCard}>
       <Animated.View entering={FadeInDown.duration(380)} style={styles.resultHero}>
         <Text style={[styles.domain, { color }]}>RESULTS · {game.name.toUpperCase()}</Text>
         <Text style={[styles.bigScore, { color }]}>{shown}</Text>
@@ -1122,6 +1140,8 @@ function Results({ game, outcome, before, color, session, onAgain }: { game: Gam
         <Stat label="Level" value={`${outcome.rating}`} sub={levelDelta > 0 ? `↑ from ${before.level}` : levelDelta < 0 ? `↓ from ${before.level}` : 'steady'} color={color} />
         <Stat label="XP" value={`+${xpGain}`} sub={rank.name} color={rank.color} />
       </Animated.View>
+      <Text style={styles.brand}>DEEPSTACH · BRAIN</Text>
+      </View>
       <Animated.View entering={FadeInDown.delay(180).duration(380)} style={styles.card}>
         <View style={styles.rankRow}>
           <Text style={styles.cardTitle}>Against your best</Text>
@@ -1202,12 +1222,40 @@ function Results({ game, outcome, before, color, session, onAgain }: { game: Gam
               </Text>
             </Pressable>
           )}
+          <Pressable accessibilityLabel="Share score" disabled={sharing} onPress={shareCard} style={[styles.secondary, styles.shareBtn]}>
+            <Text style={styles.secondaryText}>{sharing ? '…' : '↗'}</Text>
+          </Pressable>
           <Pressable accessibilityLabel="Done" onPress={() => (router.canGoBack() ? router.back() : router.replace('/brain'))} style={styles.secondary}>
             <Text style={styles.secondaryText}>Done</Text>
           </Pressable>
         </View>
       </View>
     </ScrollView>
+    {rankedUp && celebrating && <RankUp rank={rank} onClose={() => setCelebrating(false)} />}
+    </>
+  );
+}
+
+/** The moment you reach a new rank: a big badge over the results, dismissed with a tap. */
+function RankUp({ rank, onClose }: { rank: ReturnType<typeof rankFor>; onClose: () => void }) {
+  return (
+    <Animated.View entering={FadeIn.duration(250)} style={styles.rankLayer}>
+      <Pressable accessibilityLabel="Close promotion" onPress={onClose} style={styles.rankTap}>
+        <Animated.View entering={ZoomIn.delay(150).springify().damping(9)} style={[styles.rankBadge, { borderColor: rank.color, shadowColor: rank.color }]}>
+          <Text style={[styles.rankGem, { color: rank.color }]}>◆</Text>
+        </Animated.View>
+        <Animated.Text entering={FadeInUp.delay(450).duration(400)} style={styles.rankKicker}>
+          NEW RANK
+        </Animated.Text>
+        <Animated.Text entering={FadeInUp.delay(600).duration(400)} style={[styles.rankTitle, { color: rank.color }]}>
+          {rank.name}
+        </Animated.Text>
+        <Animated.Text entering={FadeInUp.delay(750).duration(400)} style={styles.rankText}>
+          {rank.next ? `Next: ${rank.next.name} at ${rank.next.xp.toLocaleString()} XP` : 'The highest rank there is.'}
+        </Animated.Text>
+        <Text style={styles.rankHint}>Tap to continue</Text>
+      </Pressable>
+    </Animated.View>
   );
 }
 
@@ -1335,6 +1383,17 @@ const styles = StyleSheet.create({
   stars: { fontSize: 28, letterSpacing: 4 },
   banner: { marginTop: 8, borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 6 },
   bannerText: { fontWeight: '900', fontSize: 14 },
+  shareCard: { gap: 14, paddingBottom: 6, borderRadius: 24, backgroundColor: colors.background },
+  brand: { color: colors.muted, fontSize: 9, fontWeight: '900', letterSpacing: 2.5, alignSelf: 'center', opacity: 0.7 },
+  shareBtn: { flex: 0, width: 56 },
+  rankLayer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(5,7,15,0.88)' },
+  rankTap: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 10, padding: 24 },
+  rankBadge: { width: 140, height: 140, borderRadius: 70, borderWidth: 3, alignItems: 'center', justifyContent: 'center', shadowOpacity: 0.9, shadowRadius: 40, backgroundColor: 'rgba(255,255,255,0.04)' },
+  rankGem: { fontSize: 72, lineHeight: 80 },
+  rankKicker: { color: '#AEB5DA', fontSize: 12, fontWeight: '900', letterSpacing: 3, marginTop: 10 },
+  rankTitle: { fontFamily: displayFont, fontSize: 48, lineHeight: 52 },
+  rankText: { color: '#D5D9F0', fontSize: 15, textAlign: 'center' },
+  rankHint: { color: '#8E97C8', fontSize: 12, marginTop: 24 },
   rankRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   cmpRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   cmpLabel: { color: colors.muted, width: 84, fontSize: 12, fontWeight: '700' },

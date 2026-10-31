@@ -135,6 +135,8 @@ export type BrainState = {
   run?: BrainRun;
   /** Today's three-game session and how each game went. */
   session?: BrainSession;
+  /** One snapshot of the area scores per day you trained, oldest first (for the progress chart). */
+  history?: { date: string; skills: Partial<Record<Skill, number>> }[];
 };
 export type BrainRun = { id: string; n: number; right: number; points: number; d: number; streak: number; hardest: number; seconds: number; history: boolean[]; saved: number };
 export type BrainSession = { date: string; games: string[]; done: Record<string, { points: number; right: number; total: number; xp: number; from: number; to: number }> };
@@ -431,6 +433,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         brain: {
           ...b,
           skills: { ...b.skills, [r.skill]: Math.round(old === undefined ? r.perf : old * 0.65 + r.perf * 0.35) },
+          history: [
+            ...(b.history ?? []).filter((h) => h.date !== date),
+            { date, skills: { ...b.skills, [r.skill]: Math.round(old === undefined ? r.perf : old * 0.65 + r.perf * 0.35) } },
+          ].slice(-120),
           best: r.points > (b.best[r.id] ?? 0) ? { ...b.best, [r.id]: r.points } : b.best,
           levels: r.rating ? { ...b.levels, [r.id]: r.rating } : b.levels,
           played: { ...b.played, [r.id]: (b.played[r.id] ?? 0) + 1 },
