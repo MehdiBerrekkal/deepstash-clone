@@ -1,4 +1,3 @@
-import JSZip from 'jszip';
 
 import type { FullBook } from '@/lib/fullbook';
 
@@ -72,6 +71,8 @@ export function parseHtmlBook(html: string, title: string, author: string): Full
 
 /** Reads a DRM-free EPUB entirely on the device. Throws a readable message for files it can't open. */
 export async function parseEpub(data: ArrayBuffer | Uint8Array, fileName: string): Promise<FullBook> {
+  // Loaded on first use: the unzip library isn't needed to open the app.
+  const { default: JSZip } = await import('jszip');
   const zip = await JSZip.loadAsync(data);
   if (zip.file('META-INF/encryption.xml') && /EncryptedData/.test(await zip.file('META-INF/encryption.xml')!.async('string'))) {
     throw new Error('This EPUB is DRM-protected, so it can only be read in the app it was bought from.');

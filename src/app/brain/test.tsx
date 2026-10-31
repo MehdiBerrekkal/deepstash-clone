@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import Svg, { Line, Path, Text as SvgText } from 'react-native-svg';
-import { captureRef } from 'react-native-view-shot';
+import type { captureRef as CaptureRef } from 'react-native-view-shot';
 
 import { OptionView, PromptView, pictureOptions } from '@/components/brain/ItemView';
 import { useLeaveGuard } from '@/components/brain/LeaveGuard';
@@ -288,7 +288,9 @@ function Report({ result, history }: { result: BrainTest; history: BrainTest[] }
   const share = async () => {
     setSharing(true);
     try {
-      const uri = await captureRef(card as Parameters<typeof captureRef>[0], { format: 'png', quality: 1, result: Platform.OS === 'web' ? 'data-uri' : 'tmpfile' });
+      // Loaded only when sharing: the image library is large and not needed to open the app.
+      const { captureRef } = await import('react-native-view-shot');
+      const uri = await captureRef(card as Parameters<typeof CaptureRef>[0], { format: 'png', quality: 1, result: Platform.OS === 'web' ? 'data-uri' : 'tmpfile' });
       await shareImage(uri, `brain-test-${localDate()}.png`);
     } catch {
       // nothing to do: the button just stops spinning

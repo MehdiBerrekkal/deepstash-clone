@@ -97,6 +97,16 @@ function walk(dir) {
   html = html.replace(/(<meta name="viewport"[^>]*>)/, `$1${browserViewport}`);
   html = html.replace(/<title>[^<]*<\/title>/, `<title>${NAME}</title>`);
   html = html.replace('</head>', `${head}</head>`);
+  // A loading screen drawn by the HTML itself, so something appears at once while the app's code downloads and
+  // starts (React replaces it). It follows the device's light/dark setting.
+  const splash =
+    '<style>#boot{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;' +
+    'font:600 15px -apple-system,system-ui,sans-serif;color:#A3A7B1;background:#0F1115}' +
+    '#boot b{font:700 30px Georgia,serif;color:#F4F1EA;letter-spacing:.5px}#boot i{width:42px;height:4px;border-radius:2px;background:#F2B84B;animation:boot 1s ease-in-out infinite alternate}' +
+    '@keyframes boot{from{opacity:.25;transform:scaleX(.4)}to{opacity:1;transform:scaleX(1)}}' +
+    '@media (prefers-color-scheme:light){html,body{background:#F6F2EA}#boot{background:#F6F2EA;color:#6E665C}#boot b{color:#1E1A16}}</style>' +
+    `<div id="boot"><b>${NAME}</b><i></i><span>Opening your library…</span></div>`;
+  html = html.replace(/<div id="root">/, `<div id="root">${splash}`);
   fs.writeFileSync(path.join(dist, 'index.html'), html);
   // GitHub Pages serves 404.html for unknown paths, so deep links like /reader/... load the app too.
   fs.writeFileSync(path.join(dist, '404.html'), html);

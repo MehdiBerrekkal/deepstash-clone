@@ -1,7 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRef, useState, type ComponentRef } from 'react';
 import { ActivityIndicator, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import { captureRef } from 'react-native-view-shot';
+import type { captureRef as CaptureRef } from 'react-native-view-shot';
 
 import { displayFont, displayItalic } from '@/lib/bookType';
 import { shareImage } from '@/lib/share';
@@ -29,7 +29,9 @@ export function QuoteImage({ text, author, source, onClose }: Props) {
     setBusy(true);
     setError(null);
     try {
-      const uri = await captureRef(card as Parameters<typeof captureRef>[0], { format: 'png', quality: 1, result: Platform.OS === 'web' ? 'data-uri' : 'tmpfile' });
+      // Loaded only when sharing: the image library is large and not needed to open the app.
+      const { captureRef } = await import('react-native-view-shot');
+      const uri = await captureRef(card as Parameters<typeof CaptureRef>[0], { format: 'png', quality: 1, result: Platform.OS === 'web' ? 'data-uri' : 'tmpfile' });
       await shareImage(uri, `${author.replace(/[^\w]+/g, '-').toLowerCase() || 'quote'}.png`);
     } catch (e) {
       setError((e as Error).message || 'Could not make the image.');
