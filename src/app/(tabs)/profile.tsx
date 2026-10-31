@@ -2,7 +2,9 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { BackupCard } from '@/components/BackupCard';
 import { GoalRing } from '@/components/GoalRing';
+import { ReminderCard } from '@/components/ReminderCard';
 import { Shelf } from '@/components/Shelf';
 import { TopicChip } from '@/components/TopicChip';
 import { classicAsSource } from '@/lib/classicSource';
@@ -153,6 +155,9 @@ export default function ProfileScreen() {
             : 'Stashed ideas and highlights come back on a spaced schedule so they stick.'}
         </Text>
       </Pressable>
+
+      <BackupCard />
+      <ReminderCard />
 
       <Pressable accessibilityLabel="Voices" onPress={() => router.push('/voices')} style={styles.card}>
         <View style={styles.rowBetween}>

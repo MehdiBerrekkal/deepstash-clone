@@ -8,6 +8,7 @@ import type { OwnBook } from '@/lib/ownbooks';
 import { NEW_PER_DAY, schedule, type Grade, type ReviewState } from '@/lib/review';
 import { supabase } from '@/lib/supabase';
 import type { Appearance } from '@/lib/theme';
+import { mergeUser } from '@/lib/backup';
 import type { Skill } from '@/lib/brain/core';
 import type {
   Bookmark, BookProgress, CardKind, DayLog, Highlight, Idea, ReaderPosition, ReaderProgress, ReaderSettings, Source, Stash, Streak, Topic,
@@ -54,6 +55,8 @@ type UserState = {
   ownBooks: OwnBook[];
   /** Catalog books downloaded to this device, newest first. */
   downloadedBooks: string[];
+  /** When the last backup file was made (ISO date). */
+  lastBackup?: string;
 };
 
 type Store = Content &
@@ -97,6 +100,11 @@ type Store = Content &
     addBrainTest: (t: BrainTest) => void;
     setBrainSound: (on: boolean) => void;
     patchBrain: (p: Partial<BrainState>) => void;
+    /** Everything you've done, for a backup file. */
+    exportUser: () => Record<string, unknown>;
+    /** Loads data from a backup: replacing this device's, or merged into it. */
+    importUser: (data: Record<string, unknown>, mode: 'merge' | 'replace') => void;
+    markBackedUp: () => void;
     markBrainHowTo: (id: string) => void;
     markBrainDaily: (part: 'game' | 'quiz') => void;
     addOwnBook: (book: OwnBook) => void;
@@ -438,6 +446,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const setBrainSound = useCallback((on: boolean) => setUser((u) => ({ ...u, brain: { ...u.brain, sound: on } })), []);
   const patchBrain = useCallback((p: Partial<BrainState>) => setUser((u) => ({ ...u, brain: { ...u.brain, ...p } })), []);
+  const exportUser = useCallback(() => user as unknown as Record<string, unknown>, [user]);
+  const importUser = useCallback((data: Record<string, unknown>, mode: 'merge' | 'replace') => {
+    setUser((u) => {
+      const next = (mode === 'replace' ? { ...initialUserState, ...data } : { ...initialUserState, ...mergeUser(u as unknown as Record<string, unknown>, data) }) as UserState;
+      return { ...next, streak: bumpStreak(next.streak), lastBackup: u.lastBackup ?? next.lastBackup };
+    });
+  }, []);
+  const markBackedUp = useCallback(() => setUser((u) => ({ ...u, lastBackup: new Date().toISOString() })), []);
 
   const markBrainHowTo = useCallback((id: string) => {
     setUser((u) => ({ ...u, brain: { ...u.brain, seen: [...new Set([...(u.brain?.seen ?? []), id])] } }));
@@ -534,6 +550,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       addBrainTest,
       setBrainSound,
       patchBrain,
+      exportUser,
+      importUser,
+      markBackedUp,
       markBrainHowTo,
       markBrainDaily,
       addOwnBook,
@@ -543,7 +562,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [
     content, user, ready, indexes, setFollowedTopics, createStash, deleteStash, toggleInStash, toggleLike, markRead, setBookPosition,
     finishBook, toggleFavoriteBook, setDailyGoal, resetProgress, setReaderSettings, setReaderPosition, toggleBookmark, removeBookmark,
-    saveClip, addHighlight, updateHighlight, removeHighlight, logReading, setMinuteGoal, markReaderFinished, gradeReview, setNotInterested, setAppearance, recordBrain, addBrainTest, setBrainSound, patchBrain, markBrainHowTo, markBrainDaily, addOwnBook, removeOwnBook, markDownloaded,
+    saveClip, addHighlight, updateHighlight, removeHighlight, logReading, setMinuteGoal, markReaderFinished, gradeReview, setNotInterested, setAppearance, recordBrain, addBrainTest, setBrainSound, patchBrain, exportUser, importUser, markBackedUp, markBrainHowTo, markBrainDaily, addOwnBook, removeOwnBook, markDownloaded,
   ]);
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

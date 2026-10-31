@@ -260,7 +260,7 @@ function ClassicShelf({ title, items }: { title: string; items: typeof classics 
 }
 
 const styles = StyleSheet.create({
-  find: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, borderRadius: 18, backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.accent },
+  find: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, marginHorizontal: 16, marginTop: -12, borderRadius: 18, backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.accent },
   findIcon: { fontSize: 24 },
   findTitle: { color: colors.text, fontWeight: '900', fontSize: 16 },
   findSub: { color: colors.muted, fontSize: 13, marginTop: 2 },
