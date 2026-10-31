@@ -4,12 +4,14 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import { makeBackup, pickBackup, restoreBooks, shareBackup, type Backup } from '@/lib/backup';
 import { useStore } from '@/lib/store';
 import { colors } from '@/lib/theme';
+import { useT } from '@/lib/i18n';
 
 const daysSince = (iso?: string) => (iso ? Math.floor((Date.now() - new Date(iso).getTime()) / 86400e3) : null);
 
 /** You → Backup & restore: save everything to a file, and load it back (merged or replacing this device's data). */
 export function BackupCard() {
   const { exportUser, importUser, markBackedUp, lastBackup, ownBooks } = useStore();
+  const t = useT();
   const [busy, setBusy] = useState<'export' | 'import' | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [incoming, setIncoming] = useState<Backup | null>(null);
@@ -59,8 +61,8 @@ export function BackupCard() {
   return (
     <View style={styles.card}>
       <View style={styles.rowBetween}>
-        <Text style={styles.heading}>💾 Backup & restore</Text>
-        <Text style={[styles.age, due && styles.due]}>{age === null ? 'never backed up' : age === 0 ? 'backed up today' : `${age} ${age === 1 ? 'day' : 'days'} ago`}</Text>
+        <Text style={styles.heading}>{t('💾 Backup & restore')}</Text>
+        <Text style={[styles.age, due && styles.due]}>{age === null ? t('never backed up') : age === 0 ? t('backed up today') : t('{n} days ago', { n: age })}</Text>
       </View>
       <Text style={styles.muted}>
         Your progress, highlights, notes, stashes, Brain scores, settings and {ownBooks.length ? `your ${ownBooks.length} saved ${ownBooks.length === 1 ? 'book' : 'books'}` : 'saved books'} live only in this browser. Save them to a file
@@ -72,22 +74,22 @@ export function BackupCard() {
             Backup from {new Date(incoming.exportedAt).toLocaleString()}: {Object.keys(incoming.books ?? {}).length} books, {((incoming.user.highlights as unknown[]) ?? []).length} highlights.
           </Text>
           <Pressable accessibilityLabel="Merge backup" onPress={() => doRestore('merge')} style={[styles.button, styles.primary]}>
-            <Text style={styles.primaryText}>Merge with this device</Text>
+            <Text style={styles.primaryText}>{t('Merge with this device')}</Text>
           </Pressable>
           <Pressable accessibilityLabel="Replace with backup" onPress={() => doRestore('replace')} style={styles.button}>
-            <Text style={styles.buttonText}>Replace everything here</Text>
+            <Text style={styles.buttonText}>{t('Replace everything here')}</Text>
           </Pressable>
           <Pressable onPress={() => setIncoming(null)} style={styles.link}>
-            <Text style={styles.muted}>Cancel</Text>
+            <Text style={styles.muted}>{t('Cancel')}</Text>
           </Pressable>
         </View>
       ) : (
         <View style={styles.row}>
           <Pressable accessibilityLabel="Export backup" disabled={!!busy} onPress={doExport} style={[styles.button, styles.primary, styles.flex]}>
-            {busy === 'export' ? <ActivityIndicator color={colors.onAccent} /> : <Text style={styles.primaryText}>Save backup</Text>}
+            {busy === 'export' ? <ActivityIndicator color={colors.onAccent} /> : <Text style={styles.primaryText}>{t('Save backup')}</Text>}
           </Pressable>
           <Pressable accessibilityLabel="Restore backup" disabled={!!busy} onPress={doPick} style={[styles.button, styles.flex]}>
-            {busy === 'import' ? <ActivityIndicator color={colors.text} /> : <Text style={styles.buttonText}>Restore…</Text>}
+            {busy === 'import' ? <ActivityIndicator color={colors.text} /> : <Text style={styles.buttonText}>{t('Restore…')}</Text>}
           </Pressable>
         </View>
       )}

@@ -12,6 +12,7 @@ import { classicById } from '@/lib/fullbook';
 import { calendarWeeks, compactNumber, formatDuration, minutesOf, readingSpeed, readingStreak } from '@/lib/stats';
 import { localDate, useStore } from '@/lib/store';
 import { colors, type Appearance } from '@/lib/theme';
+import { useT } from '@/lib/i18n';
 
 const GOALS = [5, 10, 20, 30];
 const APPEARANCES: { id: Appearance; label: string }[] = [
@@ -28,6 +29,8 @@ export default function ProfileScreen() {
     highlights, readingLog, minuteGoal, setMinuteGoal, finishedReaders, reviewQueue, reviews, appearance, setAppearance,
   } = useStore();
   const [confirmReset, setConfirmReset] = useState(false);
+  const t = useT();
+  const { uiLanguage, setUiLanguage } = useStore();
 
   const fullFinished = Object.keys(finishedReaders)
     .filter((key) => key.startsWith('classic:') && classicById[key.slice(8)])
@@ -65,7 +68,7 @@ export default function ProfileScreen() {
       <View style={[styles.card, styles.today]}>
         <GoalRing progress={todayMinutes / minuteGoal} size={112} stroke={11} label={String(todayMinutes)} sublabel={`of ${minuteGoal} min`} />
         <View style={styles.todayText}>
-          <Text style={styles.heading}>Today&apos;s reading</Text>
+          <Text style={styles.heading}>{t("Today's reading")}</Text>
           <Text style={styles.muted}>
             {todayMinutes >= minuteGoal
               ? 'Goal reached. Nice work!'
@@ -87,7 +90,7 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.heading}>Appearance</Text>
+        <Text style={styles.heading}>{t('Appearance')}</Text>
         <View style={styles.segment}>
           {APPEARANCES.map((a) => (
             <Pressable
@@ -96,7 +99,7 @@ export default function ProfileScreen() {
               accessibilityState={{ selected: appearance === a.id }}
               onPress={() => setAppearance(a.id)}
               style={[styles.segmentItem, appearance === a.id && styles.segmentOn]}>
-              <Text style={[styles.segmentText, appearance === a.id && styles.segmentTextOn]}>{a.label}</Text>
+              <Text style={[styles.segmentText, appearance === a.id && styles.segmentTextOn]}>{`${a.label.slice(0, 2)}${t(a.label.slice(2))}`}</Text>
             </Pressable>
           ))}
         </View>
@@ -104,8 +107,25 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.card}>
+        <Text style={styles.heading}>🌐 {t('Language')}</Text>
+        <View style={styles.segment}>
+          {(['auto', 'en', 'fr'] as const).map((l) => (
+            <Pressable
+              key={l}
+              accessibilityLabel={`Language ${l}`}
+              accessibilityState={{ selected: (uiLanguage ?? 'auto') === l }}
+              onPress={() => setUiLanguage(l)}
+              style={[styles.segmentItem, (uiLanguage ?? 'auto') === l && styles.segmentOn]}>
+              <Text style={[styles.segmentText, (uiLanguage ?? 'auto') === l && styles.segmentTextOn]}>{l === 'auto' ? t('Automatic') : l === 'en' ? 'English' : 'Français'}</Text>
+            </Pressable>
+          ))}
+        </View>
+        <Text style={styles.muted}>{t('The app’s menus and buttons. Books and cards keep their own language.')}</Text>
+      </View>
+
+      <View style={styles.card}>
         <View style={styles.rowBetween}>
-          <Text style={styles.heading}>Reading calendar</Text>
+          <Text style={styles.heading}>{t('Reading calendar')}</Text>
           <Text style={styles.muted}>last {WEEKS} weeks</Text>
         </View>
         <View style={styles.heatmap}>
@@ -146,7 +166,7 @@ export default function ProfileScreen() {
 
       <Pressable accessibilityLabel="Review" onPress={() => router.push('/review')} style={styles.card}>
         <View style={styles.rowBetween}>
-          <Text style={styles.heading}>🧠 Smart review</Text>
+          <Text style={styles.heading}>{t('🧠 Smart review')}</Text>
           <Text style={styles.link}>{reviewQueue.length ? `${reviewQueue.length} due ›` : 'Open ›'}</Text>
         </View>
         <Text style={styles.muted}>
@@ -161,15 +181,15 @@ export default function ProfileScreen() {
 
       <Pressable accessibilityLabel="Voices" onPress={() => router.push('/voices')} style={styles.card}>
         <View style={styles.rowBetween}>
-          <Text style={styles.heading}>🔊 Voices</Text>
+          <Text style={styles.heading}>{t('🔊 Voices')}</Text>
           <Text style={styles.link}>Open ›</Text>
         </View>
-        <Text style={styles.muted}>Choose the English and French voices that read books, idea cards and quizzes aloud, including the natural AI voices.</Text>
+        <Text style={styles.muted}>{t('Choose the English and French voices that read books, idea cards and quizzes aloud, including the natural AI voices.')}</Text>
       </Pressable>
 
       <Pressable accessibilityLabel="All highlights" onPress={() => router.push('/highlights')} style={styles.card}>
         <View style={styles.rowBetween}>
-          <Text style={styles.heading}>✎ Highlights and notes</Text>
+          <Text style={styles.heading}>{t('✎ Highlights and notes')}</Text>
           <Text style={styles.link}>Open ›</Text>
         </View>
         <Text style={styles.muted}>
@@ -186,7 +206,7 @@ export default function ProfileScreen() {
 
       <View style={styles.section}>
         <View style={styles.rowBetween}>
-          <Text style={styles.heading}>Your topics</Text>
+          <Text style={styles.heading}>{t('Your topics')}</Text>
           <Pressable onPress={() => router.push('/onboarding')}>
             <Text style={styles.link}>Edit ›</Text>
           </Pressable>

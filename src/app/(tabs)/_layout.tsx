@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useStore } from '@/lib/store';
 import { usePalette } from '@/lib/appearance';
+import { useT } from '@/lib/i18n';
 
 const icon = (glyph: string) =>
   function TabIcon({ color }: { color: ColorValue }) {
@@ -17,6 +18,7 @@ export default function TabsLayout() {
   const insets = useSafeAreaInsets();
   // Real colours (not CSS variables): navigation tints icons with them.
   const colors = usePalette();
+  const t = useT();
 
   if (!ready) return null;
   if (followedTopicIds.length === 0) return <Redirect href="/onboarding" />;
@@ -34,12 +36,12 @@ export default function TabsLayout() {
         tabBarInactiveTintColor: colors.muted,
         tabBarLabelStyle: { fontSize: 11, lineHeight: 14 },
       }}>
-      <Tabs.Screen name="index" options={{ title: 'For you', tabBarIcon: icon('◉') }} />
-      <Tabs.Screen name="library" options={{ title: 'Library', tabBarIcon: icon('📚') }} />
-      <Tabs.Screen name="explore" options={{ title: 'Explore', tabBarIcon: icon('⌕') }} />
-      <Tabs.Screen name="brain" options={{ title: 'Brain', tabBarIcon: icon('🧠') }} />
-      <Tabs.Screen name="stashes" options={{ title: 'Stashes', tabBarIcon: icon('★') }} />
-      <Tabs.Screen name="profile" options={{ title: 'You', tabBarIcon: icon('◐') }} />
+      <Tabs.Screen name="index" options={{ title: t('For you'), tabBarIcon: icon('◉') }} />
+      <Tabs.Screen name="library" options={{ title: t('Library'), tabBarIcon: icon('📚') }} />
+      <Tabs.Screen name="explore" options={{ title: t('Explore'), tabBarIcon: icon('⌕') }} />
+      <Tabs.Screen name="brain" options={{ title: t('Brain'), tabBarIcon: icon('🧠') }} />
+      <Tabs.Screen name="stashes" options={{ title: t('Stashes'), tabBarIcon: icon('★') }} />
+      <Tabs.Screen name="profile" options={{ title: t('You'), tabBarIcon: icon('◐') }} />
     </Tabs>
   );
 }

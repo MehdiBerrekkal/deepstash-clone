@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { shareTextFile } from '@/lib/share';
 import { colors } from '@/lib/theme';
+import { useT } from '@/lib/i18n';
 
 const TIMES = ['07:30', '12:30', '18:30', '21:30'];
 
@@ -41,16 +42,17 @@ function reminderIcs(time: string) {
  * even when the app is closed. (A web app on GitHub Pages can't send push notifications by itself.)
  */
 export function ReminderCard() {
+  const t = useT();
   const [time, setTime] = useState('21:30');
   const [done, setDone] = useState(false);
   return (
     <View style={styles.card}>
-      <Text style={styles.heading}>⏰ Daily reminder</Text>
-      <Text style={styles.muted}>Pick a time, then add it to your calendar. You’ll get a gentle alert every day, even when the app is closed.</Text>
+      <Text style={styles.heading}>{t('⏰ Daily reminder')}</Text>
+      <Text style={styles.muted}>{t('Pick a time, then add it to your calendar. You’ll get a gentle alert every day, even when the app is closed.')}</Text>
       <View style={styles.row}>
-        {TIMES.map((t) => (
-          <Pressable key={t} accessibilityLabel={`Remind at ${t}`} onPress={() => setTime(t)} style={[styles.chip, time === t && styles.chipOn]}>
-            <Text style={[styles.chipText, time === t && styles.chipTextOn]}>{t}</Text>
+        {TIMES.map((h) => (
+          <Pressable key={h} accessibilityLabel={`Remind at ${h}`} onPress={() => setTime(h)} style={[styles.chip, time === h && styles.chipOn]}>
+            <Text style={[styles.chipText, time === h && styles.chipTextOn]}>{h}</Text>
           </Pressable>
         ))}
       </View>
@@ -61,7 +63,7 @@ export function ReminderCard() {
           setDone(true);
         }}
         style={styles.button}>
-        <Text style={styles.buttonText}>Add to my calendar</Text>
+        <Text style={styles.buttonText}>{t('Add to my calendar')}</Text>
       </Pressable>
       {done && <Text style={styles.small}>On iPhone, tap “Add All” in the calendar sheet. To change the time later, delete the event in Calendar and add a new one.</Text>}
     </View>

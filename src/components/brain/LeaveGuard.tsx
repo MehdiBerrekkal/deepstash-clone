@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { usePalette } from '@/lib/appearance';
+import { useT } from '@/lib/i18n';
 
 type Options = {
   title: string;
@@ -30,6 +31,7 @@ export function useLeaveGuard(active: boolean, { title, message, quitLabel, save
     dispatch: (action: object) => void;
   };
   const palette = usePalette();
+  const t = useT();
   const [pending, setPending] = useState<null | (() => void)>(null);
   const leaving = useRef(false);
 
@@ -93,7 +95,7 @@ export function useLeaveGuard(active: boolean, { title, message, quitLabel, save
           <Text style={[styles.title, { color: palette.text }]}>{title}</Text>
           <Text style={[styles.message, { color: palette.muted }]}>{message}</Text>
           <Pressable accessibilityLabel="Keep going" onPress={() => setPending(null)} style={[styles.button, { backgroundColor: palette.accent }]}>
-            <Text style={[styles.buttonText, { color: palette.onAccent }]}>Keep going</Text>
+            <Text style={[styles.buttonText, { color: palette.onAccent }]}>{t('Keep going')}</Text>
           </Pressable>
           {saveLabel && (
             <Pressable

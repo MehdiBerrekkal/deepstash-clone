@@ -10,13 +10,14 @@ import Animated, {
 import { OptionView, PromptView, pictureOptions } from '@/components/brain/ItemView';
 import { useLeaveGuard } from '@/components/brain/LeaveGuard';
 import { displayFont } from '@/lib/bookType';
-import { GAMES, gameById, type GameDef } from '@/lib/brain/catalog';
+import { GAMES, gameById, gameText, type GameDef } from '@/lib/brain/catalog';
 import { DOMAINS, domainOf, rankFor, seeded, stair, type Item } from '@/lib/brain/core';
 import { setMuted, setVolume, sfx } from '@/lib/brain/sfx';
 import { haptic } from '@/lib/haptics';
 import { shareImage } from '@/lib/share';
 import { localDate, useStore, type BrainRun } from '@/lib/store';
 import { colors } from '@/lib/theme';
+import { useT, useUiLang } from '@/lib/i18n';
 
 type Outcome = { points: number; right: number; total: number; perf: number; rating: number; seconds: number; mistakes: { item: Item; picked: number }[] };
 type Phase = 'intro' | 'practice' | 'countdown' | 'play' | 'done';
@@ -34,6 +35,8 @@ export default function GameScreen() {
   const { game: id, daily, session } = useLocalSearchParams<{ game: string; daily?: string; session?: string }>();
   const game = gameById[id];
   const { brain, recordBrain, markBrainHowTo, markBrainDaily, setBrainSound, patchBrain } = useStore();
+  const t = useT();
+  const lang = useUiLang();
   const [phase, setPhase] = useState<Phase>('intro');
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [run, setRun] = useState(0);
@@ -43,9 +46,9 @@ export default function GameScreen() {
   const sound = brain.sound !== false;
   const resumable = gameById[id]?.type === 'items';
   const guard = useLeaveGuard(phase === 'countdown' || phase === 'play', {
-    title: 'Leave this game?',
+    title: t('Leave this game?'),
     message: resumable ? 'Your run is saved after every answer, so you can pick it up later from this game’s page.' : 'This run won’t be scored if you leave now.',
-    quitLabel: resumable ? 'Save & quit' : 'Quit',
+    quitLabel: t(resumable ? 'Save & quit' : 'Quit'),
   });
   useEffect(() => {
     setMuted(!sound);
@@ -61,6 +64,7 @@ export default function GameScreen() {
   }
   const dom = domainOf(game.skill);
   const rating = brain.levels[id] ?? 2;
+  const text = gameText(game, lang);
   const seen = brain.seen.includes(id);
   const saved = brain.run && brain.run.id === id && now() - brain.run.saved < RESUME_HOURS * 3600e3 ? brain.run : null;
   const today = localDate();
@@ -94,7 +98,7 @@ export default function GameScreen() {
   const playProps = { rating, color: dom.color, seed, onDone: finish };
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ title: game.name }} />
+      <Stack.Screen options={{ title: text.name }} />
       <Ambient color={dom.color} />
       {guard.sheet}
       {phase === 'intro' && (
@@ -102,15 +106,15 @@ export default function GameScreen() {
           <Animated.View entering={FadeInDown.duration(380)}>
             <LinearGradient colors={[`${dom.color}33`, `${dom.color}08`]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.hero, { borderColor: `${dom.color}55` }]}>
               <Text style={[styles.domain, { color: dom.color }]}>
-                {dom.glyph} {dom.name.toUpperCase()}
+                {dom.glyph} {t(dom.name).toUpperCase()}
                 {inSession ? `  ·  TODAY’S SESSION ${brain.session!.games.indexOf(id) + 1}/3` : daily ? '  ·  DAILY CHALLENGE' : ''}
               </Text>
-              <Text style={styles.title}>{game.name}</Text>
-              <Text style={styles.heroBlurb}>{game.blurb}</Text>
+              <Text style={styles.title}>{text.name}</Text>
+              <Text style={styles.heroBlurb}>{text.blurb}</Text>
               <View style={styles.statRow}>
-                <Stat label="Level" value={`${rating}`} color={dom.color} />
-                <Stat label="Best" value={String(brain.best[id] ?? '—')} color={dom.color} />
-                <Stat label="Played" value={String(brain.played[id] ?? 0)} color={dom.color} />
+                <Stat label={t('Level')} value={`${rating}`} color={dom.color} />
+                <Stat label={t('Best')} value={String(brain.best[id] ?? '—')} color={dom.color} />
+                <Stat label={t('Played')} value={String(brain.played[id] ?? 0)} color={dom.color} />
               </View>
             </LinearGradient>
           </Animated.View>
@@ -129,24 +133,24 @@ export default function GameScreen() {
             </Animated.View>
           )}
           <Animated.View entering={FadeInDown.delay(80).duration(380)} style={styles.card}>
-            <Text style={styles.cardTitle}>{seen ? 'Reminder' : 'How it works'}</Text>
-            <Text style={styles.cardText}>{game.howTo}</Text>
-            {!!game.why && (
+            <Text style={styles.cardTitle}>{t(seen ? 'Reminder' : 'How it works')}</Text>
+            <Text style={styles.cardText}>{text.howTo}</Text>
+            {!!text.why && (
               <View style={styles.whyRow}>
-                <Text style={[styles.whyLabel, { color: dom.color }]}>WHY</Text>
-                <Text style={styles.whyText}>{game.why}</Text>
+                <Text style={[styles.whyLabel, { color: dom.color }]}>{t('WHY')}</Text>
+                <Text style={styles.whyText}>{text.why}</Text>
               </View>
             )}
-            <Text style={styles.cardHint}>The level adapts as you play: two right in a row moves up, a mistake moves down. Streaks multiply your points up to ×3.</Text>
+            <Text style={styles.cardHint}>{t('The level adapts as you play: two right in a row moves up, a mistake moves down. Streaks multiply your points up to ×3.')}</Text>
           </Animated.View>
           <Animated.View entering={FadeInDown.delay(160).duration(380)} style={styles.actions}>
             {seen ? (
               <Pressable accessibilityLabel="Start" onPress={() => begin(null)} style={[styles.primary, { backgroundColor: dom.color }]}>
-                <Text style={styles.primaryText}>{saved ? 'Start over' : 'Start'}</Text>
+                <Text style={styles.primaryText}>{t(saved ? 'Start over' : 'Start')}</Text>
               </Pressable>
             ) : (
               <Pressable accessibilityLabel="Practice first" onPress={() => (sfx.unlock(), setPhase('practice'))} style={[styles.primary, { backgroundColor: dom.color }]}>
-                <Text style={styles.primaryText}>Try a practice round</Text>
+                <Text style={styles.primaryText}>{t('Try a practice round')}</Text>
               </Pressable>
             )}
             <Pressable accessibilityLabel={sound ? 'Mute sounds' : 'Turn sounds on'} onPress={() => setBrainSound(!sound)} style={styles.iconBtn}>
@@ -155,11 +159,11 @@ export default function GameScreen() {
           </Animated.View>
           {seen ? (
             <Pressable accessibilityLabel="Practice" onPress={() => setPhase('practice')} style={styles.linkBtn}>
-              <Text style={styles.linkText}>Practice round (not scored)</Text>
+              <Text style={styles.linkText}>{t('Practice round (not scored)')}</Text>
             </Pressable>
           ) : (
             <Pressable accessibilityLabel="Start" onPress={() => begin(null)} style={styles.linkBtn}>
-              <Text style={styles.linkText}>Skip practice and start</Text>
+              <Text style={styles.linkText}>{t('Skip practice and start')}</Text>
             </Pressable>
           )}
         </ScrollView>
@@ -296,6 +300,7 @@ function nearMiss(item: Item, picked: number) {
 
 /** One guided easy item (or a short round of the memory games), not scored. */
 function Practice({ game, color, onDone }: { game: GameDef; color: string; onDone: () => void }) {
+  const t = useT();
   const { width } = useWindowDimensions();
   const w = Math.min(width, 620) - 32;
   const [item] = useState(() => game.make?.(1, seeded(`practice-${game.id}-${now()}`)));
@@ -303,7 +308,7 @@ function Practice({ game, color, onDone }: { game: GameDef; color: string; onDon
   const [customDone, setCustomDone] = useState(false);
   const banner = (
     <View style={[styles.practiceBanner, { borderColor: color }]}>
-      <Text style={[styles.practiceKicker, { color }]}>PRACTICE · NOT SCORED</Text>
+      <Text style={[styles.practiceKicker, { color }]}>{t('PRACTICE · NOT SCORED')}</Text>
     </View>
   );
   const ready = (
@@ -311,7 +316,7 @@ function Practice({ game, color, onDone }: { game: GameDef; color: string; onDon
       <Text style={[styles.explainTitle, { color: '#3DDC97' }]}>{picked === null || !item || picked === item.answer ? 'You’ve got it.' : 'Now you know the trick.'}</Text>
       {!!item?.explain && <Text style={styles.cardText}>{item.explain}</Text>}
       <Pressable accessibilityLabel="Start the real game" onPress={onDone} style={[styles.primary, { backgroundColor: color }]}>
-        <Text style={styles.primaryText}>Start the real game</Text>
+        <Text style={styles.primaryText}>{t('Start the real game')}</Text>
       </Pressable>
     </Animated.View>
   );
@@ -369,6 +374,7 @@ function Practice({ game, color, onDone }: { game: GameDef; color: string; onDon
 // ---------- multiple-choice runs (puzzles and sprints) ----------
 
 function ItemsRun({ game, rating, seed, color, onDone, resume, save, onQuit }: { game: GameDef; rating: number; seed: string; color: string; onDone: (o: Outcome) => void; resume: BrainRun | null; save: (r: BrainRun) => void; onQuit: () => void }) {
+  const t = useT();
   const { width } = useWindowDimensions();
   const reduced = useReducedMotion();
   const w = Math.min(width, 620) - 32;
@@ -548,10 +554,10 @@ function ItemsRun({ game, rating, seed, color, onDone, resume, save, onQuit }: {
       {paused && (
         <Animated.View entering={FadeIn.duration(160)} style={styles.pauseLayer}>
           <View style={styles.pauseCard}>
-            <Text style={styles.pauseTitle}>Paused</Text>
+            <Text style={styles.pauseTitle}>{t('Paused')}</Text>
             <Text style={styles.cardHint}>{sprint ? 'The clock is stopped.' : 'The clock is stopped. If you leave, you can resume this run later from the game page.'}</Text>
             <Pressable accessibilityLabel="Continue" onPress={() => setPaused(false)} style={[styles.primary, styles.full, { backgroundColor: color }]}>
-              <Text style={styles.primaryText}>Continue</Text>
+              <Text style={styles.primaryText}>{t('Continue')}</Text>
             </Pressable>
             <Pressable accessibilityLabel="Quit" onPress={onQuit} style={[styles.secondary, styles.full]}>
               <Text style={styles.secondaryText}>{sprint ? 'Quit' : 'Save and quit'}</Text>
@@ -1065,6 +1071,7 @@ function Tower({ rating, color, seed, onDone, practice }: CustomProps) {
 // ---------- results ----------
 
 function Results({ game, outcome, before, color, session, onAgain }: { game: GameDef; outcome: Outcome; before: { xp: number; best: number; level: number }; color: string; session: boolean; onAgain: () => void }) {
+  const t = useT();
   const { brain } = useStore();
   const xpGain = Math.round(outcome.points / 4) + 10;
   const rank = rankFor(before.xp + xpGain);
@@ -1123,7 +1130,7 @@ function Results({ game, outcome, before, color, session, onAgain }: { game: Gam
       <Animated.View entering={FadeInDown.duration(380)} style={styles.resultHero}>
         <Text style={[styles.domain, { color }]}>RESULTS · {game.name.toUpperCase()}</Text>
         <Text style={[styles.bigScore, { color }]}>{shown}</Text>
-        <Text style={styles.muted}>points</Text>
+        <Text style={styles.muted}>{t('points')}</Text>
         <Animated.Text entering={ZoomIn.delay(700).springify().damping(10)} style={[styles.stars, { color }]}>
           {'★'.repeat(stars)}
           <Text style={{ color: colors.border }}>{'★'.repeat(3 - stars)}</Text>
@@ -1144,7 +1151,7 @@ function Results({ game, outcome, before, color, session, onAgain }: { game: Gam
       </View>
       <Animated.View entering={FadeInDown.delay(180).duration(380)} style={styles.card}>
         <View style={styles.rankRow}>
-          <Text style={styles.cardTitle}>Against your best</Text>
+          <Text style={styles.cardTitle}>{t('Against your best')}</Text>
           <Text style={styles.muted}>{before.best ? `${Math.round((outcome.points / before.best) * 100)}%` : 'first score'}</Text>
         </View>
         <CompareBar label="This run" value={outcome.points} max={Math.max(outcome.points, before.best, 1)} color={color} />
@@ -1179,7 +1186,7 @@ function Results({ game, outcome, before, color, session, onAgain }: { game: Gam
       )}
       {outcome.mistakes.length > 0 && (
         <Animated.View entering={FadeInDown.delay(300).duration(380)} style={styles.card}>
-          <Text style={styles.cardTitle}>Review your mistakes</Text>
+          <Text style={styles.cardTitle}>{t('Review your mistakes')}</Text>
           {outcome.mistakes.slice(0, 6).map((m, i) => (
             <View key={i} style={styles.mistake}>
               <Text style={styles.mistakeAsk}>{m.item.ask}</Text>
@@ -1189,14 +1196,14 @@ function Results({ game, outcome, before, color, session, onAgain }: { game: Gam
                     <View style={[styles.mistakeOpt, { borderColor: '#FF5C70' }]}>
                       <OptionView item={m.item} value={m.item.options[m.picked]} size={58} accent={color} />
                     </View>
-                    <Text style={[styles.mistakeLabel, { color: '#FF5C70' }]}>Yours</Text>
+                    <Text style={[styles.mistakeLabel, { color: '#FF5C70' }]}>{t('Yours')}</Text>
                   </View>
                 )}
                 <View style={styles.mistakeCol}>
                   <View style={styles.mistakeOpt}>
                     <OptionView item={m.item} value={m.item.options[m.item.answer]} size={58} accent={color} />
                   </View>
-                  <Text style={styles.mistakeLabel}>Right</Text>
+                  <Text style={styles.mistakeLabel}>{t('Right')}</Text>
                 </View>
               </View>
               {!!m.item.explain && <Text style={styles.cardText}>{m.item.explain}</Text>}
@@ -1226,7 +1233,7 @@ function Results({ game, outcome, before, color, session, onAgain }: { game: Gam
             <Text style={styles.secondaryText}>{sharing ? '…' : '↗'}</Text>
           </Pressable>
           <Pressable accessibilityLabel="Done" onPress={() => (router.canGoBack() ? router.back() : router.replace('/brain'))} style={styles.secondary}>
-            <Text style={styles.secondaryText}>Done</Text>
+            <Text style={styles.secondaryText}>{t('Done')}</Text>
           </Pressable>
         </View>
       </View>
@@ -1238,6 +1245,7 @@ function Results({ game, outcome, before, color, session, onAgain }: { game: Gam
 
 /** The moment you reach a new rank: a big badge over the results, dismissed with a tap. */
 function RankUp({ rank, onClose }: { rank: ReturnType<typeof rankFor>; onClose: () => void }) {
+  const t = useT();
   return (
     <Animated.View entering={FadeIn.duration(250)} style={styles.rankLayer}>
       <Pressable accessibilityLabel="Close promotion" onPress={onClose} style={styles.rankTap}>
@@ -1245,7 +1253,7 @@ function RankUp({ rank, onClose }: { rank: ReturnType<typeof rankFor>; onClose: 
           <Text style={[styles.rankGem, { color: rank.color }]}>◆</Text>
         </Animated.View>
         <Animated.Text entering={FadeInUp.delay(450).duration(400)} style={styles.rankKicker}>
-          NEW RANK
+          {t('NEW_RANK')}
         </Animated.Text>
         <Animated.Text entering={FadeInUp.delay(600).duration(400)} style={[styles.rankTitle, { color: rank.color }]}>
           {rank.name}
@@ -1253,7 +1261,7 @@ function RankUp({ rank, onClose }: { rank: ReturnType<typeof rankFor>; onClose: 
         <Animated.Text entering={FadeInUp.delay(750).duration(400)} style={styles.rankText}>
           {rank.next ? `Next: ${rank.next.name} at ${rank.next.xp.toLocaleString()} XP` : 'The highest rank there is.'}
         </Animated.Text>
-        <Text style={styles.rankHint}>Tap to continue</Text>
+        <Text style={styles.rankHint}>{t('Tap to continue')}</Text>
       </Pressable>
     </Animated.View>
   );

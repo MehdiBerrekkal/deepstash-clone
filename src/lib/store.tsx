@@ -57,6 +57,8 @@ type UserState = {
   downloadedBooks: string[];
   /** When the last backup file was made (ISO date). */
   lastBackup?: string;
+  /** The interface language: follow the device, or English / French. */
+  uiLanguage?: 'auto' | 'en' | 'fr';
 };
 
 type Store = Content &
@@ -105,6 +107,7 @@ type Store = Content &
     /** Loads data from a backup: replacing this device's, or merged into it. */
     importUser: (data: Record<string, unknown>, mode: 'merge' | 'replace') => void;
     markBackedUp: () => void;
+    setUiLanguage: (l: 'auto' | 'en' | 'fr') => void;
     markBrainHowTo: (id: string) => void;
     markBrainDaily: (part: 'game' | 'quiz') => void;
     addOwnBook: (book: OwnBook) => void;
@@ -460,6 +463,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     });
   }, []);
   const markBackedUp = useCallback(() => setUser((u) => ({ ...u, lastBackup: new Date().toISOString() })), []);
+  const setUiLanguage = useCallback((l: 'auto' | 'en' | 'fr') => setUser((u) => ({ ...u, uiLanguage: l })), []);
 
   const markBrainHowTo = useCallback((id: string) => {
     setUser((u) => ({ ...u, brain: { ...u.brain, seen: [...new Set([...(u.brain?.seen ?? []), id])] } }));
@@ -559,6 +563,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       exportUser,
       importUser,
       markBackedUp,
+      setUiLanguage,
       markBrainHowTo,
       markBrainDaily,
       addOwnBook,
@@ -568,7 +573,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [
     content, user, ready, indexes, setFollowedTopics, createStash, deleteStash, toggleInStash, toggleLike, markRead, setBookPosition,
     finishBook, toggleFavoriteBook, setDailyGoal, resetProgress, setReaderSettings, setReaderPosition, toggleBookmark, removeBookmark,
-    saveClip, addHighlight, updateHighlight, removeHighlight, logReading, setMinuteGoal, markReaderFinished, gradeReview, setNotInterested, setAppearance, recordBrain, addBrainTest, setBrainSound, patchBrain, exportUser, importUser, markBackedUp, markBrainHowTo, markBrainDaily, addOwnBook, removeOwnBook, markDownloaded,
+    saveClip, addHighlight, updateHighlight, removeHighlight, logReading, setMinuteGoal, markReaderFinished, gradeReview, setNotInterested, setAppearance, recordBrain, addBrainTest, setBrainSound, patchBrain, exportUser, importUser, markBackedUp, setUiLanguage, markBrainHowTo, markBrainDaily, addOwnBook, removeOwnBook, markDownloaded,
   ]);
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

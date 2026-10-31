@@ -1,0 +1,123 @@
+/** French names, blurbs, rules and "why" lines for every Brain game (original wording). */
+export const GAMES_FR: Record<string, { name: string; blurb: string; howTo: string; why: string }> = {
+  matrix: {
+    name: 'Matrices logiques',
+    blurb: 'Compléter des grilles 3×3 abstraites',
+    howTo: 'Chaque ligne de la grille suit des règles cachées : forme, remplissage, traits et points changent de façon régulière. Trouvez les règles et choisissez la figure qui complète la case en bas à droite. Les règles se combinent quand vous progressez.',
+    why: 'Le raisonnement fluide : repérer des règles que personne ne vous a données, le cœur de la plupart des tests de QI.',
+  },
+  analogy: {
+    name: 'Analogies de figures',
+    blurb: 'A est à B ce que C est à ?',
+    howTo: 'Quelque chose change entre la figure A et la figure B. Appliquez exactement les mêmes changements à C. Aux niveaux avancés, deux ou trois changements s’enchaînent.',
+    why: 'L’abstraction : décrire un changement assez précisément pour l’appliquer ailleurs.',
+  },
+  series: {
+    name: 'Suites de nombres',
+    blurb: 'Des suites à plusieurs règles',
+    howTo: 'Trouvez la règle derrière les nombres et choisissez le suivant. Attention aux pas qui alternent, aux écarts qui grandissent, aux deux suites mêlées et aux puissances.',
+    why: 'Le raisonnement inductif sur les nombres : formuler et tester des hypothèses vite.',
+  },
+  letters: {
+    name: 'Suites de lettres',
+    blurb: 'Des motifs dans l’alphabet',
+    howTo: 'Les lettres avancent dans l’alphabet selon une règle. Comptez les écarts entre elles et choisissez la suivante.',
+    why: 'Trouver une règle dans une suite, tout en gardant les positions en mémoire de travail.',
+  },
+  numgrid: {
+    name: 'Grilles de nombres',
+    blurb: 'Trouver la règle de chaque ligne',
+    howTo: 'Dans chaque ligne, les deux premiers nombres donnent le troisième par le même calcul. Trouvez-le et complétez la case vide.',
+    why: 'Le raisonnement numérique : trouver une opération qui marche dans plusieurs cas.',
+  },
+  syllogism: {
+    name: 'Déduction',
+    blurb: 'Conclusions valides ou non',
+    howTo: 'Acceptez les deux affirmations comme vraies, même si les mots sont inventés. Décidez si la conclusion en découle forcément, ou si elle pourrait être fausse.',
+    why: 'La logique déductive : distinguer ce qui est forcément vrai de ce qui semble juste.',
+  },
+  seating: {
+    name: 'Grille logique',
+    blurb: 'Retrouver l’ordre des places',
+    howTo: 'Des personnes sont assises dans une rangée de sièges numérotés. Utilisez tous les indices pour éliminer les possibilités jusqu’à ce qu’une seule reste, puis répondez.',
+    why: 'Raisonner sous contraintes : réunir de nombreux faits en une image cohérente.',
+  },
+  verbal: {
+    name: 'Analogies verbales',
+    blurb: 'Les relations entre les mots',
+    howTo: 'Trouvez la relation entre les deux premiers mots, puis choisissez le mot qui complète la seconde paire de la même façon. Les mots sont en anglais.',
+    why: 'Le raisonnement verbal et le vocabulaire : nommer la relation entre deux idées.',
+  },
+  word: {
+    name: 'Raisonnement quantitatif',
+    blurb: 'Taux, rapports et pourcentages',
+    howTo: 'De courts problèmes. Posez-les soigneusement : moyennes de vitesses, pourcentages de pourcentages et débits combinés sont des pièges classiques.',
+    why: 'Le raisonnement quantitatif : transformer des mots en bon calcul.',
+  },
+  folding: {
+    name: 'Pliage de papier',
+    blurb: 'Plier, percer, déplier',
+    howTo: 'Une feuille carrée est pliée comme indiqué, puis percée à travers toutes les épaisseurs. Imaginez-la dépliée : chaque trou se reflète de l’autre côté de chaque pli.',
+    why: 'La visualisation spatiale : transformer une forme étape par étape dans sa tête.',
+  },
+  cubenet: {
+    name: 'Patrons de cubes',
+    blurb: 'Quel cube peut-on plier ?',
+    howTo: 'Le patron à plat se replie en cube. Choisissez la vue possible. Deux faces séparées par une autre dans une ligne droite deviennent opposées, et l’ordre des faces ne doit pas être inversé.',
+    why: 'La visualisation spatiale : replier un motif plat en 3D dans sa tête.',
+  },
+  rotation3d: {
+    name: 'Rotation mentale',
+    blurb: 'Tournée, ou retournée ?',
+    howTo: 'Trouvez la forme qui est la cible simplement tournée sur la page, sans être retournée. Les autres sont des images miroir ou ont un carré déplacé. Repérez un coin caractéristique de la cible et cherchez-le dans chaque option.',
+    why: 'La rotation mentale : garder la structure d’un objet en le faisant tourner.',
+  },
+  nback: {
+    name: 'Double N-Back',
+    blurb: 'La mémoire de travail à sa limite',
+    howTo: 'Une case s’allume sur la grille pendant qu’une lettre est prononcée. Appuyez sur « Position » quand la case est la même que N étapes plus tôt, et sur « Son » quand la lettre est la même que N étapes plus tôt. N grandit quand vous progressez.',
+    why: 'La mémoire de travail : mettre à jour ce que vous gardez en tête, seconde après seconde.',
+  },
+  span: {
+    name: 'Empan de chiffres',
+    blurb: 'À l’endroit, puis à l’envers',
+    howTo: 'Des chiffres apparaissent un par un. Retapez-les dans le même ordre ; aux niveaux avancés, dans l’ordre inverse. La liste s’allonge à chaque réussite.',
+    why: 'La mémoire à court terme, et la manipulation mentale quand c’est à l’envers.',
+  },
+  corsi: {
+    name: 'Empan de blocs',
+    blurb: 'Retenir un chemin de blocs',
+    howTo: 'Des blocs s’allument l’un après l’autre. Touchez-les dans le même ordre. Le chemin s’allonge d’un bloc après chaque réussite.',
+    why: 'La mémoire visuo-spatiale : garder un trajet en tête.',
+  },
+  code: {
+    name: 'Codage de symboles',
+    blurb: 'Vitesse de traitement, 60 secondes',
+    howTo: 'Utilisez la clé pour trouver le chiffre associé au symbole, le plus vite possible. La précision compte autant que la vitesse.',
+    why: 'La vitesse de traitement : à quelle vitesse vous trouvez une information et agissez.',
+  },
+  switch: {
+    name: 'Changement de tâche',
+    blurb: 'La règle change sans prévenir',
+    howTo: 'Un cadre ambre demande pair ou impair ; un cadre cyan demande plus petit ou plus grand que 5. Répondez à la question du cadre. La règle change plus souvent quand vous progressez.',
+    why: 'La flexibilité cognitive : changer de règle sans perdre en vitesse.',
+  },
+  ink: {
+    name: 'Conflit de couleurs',
+    blurb: 'Résister à la réponse évidente',
+    howTo: 'Nommez la couleur de l’ENCRE, pas le mot. Aux niveaux avancés, on demande parfois le mot : lisez bien la consigne.',
+    why: 'L’inhibition : stopper la réponse automatique pour donner la bonne.',
+  },
+  arith: {
+    name: 'Calcul mental',
+    blurb: 'Calcul rapide',
+    howTo: 'Résolvez-en le plus possible en 60 secondes. Une erreur coûte deux secondes.',
+    why: 'L’aisance en calcul sous la pression du temps.',
+  },
+  tower: {
+    name: 'Tour de planification',
+    blurb: 'Atteindre le but en un minimum de coups',
+    howTo: 'Déplacez un disque à la fois depuis le haut d’un piquet ; un disque ne se pose jamais sur un plus petit. Reconstruisez la disposition cible en le moins de coups possible. Planifiez avant de jouer.',
+    why: 'La planification : penser plusieurs coups à l’avance.',
+  },
+};

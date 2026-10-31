@@ -11,11 +11,13 @@ import { localDate, useFeed, useStore } from '@/lib/store';
 import { colors } from '@/lib/theme';
 import type { FeedItem } from '@/lib/feed';
 import type { CardKind } from '@/lib/types';
+import { useT } from '@/lib/i18n';
 
 export default function FeedScreen() {
   const [kind, setKind] = useState<CardKind | null>(null);
   const feed = useFeed(kind);
   const { streak, markRead, readingLog, minuteGoal, reviewQueue, setNotInterested } = useStore();
+  const t = useT();
   const [undo, setUndo] = useState<string | null>(null);
   const continueBook = useContinueReading();
   // The first page is "Today" (your book, goal and review) when there's something to show and no filter is on.
@@ -38,12 +40,12 @@ export default function FeedScreen() {
           onPress={() => router.push('/profile')}
           style={styles.headerRight}>
           <GoalRing progress={minutes / minuteGoal} size={30} stroke={3.5} label={minutes >= minuteGoal ? '✓' : String(minutes)} />
-          <Text style={styles.goal}>{minutes >= minuteGoal ? 'Goal met' : `${minuteGoal - minutes} min to go`}</Text>
+          <Text style={styles.goal}>{minutes >= minuteGoal ? t('Goal reached') : t('{n} min to go', { n: minuteGoal - minutes })}</Text>
           <Text style={styles.streak}>🔥 {streak.count}</Text>
         </Pressable>
       ),
     });
-  }, [navigation, streak.count, minutes, minuteGoal]);
+  }, [navigation, streak.count, minutes, minuteGoal, t]);
 
   // FlatList doesn't allow this callback to change after mount; markRead is stable.
   const [onViewable] = useState(() => ({ viewableItems }: { viewableItems: ListViewToken[] }) => {

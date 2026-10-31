@@ -12,9 +12,11 @@ import { hasNarration } from '@/lib/narration';
 import { deleteOwnBookFiles, pickOwnBook, type OwnBook } from '@/lib/ownbooks';
 import { useStore } from '@/lib/store';
 import { colors } from '@/lib/theme';
+import { useT } from '@/lib/i18n';
 
 export default function LibraryScreen() {
   const { sources, topics, followedTopicIds, bookProgress, sourceById, readerProgress, ownBooks, addOwnBook, removeOwnBook, favoriteBooks, downloadedBooks } = useStore();
+  const t = useT();
   const navigation = useNavigation();
   const [query, setQuery] = useState('');
   const [opening, setOpening] = useState(false);
@@ -118,7 +120,7 @@ export default function LibraryScreen() {
       <TextInput
         value={query}
         onChangeText={setQuery}
-        placeholder={`Search ${sources.length} books and authors`}
+        placeholder={t('Search {n} books and authors', { n: sources.length })}
         placeholderTextColor={colors.muted}
         style={styles.search}
       />
@@ -126,8 +128,8 @@ export default function LibraryScreen() {
       <Pressable accessibilityLabel="Find a free book" onPress={() => router.push('/find')} style={styles.find}>
         <Text style={styles.findIcon}>🔎</Text>
         <View style={{ flex: 1 }}>
-          <Text style={styles.findTitle}>Find a free book</Text>
-          <Text style={styles.findSub}>Thousands of classics in English and French, one tap to download</Text>
+          <Text style={styles.findTitle}>{t('Find a free book')}</Text>
+          <Text style={styles.findSub}>{t('Thousands of classics in English and French, one tap to download')}</Text>
         </View>
         <Text style={styles.findChev}>›</Text>
       </Pressable>
@@ -144,18 +146,18 @@ export default function LibraryScreen() {
       ) : (
         <>
           {myBooks.length > 0 && <ClassicShelf title="🔒 My books" items={myBooks} />}
-          {recentlyAdded.length > 0 && <ClassicShelf title="✨ Recently added" items={recentlyAdded} />}
-          <ClassicShelf title="🎙 Read aloud by a real narrator" items={narrated} />
-          <Shelf title="Continue reading" books={shelves.inProgress} />
+          {recentlyAdded.length > 0 && <ClassicShelf title={t('✨ Recently added')} items={recentlyAdded} />}
+          <ClassicShelf title={t('🎙 Read aloud by a real narrator')} items={narrated} />
+          <Shelf title={t('Continue reading')} books={shelves.inProgress} />
           {classicShelves.map((s) => (
             <ClassicShelf key={s.id} title={s.title} items={s.items} />
           ))}
           <ClassicShelf title="⬇ More full books · free to download" items={toDownload} />
           <Shelf title="🎁 Free from the author" books={shelves.free} />
           <View style={styles.own}>
-            <Text style={styles.ownTitle}>Your books</Text>
+            <Text style={styles.ownTitle}>{t('Your books')}</Text>
             <Pressable disabled={opening} onPress={pick} style={styles.ownButton}>
-              {opening ? <ActivityIndicator color={colors.onAccent} /> : <Text style={styles.ownButtonText}>＋ Open your own book (EPUB or PDF)</Text>}
+              {opening ? <ActivityIndicator color={colors.onAccent} /> : <Text style={styles.ownButtonText}>{t('＋ Open your own book (EPUB or PDF)')}</Text>}
             </Pressable>
             {fileError && <Text style={styles.error}>{fileError}</Text>}
             {ownBooks.map((b) => {

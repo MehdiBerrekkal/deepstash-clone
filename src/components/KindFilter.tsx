@@ -2,6 +2,7 @@ import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 
 import { cardKinds, colors } from '@/lib/theme';
 import type { CardKind } from '@/lib/types';
+import { useT } from '@/lib/i18n';
 
 type Props<T extends string> = {
   value: CardKind | NoInfer<T> | null;
@@ -12,9 +13,10 @@ type Props<T extends string> = {
 
 /** Pills for All / Book ideas / Quotes / Poems / Knowledge, plus any extras. */
 export function KindFilter<T extends string = never>({ value, onChange, extras = [] }: Props<T>) {
+  const t = useT();
   const options: { id: CardKind | T | null; label: string }[] = [
-    { id: null, label: 'All' },
-    ...cardKinds.map((k) => ({ id: k.id, label: `${k.emoji} ${k.plural}` })),
+    { id: null, label: t('All') },
+    ...cardKinds.map((k) => ({ id: k.id, label: `${k.emoji} ${t(k.plural)}` })),
     ...extras,
   ];
   return (

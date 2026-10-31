@@ -8,11 +8,12 @@ import { ProgressChart } from '@/components/brain/ProgressChart';
 import { SkillRadar } from '@/components/brain/SkillRadar';
 import { GoalRing } from '@/components/GoalRing';
 import { displayFont } from '@/lib/bookType';
-import { GAMES, dailyGame, gameById, sessionGames } from '@/lib/brain/catalog';
+import { GAMES, dailyGame, gameById, gameText, sessionGames } from '@/lib/brain/catalog';
 import { DOMAINS, rankFor, type Skill } from '@/lib/brain/core';
 import { QUIZ, QUIZ_CATEGORIES } from '@/data/brain/quiz';
 import { localDate, useStore } from '@/lib/store';
 import { colors } from '@/lib/theme';
+import { useT, useUiLang } from '@/lib/i18n';
 
 /** Unfinished runs can be resumed for a day. */
 const isRecent = (t: number) => Date.now() - t < 24 * 3600e3;
@@ -20,6 +21,8 @@ const isRecent = (t: number) => Date.now() - t < 24 * 3600e3;
 /** The training hub: rank and cognitive profile, tests, the daily challenge, a weekly plan, games by domain, quizzes. */
 export default function BrainScreen() {
   const { brain, streak, patchBrain, setBrainSound } = useStore();
+  const t = useT();
+  const lang = useUiLang();
   const [mode, setMode] = useState<'training' | 'quizzes'>('training');
   const [quizMode, setQuizMode] = useState<'standard' | 'timed' | 'hard'>('standard');
   const { width } = useWindowDimensions();
@@ -52,10 +55,10 @@ export default function BrainScreen() {
       <Animated.View entering={FadeInDown.duration(400)}>
         <LinearGradient colors={['#2A2160', '#141A3A', '#0B0E1C']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.session}>
           <View style={styles.rowBetween}>
-            <Text style={styles.heroKicker}>TODAY’S SESSION</Text>
-            <Text style={styles.sessionMeta}>{streak.count > 0 ? `🔥 ${streak.count}-day streak` : 'about 6 min'}</Text>
+            <Text style={styles.heroKicker}>{t('TODAY’S SESSION')}</Text>
+            <Text style={styles.sessionMeta}>{streak.count > 0 ? `🔥 ${t('{n}-day streak', { n: streak.count })}` : t('about 6 min')}</Text>
           </View>
-          <Text style={styles.sessionTitle}>{sessionDone >= 3 ? 'Session complete' : sessionDone ? `${sessionDone} of 3 done` : 'Three games, picked for you'}</Text>
+          <Text style={styles.sessionTitle}>{sessionDone >= 3 ? t('Session complete') : sessionDone ? t('{n} of 3 done', { n: sessionDone }) : t('Three games, picked for you')}</Text>
           <View style={styles.sessionGames}>
             {sessionList.map((g, i) => {
               const gd = gameById[g];
@@ -65,16 +68,16 @@ export default function BrainScreen() {
                 <View key={g} style={[styles.sessionGame, { borderColor: r ? '#3DDC97' : `${dm.color}66` }, g === nextGame && { borderColor: dm.color, backgroundColor: `${dm.color}1A` }]}>
                   <Text style={[styles.sessionGlyph, { color: r ? '#3DDC97' : dm.color }]}>{r ? '✓' : `${i + 1}`}</Text>
                   <Text style={styles.sessionName} numberOfLines={2}>
-                    {gd.name}
+                    {gameText(gd, lang).name}
                   </Text>
-                  <Text style={[styles.sessionArea, { color: dm.color }]}>{r ? `${r.points} pts` : dm.name}</Text>
+                  <Text style={[styles.sessionArea, { color: dm.color }]}>{r ? `${r.points} pts` : t(dm.name)}</Text>
                 </View>
               );
             })}
           </View>
           {nextGame ? (
             <Pressable accessibilityLabel="Start today's session" onPress={startSession} style={styles.sessionBtn}>
-              <Text style={styles.sessionBtnText}>{sessionDone ? `Continue · ${gameById[nextGame].name}` : 'Start session'}</Text>
+              <Text style={styles.sessionBtnText}>{sessionDone ? t('Continue · {name}', { name: gameText(gameById[nextGame], lang).name }) : t('Start session')}</Text>
             </Pressable>
           ) : (
             <Text style={styles.heroSmall}>
@@ -88,8 +91,8 @@ export default function BrainScreen() {
         <Animated.View entering={FadeInDown.delay(30).duration(400)}>
           <Pressable accessibilityLabel="Continue unfinished game" onPress={() => open(run.id)} style={styles.continueCard}>
             <View style={styles.flex}>
-              <Text style={styles.testKicker}>CONTINUE</Text>
-              <Text style={styles.cardTitle}>{gameById[run.id].name}</Text>
+              <Text style={styles.testKicker}>{t('CONTINUE')}</Text>
+              <Text style={styles.cardTitle}>{gameText(gameById[run.id], lang).name}</Text>
               <Text style={styles.muted}>
                 Question {run.n + 1} of {gameById[run.id].items} · Level {run.d} · {run.points} pts
               </Text>
@@ -103,8 +106,8 @@ export default function BrainScreen() {
         <LinearGradient colors={['#1B2140', '#11152A', '#0B0E1C']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
           <View style={styles.heroTop}>
             <View>
-              <Text style={styles.heroKicker}>COGNITIVE PROFILE</Text>
-              {profile !== null ? <Text style={styles.heroScore}>{profile}</Text> : <Text style={styles.heroEmpty}>Play a few games to build it</Text>}
+              <Text style={styles.heroKicker}>{t('COGNITIVE PROFILE')}</Text>
+              {profile !== null ? <Text style={styles.heroScore}>{profile}</Text> : <Text style={styles.heroEmpty}>{t('Play a few games to build it')}</Text>}
             </View>
             <View style={[styles.rankBadge, { borderColor: rank.color }]}>
               <Text style={[styles.rankText, { color: rank.color }]}>◆ {rank.name}</Text>
@@ -114,7 +117,7 @@ export default function BrainScreen() {
           <View style={styles.xpTrack}>
             <View style={[styles.xpFill, { width: `${rank.progress * 100}%`, backgroundColor: rank.color }]} />
           </View>
-          <Text style={styles.heroSmall}>{rank.next ? `${rank.next.xp - (brain.xp ?? 0)} XP to ${rank.next.name}` : 'Top rank'}</Text>
+          <Text style={styles.heroSmall}>{rank.next ? t('{n} XP to {rank}', { n: rank.next.xp - (brain.xp ?? 0), rank: rank.next.name }) : t('Top rank')}</Text>
           <View style={styles.radar}>
             <SkillRadar skills={brain.skills} size={Math.min(width - 72, 320)} />
           </View>
@@ -126,16 +129,16 @@ export default function BrainScreen() {
               </View>
             ))}
           </View>
-          <Text style={[styles.heroKicker, { marginTop: 10 }]}>YOUR PROGRESS</Text>
+          <Text style={[styles.heroKicker, { marginTop: 10 }]}>{t('YOUR PROGRESS')}</Text>
           <ProgressChart history={brain.history ?? []} width={Math.min(width - 72, 640)} />
         </LinearGradient>
       </Animated.View>
 
       <Animated.View entering={FadeInDown.delay(60).duration(400)} style={styles.testRow}>
         <Pressable accessibilityLabel="Full IQ-style test" onPress={() => router.push({ pathname: '/brain/test', params: { mode: 'full' } })} style={[styles.testCard, styles.testMain]}>
-          <Text style={styles.testKicker}>ASSESSMENT</Text>
-          <Text style={styles.testTitle}>IQ-style test</Text>
-          <Text style={styles.testSub}>38 items · 25 min · 4 sections</Text>
+          <Text style={styles.testKicker}>{t('ASSESSMENT')}</Text>
+          <Text style={styles.testTitle}>{t('IQ-style test')}</Text>
+          <Text style={styles.testSub}>{t('38 items · 25 min · 4 sections')}</Text>
           {lastTest && (
             <Text style={styles.testLast}>
               Last: {lastTest.iq} ({lastTest.mode === 'full' ? 'full' : 'quick'})
@@ -143,15 +146,15 @@ export default function BrainScreen() {
           )}
         </Pressable>
         <Pressable accessibilityLabel="Quick test" onPress={() => router.push({ pathname: '/brain/test', params: { mode: 'quick' } })} style={styles.testCard}>
-          <Text style={styles.testKicker}>QUICK</Text>
-          <Text style={styles.testTitle}>15-min test</Text>
-          <Text style={styles.testSub}>16 items</Text>
+          <Text style={styles.testKicker}>{t('QUICK')}</Text>
+          <Text style={styles.testTitle}>{t('15-min test')}</Text>
+          <Text style={styles.testSub}>{t('16 items')}</Text>
         </Pressable>
       </Animated.View>
 
       <Animated.View entering={FadeInDown.delay(120).duration(400)} style={styles.card}>
         <View style={styles.rowBetween}>
-          <Text style={styles.cardTitle}>Daily challenge</Text>
+          <Text style={styles.cardTitle}>{t('Daily challenge')}</Text>
           <Text style={styles.accent}>{daily.game && daily.quiz ? 'Complete ✓' : `${Number(daily.game) + Number(daily.quiz)}/2`}</Text>
         </View>
         <View style={styles.row}>
@@ -161,13 +164,13 @@ export default function BrainScreen() {
           </Pressable>
           <Pressable accessibilityLabel="Daily questions" onPress={() => router.push({ pathname: '/brain/quiz', params: { category: 'daily' } })} style={[styles.step, daily.quiz && styles.done]}>
             <Text style={[styles.stepGlyph, { color: '#FF6FB5' }]}>{daily.quiz ? '✓' : '?'}</Text>
-            <Text style={styles.stepText}>3 hard questions</Text>
+            <Text style={styles.stepText}>{t('3 hard questions')}</Text>
           </Pressable>
         </View>
       </Animated.View>
 
       <Animated.View entering={FadeInDown.delay(180).duration(400)} style={styles.card}>
-        <Text style={styles.cardTitle}>This week’s plan</Text>
+        <Text style={styles.cardTitle}>{t('This week’s plan')}</Text>
         <Text style={styles.muted}>
           {scores.length ? `Focus on ${weakest.map((d) => d.name).join(' and ')}, your lowest areas. Three short sessions a week beats one long one.` : 'Start with these to build your profile. Three short sessions a week works best.'}
         </Text>
@@ -183,7 +186,7 @@ export default function BrainScreen() {
       <View style={styles.segment}>
         {(['training', 'quizzes'] as const).map((m) => (
           <Pressable key={m} accessibilityLabel={m === 'training' ? 'Training' : 'Quizzes'} onPress={() => setMode(m)} style={[styles.segmentItem, mode === m && styles.segmentOn]}>
-            <Text style={[styles.segmentText, mode === m && styles.segmentTextOn]}>{m === 'training' ? `Training · ${GAMES.length}` : `Quizzes · ${QUIZ.length}`}</Text>
+            <Text style={[styles.segmentText, mode === m && styles.segmentTextOn]}>{m === 'training' ? `${t('Training')} · ${GAMES.length}` : `${t('Quizzes')} · ${QUIZ.length}`}</Text>
           </Pressable>
         ))}
       </View>
@@ -197,7 +200,7 @@ export default function BrainScreen() {
               <View key={d.id} style={styles.section}>
                 <View style={styles.sectionHead}>
                   <Text style={[styles.sectionGlyph, { color: d.color }]}>{d.glyph}</Text>
-                  <Text style={styles.sectionTitle}>{d.name}</Text>
+                  <Text style={styles.sectionTitle}>{t(d.name)}</Text>
                   <Text style={[styles.sectionScore, { color: d.color }]}>{brain.skills[d.id as Skill] ?? '—'}</Text>
                 </View>
                 <View style={styles.grid}>
@@ -206,16 +209,16 @@ export default function BrainScreen() {
                     return (
                       <Pressable key={g.id} accessibilityLabel={`Play ${g.name}`} onPress={() => open(g.id)} style={styles.tileWrap}>
                         <LinearGradient colors={[`${d.color}26`, `${d.color}05`]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.tile, { borderColor: `${d.color}40` }]}>
-                          <Text style={styles.tileTitle}>{g.name}</Text>
+                          <Text style={styles.tileTitle}>{gameText(g, lang).name}</Text>
                           <Text style={styles.tileBlurb} numberOfLines={2}>
-                            {g.blurb}
+                            {gameText(g, lang).blurb}
                           </Text>
                           <View style={styles.levelTrack}>
                             <View style={[styles.levelFill, { width: `${lv * 10}%`, backgroundColor: d.color }]} />
                           </View>
                           <View style={styles.rowBetween}>
-                            <Text style={styles.tileMeta}>Level {lv}</Text>
-                            <Text style={styles.tileMeta}>{brain.best[g.id] ? `Best ${brain.best[g.id]}` : 'New'}</Text>
+                            <Text style={styles.tileMeta}>{t('Level {n}', { n: lv })}</Text>
+                            <Text style={styles.tileMeta}>{brain.best[g.id] ? t('Best {n}', { n: brain.best[g.id] }) : t('New')}</Text>
                           </View>
                         </LinearGradient>
                       </Pressable>
@@ -231,7 +234,7 @@ export default function BrainScreen() {
           <View style={styles.row}>
             {(['standard', 'timed', 'hard'] as const).map((m) => (
               <Pressable key={m} onPress={() => setQuizMode(m)} style={[styles.modeChip, quizMode === m && styles.modeOn]}>
-                <Text style={[styles.modeText, quizMode === m && styles.modeTextOn]}>{m === 'standard' ? 'Standard' : m === 'timed' ? 'Timed · 20 s' : 'Hard only'}</Text>
+                <Text style={[styles.modeText, quizMode === m && styles.modeTextOn]}>{t(m === 'standard' ? 'Standard' : m === 'timed' ? 'Timed · 20 s' : 'Hard only')}</Text>
               </Pressable>
             ))}
           </View>
@@ -250,21 +253,21 @@ export default function BrainScreen() {
       )}
       <View style={styles.card}>
         <View style={styles.rowBetween}>
-          <Text style={styles.cardTitle}>Sound</Text>
+          <Text style={styles.cardTitle}>{t('Sound')}</Text>
           <Pressable accessibilityLabel={sound ? 'Mute brain sounds' : 'Turn brain sounds on'} onPress={() => setBrainSound(!sound)} style={[styles.toggle, sound && styles.toggleOn]}>
-            <Text style={[styles.modeText, sound && styles.modeTextOn]}>{sound ? 'On' : 'Off'}</Text>
+            <Text style={[styles.modeText, sound && styles.modeTextOn]}>{t(sound ? 'On' : 'Off')}</Text>
           </Pressable>
         </View>
         <View style={[styles.row, !sound && { opacity: 0.4 }]}>
           {[0.25, 0.5, 0.75, 1].map((v) => (
             <Pressable key={v} accessibilityLabel={`Volume ${v * 100}%`} disabled={!sound} onPress={() => patchBrain({ volume: v })} style={[styles.modeChip, Math.abs(volume - v) < 0.13 && styles.volOn]}>
-              <Text style={[styles.modeText, Math.abs(volume - v) < 0.13 && styles.modeTextOn]}>{v === 0.25 ? 'Soft' : v === 1 ? 'Loud' : `${v * 100}%`}</Text>
+              <Text style={[styles.modeText, Math.abs(volume - v) < 0.13 && styles.modeTextOn]}>{v === 0.25 ? t('Soft') : v === 1 ? t('Loud') : `${v * 100}%`}</Text>
             </Pressable>
           ))}
         </View>
         <Text style={styles.muted}>Sounds play in the web app; the phone app adds haptics. Animations follow your device’s reduce-motion setting.</Text>
       </View>
-      <Text style={styles.disclaimer}>Scores here are estimates for practice and fun. They are not a clinically validated IQ test.</Text>
+      <Text style={styles.disclaimer}>{t('Scores here are estimates for practice and fun. They are not a clinically validated IQ test.')}</Text>
     </ScrollView>
   );
 }

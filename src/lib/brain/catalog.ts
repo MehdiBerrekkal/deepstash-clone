@@ -1,4 +1,5 @@
 import { int, numberOptions, pick, shuffle, type Item, type Rng, type Skill } from '@/lib/brain/core';
+import { GAMES_FR } from '@/lib/brain/gamesFr';
 import { makeAnalogy, makeMatrix } from '@/lib/brain/figures';
 import { makeLetters, makeNumberMatrix, makeSeries, makeSeating, makeSyllogism, makeVerbal, makeWordProblem } from '@/lib/brain/reasoning';
 import { makeCubeNet, makeFolding, makeRotation2D } from '@/lib/brain/spatial';
@@ -145,4 +146,10 @@ export function sessionGames(skills: Partial<Record<Skill, number>>, played: Rec
     return least[(h + salt) % least.length].id;
   };
   return [pickFrom(areas[0], 0), pickFrom(areas[1], 1), pickFrom(areas[2 + (h % 4)], 2)];
+}
+
+/** A game's name and texts in the interface language. */
+export function gameText(g: GameDef, lang: 'en' | 'fr') {
+  const fr = lang === 'fr' ? GAMES_FR[g.id] : undefined;
+  return { name: fr?.name ?? g.name, blurb: fr?.blurb ?? g.blurb, howTo: fr?.howTo ?? g.howTo, why: fr?.why ?? g.why };
 }

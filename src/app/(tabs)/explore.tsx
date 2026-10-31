@@ -13,6 +13,7 @@ import { matchesAll } from '@/lib/search';
 import { useStore } from '@/lib/store';
 import { colors, onCardScope } from '@/lib/theme';
 import type { CardKind, Highlight, Idea, Source } from '@/lib/types';
+import { useT } from '@/lib/i18n';
 
 const PAGE = 60;
 
@@ -28,6 +29,7 @@ const openHighlight = (h: Highlight) => {
 /** Search everything: card text, library books, full books (bundled and downloadable) and your highlights. */
 export default function ExploreScreen() {
   const { ideas, topics, sources, sourceById, highlights } = useStore();
+  const t = useT();
   const [query, setQuery] = useState('');
   const [scope, setScope] = useState<Scope>(null);
   const [limit, setLimit] = useState(PAGE);
@@ -136,7 +138,7 @@ export default function ExploreScreen() {
           setQuery(t);
           setLimit(PAGE);
         }}
-        placeholder="Search books, ideas, quotes, poems, highlights"
+        placeholder={t('Search books, ideas, quotes, poems, highlights')}
         placeholderTextColor={colors.muted}
         style={styles.search}
         clearButtonMode="while-editing"
