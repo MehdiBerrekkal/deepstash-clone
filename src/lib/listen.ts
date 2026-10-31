@@ -314,9 +314,10 @@ export function useListen(book: FullBook | null, { rate, voice: chosen, language
 
   const naturalVoice =
     isNatural(chosen) && naturalChoices.some((v) => NATURAL_PREFIX + v.id === chosen) ? chosen! : `${NATURAL_PREFIX}${naturalChoices[0]?.id}`;
-  // With no voice chosen, the natural voice is used once it's been downloaded (so nothing big downloads unasked).
+  // With no voice chosen, the natural voice is the default where it runs: the device's built-in voices sound robotic,
+  // so the first Listen downloads it once (with progress shown) and every later one starts at once.
   const cached = naturalAvailable && naturalDownloaded(naturalVoice);
-  const wantsNatural = isNatural(chosen) || (!chosen && preferNatural && cached);
+  const wantsNatural = isNatural(chosen) || (!chosen && preferNatural);
   const natural = wantsNatural && naturalAvailable && !systemOnly;
   const systemVoice = chosen && !isNatural(chosen) ? chosen : best;
 
@@ -457,8 +458,9 @@ export function useListen(book: FullBook | null, { rate, voice: chosen, language
 
   // Start the natural voice as soon as a book is open (it takes a few seconds), so it's ready when you press play.
   useEffect(() => {
-    if (natural) loadNatural(naturalVoice).catch(() => {});
-  }, [natural, naturalVoice]);
+    // Only once downloaded: the first download waits for you to press Listen.
+    if (natural && cached) loadNatural(naturalVoice).catch(() => {});
+  }, [natural, naturalVoice, cached]);
 
   /**
    * Get ready to read from a position without playing: load the natural voice and generate the first piece,
@@ -466,14 +468,14 @@ export function useListen(book: FullBook | null, { rate, voice: chosen, language
    */
   const warm = useCallback(
     (from: BookPosition) => {
-      if (!book || !natural || playing) return;
+      if (!book || !natural || !cached || playing) return;
       const s = sentenceAt(book, from);
       if (!s) return;
       loadNatural(naturalVoice)
         .then(() => clipFor(leadPiece(book, s, language)))
         .catch(() => {});
     },
-    [book, natural, playing, naturalVoice, clipFor, language],
+    [book, natural, cached, playing, naturalVoice, clipFor, language],
   );
 
   // A new voice choice gets a fresh chance.
@@ -563,6 +565,8 @@ export function speakOnce(text: string, onEnd: () => void, language: string = de
   // A chosen natural voice, or (with nothing chosen) the default one once it's downloaded.
   const defaultNatural = `${NATURAL_PREFIX}${naturalVoicesFor(language)[0]?.id}`;
   const naturalVoice = isNatural(voice) ? voice! : !voice && naturalDownloaded(defaultNatural) ? defaultNatural : null;
+  // Not downloaded yet: this one is read by the device, and the natural voice downloads in the background for next time.
+  if (!naturalVoice && !voice && naturalSupported() && naturalVoicesFor(language).length) loadNatural(defaultNatural).catch(() => {});
   if (naturalVoice && naturalSupported()) {
     unlockAudio();
     synthesize(spoken, naturalVoice)
