@@ -1,9 +1,10 @@
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { CardBody } from '@/components/CardBody';
 import { useStore } from '@/lib/store';
-import { colors, sourceKindLabel } from '@/lib/theme';
+import { colors, onCardScope, sourceKindLabel } from '@/lib/theme';
 
 export default function IdeaScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -11,10 +12,10 @@ export default function IdeaScreen() {
   const [newName, setNewName] = useState('');
   const idea = ideaById[id];
 
-  if (!idea) return <Text style={styles.muted}>Idea not found.</Text>;
+  if (!idea) return <Text style={styles.muted}>Card not found.</Text>;
 
   const topic = topicById[idea.topicId];
-  const source = sourceById[idea.sourceId];
+  const source = idea.sourceId ? sourceById[idea.sourceId] : undefined;
 
   const createAndAdd = () => {
     if (!newName.trim()) return;
@@ -25,14 +26,19 @@ export default function IdeaScreen() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <View style={[styles.card, { backgroundColor: topic?.color ?? colors.surface }]}>
+      <View style={[styles.card, topic && onCardScope, { backgroundColor: topic?.color ?? colors.surface }]}>
         <Text style={styles.topic}>{topic ? `${topic.emoji}  ${topic.name}` : ''}</Text>
-        <Text style={styles.title}>{idea.title}</Text>
-        <Text style={styles.body}>{idea.body}</Text>
+        <CardBody idea={idea} />
         {source && (
-          <Text style={styles.source}>
-            {sourceKindLabel[source.kind]} · {source.title} · {source.author}
-          </Text>
+          <Pressable
+            onPress={() => {
+              router.back();
+              router.push({ pathname: '/book/[id]', params: { id: source.id } });
+            }}>
+            <Text style={styles.source}>
+              {sourceKindLabel[source.kind]} · {source.title} · {source.author} ›
+            </Text>
+          </Pressable>
         )}
       </View>
 
@@ -65,11 +71,9 @@ export default function IdeaScreen() {
 
 const styles = StyleSheet.create({
   container: { padding: 16, gap: 10 },
-  card: { borderRadius: 24, padding: 22, gap: 12, marginBottom: 12 },
+  card: { borderRadius: 24, padding: 22, gap: 16, marginBottom: 12 },
   topic: { color: colors.text, fontWeight: '600', opacity: 0.9 },
-  title: { color: colors.text, fontSize: 24, fontWeight: '800' },
-  body: { color: colors.text, fontSize: 17, lineHeight: 26 },
-  source: { color: colors.text, opacity: 0.8, fontSize: 13 },
+  source: { color: colors.text, opacity: 0.85, fontSize: 13, fontWeight: '600' },
   heading: { color: colors.text, fontSize: 18, fontWeight: '700' },
   stashRow: {
     flexDirection: 'row',
@@ -92,6 +96,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   button: { justifyContent: 'center', paddingHorizontal: 18, borderRadius: 14, backgroundColor: colors.accent },
-  buttonText: { color: '#1A1300', fontWeight: '700' },
+  buttonText: { color: colors.onAccent, fontWeight: '700' },
   muted: { color: colors.muted, padding: 24 },
 });

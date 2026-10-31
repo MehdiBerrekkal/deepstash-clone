@@ -1,24 +1,65 @@
 import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
+import { useFonts } from 'expo-font';
+import { useEffect, type ReactNode } from 'react';
+import { Platform } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import { CelebrationHost } from '@/components/Celebration';
+import { AppearanceSync, usePalette } from '@/lib/appearance';
+import { bookFonts } from '@/lib/bookType';
+import { WebSafeArea } from '@/lib/safeArea';
 import { StoreProvider } from '@/lib/store';
-import { colors } from '@/lib/theme';
 
 export default function RootLayout() {
+  // Book fonts for the reader; text falls back to system fonts until they finish loading.
+  useFonts(bookFonts);
+  // Browsers only hyphenate justified text when they know its language.
+  useEffect(() => {
+    if (Platform.OS === 'web' && typeof document !== 'undefined' && !document.documentElement.lang) document.documentElement.lang = 'en';
+  }, []);
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+    <WebSafeArea>
     <StoreProvider>
-      <StatusBar style="light" />
-      <Stack
-        screenOptions={{
-          headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.text,
-          contentStyle: { backgroundColor: colors.background },
-        }}>
+      <AppearanceSync />
+      <ThemedStack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-        <Stack.Screen name="idea/[id]" options={{ title: 'Idea', presentation: 'modal' }} />
+        <Stack.Screen name="idea/[id]" options={{ title: 'Card', presentation: 'modal' }} />
         <Stack.Screen name="stash/[id]" options={{ title: 'Stash' }} />
-      </Stack>
+        <Stack.Screen name="book/[id]" options={{ title: '' }} />
+        <Stack.Screen name="read/[id]" options={{ title: 'Reading' }} />
+        <Stack.Screen name="topic/[id]" options={{ title: 'Topic' }} />
+        <Stack.Screen name="classic/[id]" options={{ title: '' }} />
+        <Stack.Screen name="reader/[id]" options={{ headerShown: false }} />
+        <Stack.Screen name="pdfbook/[id]" options={{ headerShown: false }} />
+        <Stack.Screen name="favorites" options={{ title: 'Favorites' }} />
+        <Stack.Screen name="highlights" options={{ title: 'Highlights' }} />
+        <Stack.Screen name="review" options={{ title: 'Review' }} />
+        <Stack.Screen name="brain/[game]" options={{ title: 'Brain' }} />
+        <Stack.Screen name="brain/quiz" options={{ title: 'Quiz' }} />
+        <Stack.Screen name="brain/test" options={{ title: 'Test' }} />
+        <Stack.Screen name="voices" options={{ title: 'Voices' }} />
+        <Stack.Screen name="find" options={{ title: 'Find a free book' }} />
+      </ThemedStack>
+      <CelebrationHost />
     </StoreProvider>
+    </WebSafeArea>
+    </GestureHandlerRootView>
+  );
+}
+
+/** The app's stack, coloured for the current light/dark scheme. */
+function ThemedStack({ children }: { children: ReactNode }) {
+  const palette = usePalette();
+  return (
+    <Stack
+      screenOptions={{
+        headerStyle: { backgroundColor: palette.background },
+        headerTintColor: palette.text,
+        contentStyle: { backgroundColor: palette.background },
+      }}>
+      {children}
+    </Stack>
   );
 }
