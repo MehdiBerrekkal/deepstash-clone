@@ -8,6 +8,7 @@ import { FavoriteButton } from '@/components/FavoriteButton';
 import { Shelf } from '@/components/Shelf';
 import { classicAsSource } from '@/lib/classicSource';
 import { classicReaderId, classics, type Classic } from '@/lib/fullbook';
+import { hasNarration } from '@/lib/narration';
 import { deleteOwnBookFiles, pickOwnBook, type OwnBook } from '@/lib/ownbooks';
 import { useStore } from '@/lib/store';
 import { colors } from '@/lib/theme';
@@ -37,6 +38,8 @@ export default function LibraryScreen() {
   }, [navigation, favoriteBooks.length]);
 
   // Books you dropped into books/, newest first.
+  // Books with a free human recording (LibriVox), bundled ones first.
+  const narrated = useMemo(() => classics.filter((c) => hasNarration(c.id) && c.origin !== 'catalog').slice(0, 30), []);
   const recentlyAdded = useMemo(
     () => classics.filter((c) => c.origin === 'books').sort((a, b) => (b.addedAt ?? '').localeCompare(a.addedAt ?? '')),
     [],
@@ -142,6 +145,7 @@ export default function LibraryScreen() {
         <>
           {myBooks.length > 0 && <ClassicShelf title="🔒 My books" items={myBooks} />}
           {recentlyAdded.length > 0 && <ClassicShelf title="✨ Recently added" items={recentlyAdded} />}
+          <ClassicShelf title="🎙 Read aloud by a real narrator" items={narrated} />
           <Shelf title="Continue reading" books={shelves.inProgress} />
           {classicShelves.map((s) => (
             <ClassicShelf key={s.id} title={s.title} items={s.items} />

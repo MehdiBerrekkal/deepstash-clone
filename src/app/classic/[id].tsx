@@ -8,6 +8,7 @@ import { classicAsSource } from '@/lib/classicSource';
 import { downloadCatalogBook } from '@/lib/downloads';
 import { classicById, classicReaderId, formatYear, loadClassic, readMinutesForWords, type FullBook } from '@/lib/fullbook';
 import { voiceForLanguage } from '@/lib/lang';
+import { hasNarration } from '@/lib/narration';
 import { prewarmNatural } from '@/lib/neuralVoice';
 import { useStore } from '@/lib/store';
 import { colors, onCardScope, serif } from '@/lib/theme';
@@ -67,6 +68,7 @@ export default function ClassicScreen() {
             {classic.year ? ` · ${formatYear(classic.year)}` : ''}
           </Text>
           {classic.translator && <Text style={styles.meta}>Translated by {classic.translator}</Text>}
+          {hasNarration(classic.id) && <Text style={styles.narrated}>🎙 Human narration · tap 🎧 in the book to hear a real reader (LibriVox)</Text>}
           <Text style={styles.meta}>
             {classic.words
               ? `📚 Full book · ${classic.chapters} chapters · ${hours >= 1 ? `about ${Math.round(hours)} h` : `${readMinutesForWords(classic.words)} min`} read`
@@ -154,6 +156,7 @@ export default function ClassicScreen() {
 }
 
 const styles = StyleSheet.create({
+  narrated: { color: '#B5492F', fontWeight: '800', fontSize: 13, textAlign: 'center', marginTop: 4 },
   container: { paddingBottom: 32, gap: 24 },
   hero: { alignItems: 'center', paddingTop: 28, paddingBottom: 24, paddingHorizontal: 24, gap: 8 },
   title: { color: colors.text, fontSize: 26, fontWeight: '800', fontFamily: serif, textAlign: 'center', marginTop: 12 },

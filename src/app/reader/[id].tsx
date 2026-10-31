@@ -14,6 +14,7 @@ import { HighlightSheet } from '@/components/HighlightSheet';
 import { PageFlip, type PageFlipHandle } from '@/components/PageFlip';
 import { Scrubber } from '@/components/Scrubber';
 import { VoicePicker } from '@/components/VoicePicker';
+import { useNarration } from '@/lib/narration';
 import { voiceForLanguage, voiceSetting } from '@/lib/lang';
 import { BOOK_THEMES, HIGHLIGHT_COLORS, READER_FONTS, bookFonts, chooseReaderTheme, measuredCharWidth, readerThemeFor, chapterLabel, displayFont, displayItalic, typeset, type BookTheme } from '@/lib/bookType';
 import { classicAsSource } from '@/lib/classicSource';
@@ -111,6 +112,8 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
   const listenRate = readerSettings.listenRate ?? 1;
   // If the natural voice proves too slow here, stop choosing it automatically.
   const onNaturalFailed = useCallback(() => setReaderSettings({ naturalOff: true }), [setReaderSettings]);
+  const narration = useNarration(book, kind === 'own' ? undefined : id, listenRate);
+  const human = narration.available && readerSettings.narrator !== 'ai';
   const listen = useListen(book, {
     rate: listenRate,
     voice: voiceForLanguage(readerSettings, language),
@@ -118,6 +121,8 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
     preferNatural: !readerSettings.naturalOff,
     onNaturalFailed,
   });
+  // The engine in use: the human narrator when the book has one (unless you chose a synthetic voice).
+  const audio = human ? narration : listen;
 
   useEffect(() => {
     let alive = true;
@@ -199,7 +204,7 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
   const following = useRef(true);
   const autoTurn = useRef(false);
   useEffect(() => {
-    const s = listen.sentence;
+    const s = audio.sentence;
     if (!s || !pages.length || !following.current) return;
     const target = findPage(pages, { chapter: s.chapter, para: s.para, char: s.from });
     const shown = spread ? [current, current + 1] : [current];
@@ -215,7 +220,7 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
     return () => clearTimeout(t);
     // Only a new sentence should move the page, not your own page turns.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [listen.sentence, pages]);
+  }, [audio.sentence, pages]);
 
   const listenControl = useCallback(
     (action: () => void) => {
@@ -229,15 +234,16 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
   useEffect(() => {
     const target = pages[current];
     if (!target) return;
+    if (human) return;
     const t = setTimeout(() => warm(pageStart(target)), 150);
     return () => clearTimeout(t);
-  }, [pages, current, warm]);
+  }, [pages, current, warm, human]);
 
   const toggleListen = useCallback(() => {
     following.current = true;
-    if (listen.sentence) listen.setPlaying(!listen.playing);
-    else if (pages[current]) listen.start(pageStart(pages[current]));
-  }, [listen, pages, current]);
+    if (audio.sentence) audio.setPlaying(!audio.playing);
+    else if (pages[current]) audio.start(pageStart(pages[current]));
+  }, [audio, pages, current]);
 
 
   const onLeafChange = useCallback(
@@ -271,8 +277,8 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
   const lastActive = useRef(0);
   const playing = useRef(false);
   useEffect(() => {
-    playing.current = listen.playing;
-  }, [listen.playing]);
+    playing.current = audio.playing;
+  }, [audio.playing]);
   useEffect(() => {
     if (!book) return;
     const tick = setInterval(() => {
@@ -320,7 +326,7 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
   // The player sits just above the controls when they're shown, otherwise low over the home indicator
   // (the page number hides while it's there, so it never covers text).
   const playerBottom = chrome && bottomBarHeight ? bottomBarHeight + 8 : Math.max(8, insets.bottom - 18);
-  const hideFolio = !!listen.sentence;
+  const hideFolio = !!audio.sentence;
 
   const onLayout = (e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
@@ -406,8 +412,8 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
               {chapterTitle}
             </Text>
           </View>
-          <Pressable accessibilityLabel={listen.sentence ? 'Listening controls' : 'Listen to this book'} onPress={toggleListen} style={styles.iconButton}>
-            <Text style={[styles.icon, { color: listen.sentence ? '#B5492F' : theme.chromeText }]}>{listen.playing ? '❚❚' : '🎧'}</Text>
+          <Pressable accessibilityLabel={audio.sentence ? 'Listening controls' : 'Listen to this book'} onPress={toggleListen} style={styles.iconButton}>
+            <Text style={[styles.icon, { color: audio.sentence ? '#B5492F' : theme.chromeText }]}>{audio.playing ? '❚❚' : '🎧'}</Text>
           </Pressable>
           <Pressable accessibilityLabel="Search in this book" onPress={() => setPanel('search')} style={styles.iconButton}>
             <Text style={[styles.icon, { color: theme.chromeText, fontSize: 20 }]}>⌕</Text>
@@ -467,7 +473,7 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
         <Animated.View
           entering={FadeIn.duration(200)}
           exiting={FadeOut.duration(200)}
-          style={[styles.listenNotice, { backgroundColor: theme.ink, bottom: playerBottom + (listen.sentence ? 58 : 0) }]}>
+          style={[styles.listenNotice, { backgroundColor: theme.ink, bottom: playerBottom + (audio.sentence ? 58 : 0) }]}>
           {listen.loading !== null ? (
             <>
               <Text style={[styles.listenNoticeText, { color: theme.paper }]}>
@@ -485,28 +491,28 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
         </Animated.View>
       )}
 
-      {listen.sentence && (
+      {audio.sentence && (
         <Animated.View
           entering={FadeIn.duration(200)}
           style={[
             styles.listenBar,
             { backgroundColor: theme.chrome, borderColor: theme.rule, bottom: playerBottom },
           ]}>
-          <Pressable accessibilityLabel="Previous sentence" onPress={() => listenControl(() => listen.skip(-1))} style={styles.listenButton}>
-            <Text style={[styles.listenIcon, { color: theme.chromeText }]}>⏮</Text>
+          <Pressable accessibilityLabel={human ? 'Back 15 seconds' : 'Previous sentence'} onPress={() => listenControl(() => audio.skip(-1))} style={styles.listenButton}>
+            <Text style={[styles.listenIcon, { color: theme.chromeText }]}>{human ? '↺' : '⏮'}</Text>
           </Pressable>
           <Pressable
-            accessibilityLabel={listen.playing ? 'Pause' : 'Play'}
-            onPress={() => listenControl(() => listen.setPlaying(!listen.playing))}
+            accessibilityLabel={audio.playing ? 'Pause' : 'Play'}
+            onPress={() => listenControl(() => audio.setPlaying(!audio.playing))}
             style={[styles.playButton, { backgroundColor: theme.ink }]}>
-            {listen.preparing ? (
+            {audio.preparing ? (
               <ActivityIndicator size="small" color={theme.paper} accessibilityLabel="Preparing voice" />
             ) : (
-              <Text style={[styles.playIcon, { color: theme.paper }]}>{listen.playing ? '❚❚' : '▶'}</Text>
+              <Text style={[styles.playIcon, { color: theme.paper }]}>{audio.playing ? '❚❚' : '▶'}</Text>
             )}
           </Pressable>
-          <Pressable accessibilityLabel="Next sentence" onPress={() => listenControl(() => listen.skip(1))} style={styles.listenButton}>
-            <Text style={[styles.listenIcon, { color: theme.chromeText }]}>⏭</Text>
+          <Pressable accessibilityLabel={human ? 'Forward 30 seconds' : 'Next sentence'} onPress={() => listenControl(() => audio.skip(1))} style={styles.listenButton}>
+            <Text style={[styles.listenIcon, { color: theme.chromeText }]}>{human ? '↻' : '⏭'}</Text>
           </Pressable>
           <Pressable
             accessibilityLabel="Reading speed"
@@ -517,16 +523,18 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
           <Pressable
             accessibilityLabel="Voice"
             onPress={() => {
-              listen.setPlaying(false);
+              audio.setPlaying(false);
               setPanel('voice');
             }} style={[styles.listenChip, { borderColor: theme.rule }]}>
-            <Text style={[styles.listenChipText, { color: theme.chromeText }]}>{listen.natural ? '✨ Natural' : listen.naturalAvailable ? '✨ Voice' : 'Voice'}</Text>
+            <Text style={[styles.listenChipText, { color: theme.chromeText }]} numberOfLines={1}>
+              {human ? `🎙 ${narration.reader}` : listen.natural ? '✨ Natural' : listen.naturalAvailable ? '✨ Voice' : 'Voice'}
+            </Text>
           </Pressable>
           <Pressable
             accessibilityLabel="Sleep timer"
             onPress={() => setPanel('sleep')}
-            style={[styles.listenChip, { borderColor: listen.sleep ? theme.ink : theme.rule }]}>
-            <Text style={[styles.listenChipText, { color: theme.chromeText }]}>{sleepLabel(listen.sleep)}</Text>
+            style={[styles.listenChip, { borderColor: audio.sleep ? theme.ink : theme.rule }]}>
+            <Text style={[styles.listenChipText, { color: theme.chromeText }]}>{sleepLabel(audio.sleep)}</Text>
           </Pressable>
           <Pressable
             accessibilityLabel={themeKey === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
@@ -534,7 +542,7 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
             style={styles.listenButton}>
             <Text style={[styles.listenIcon, { color: theme.chromeText }]}>{themeKey === 'dark' ? '☀︎' : '☾'}</Text>
           </Pressable>
-          <Pressable accessibilityLabel="Stop listening" onPress={listen.close} style={styles.listenButton}>
+          <Pressable accessibilityLabel="Stop listening" onPress={audio.close} style={styles.listenButton}>
             <Text style={[styles.listenIcon, { color: theme.soft }]}>✕</Text>
           </Pressable>
         </Animated.View>
@@ -544,6 +552,39 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
         <Pressable style={styles.backdrop} onPress={() => setPanel(null)}>
           <Pressable style={[styles.sheet, { backgroundColor: theme.paper, borderColor: theme.rule }]} onPress={() => {}}>
             {panel === 'voice' ? (
+              <>
+              {narration.available && narration.entry && (
+                <View style={[styles.narratorBox, { borderColor: theme.rule }]}>
+                  <Pressable
+                    accessibilityLabel="Use the human narrator"
+                    onPress={() => {
+                      const from = audio.sentence ?? (page ? pageStart(page) : null);
+                      listen.close();
+                      setReaderSettings({ narrator: 'human' });
+                      setPanel(null);
+                      if (from) setTimeout(() => narration.start({ chapter: from.chapter, para: from.para, char: 'from' in from ? from.from : from.char }), 0);
+                    }}
+                    style={styles.narratorRow}>
+                    <Text style={{ color: theme.ink, fontFamily: human ? font.bold : font.regular, fontSize: 17 }}>
+                      {human ? '✓ ' : ''}🎙 Human narrator
+                    </Text>
+                    <Text style={{ color: theme.soft, fontSize: 13 }}>
+                      Read by {narration.entry.solo ? narration.entry.readers[0] : `${narration.entry.readers.length} LibriVox volunteers`} · a real recording, free from LibriVox
+                    </Text>
+                  </Pressable>
+                  {human && (
+                    <Pressable
+                      accessibilityLabel="Use a synthetic voice"
+                      onPress={() => {
+                        narration.close();
+                        setReaderSettings({ narrator: 'ai' });
+                      }}
+                      style={styles.narratorSwitch}>
+                      <Text style={{ color: theme.ink, fontWeight: '700' }}>Use a synthetic voice instead ›</Text>
+                    </Pressable>
+                  )}
+                </View>
+              )}
               <VoicePicker
                 theme={theme}
                 fontRegular={font.regular}
@@ -552,10 +593,12 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
                 selectedFor={(lang) => voiceForLanguage(readerSettings, lang)}
                 naturalActive={listen.natural ? listen.naturalVoice : null}
                 onSelect={(v, lang) => {
-                  setReaderSettings({ ...voiceSetting(lang, v), ...(isNatural(v) ? { naturalOff: false } : {}) });
+                  if (human) narration.close();
+                  setReaderSettings({ ...voiceSetting(lang, v), ...(isNatural(v) ? { naturalOff: false } : {}), narrator: 'ai' });
                   if (isNatural(v)) listen.tryNatural();
                 }}
               />
+              </>
             ) : (
               <>
                 <Text style={[styles.sheetTitle, { color: theme.ink, fontFamily: displayFont }]}>Sleep timer</Text>
@@ -563,11 +606,11 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
                   <Pressable
                     key={o.label}
                     onPress={() => {
-                      listen.setSleep(
+                      audio.setSleep(
                         o.minutes === undefined
                           ? null
                           : o.minutes === 0
-                            ? { kind: 'chapter', chapter: listen.sentence?.chapter ?? 0 }
+                            ? { kind: 'chapter', chapter: audio.sentence?.chapter ?? 0 }
                             : { kind: 'time', until: Date.now() + o.minutes * 60_000 },
                       );
                       setPanel(null);
@@ -939,6 +982,9 @@ function sleepLabel(sleep: SleepTimer) {
 }
 
 const styles = StyleSheet.create({
+  narratorBox: { gap: 6, paddingBottom: 12, marginBottom: 8, borderBottomWidth: StyleSheet.hairlineWidth },
+  narratorRow: { gap: 3, paddingVertical: 8, minHeight: 52 },
+  narratorSwitch: { paddingVertical: 8 },
   container: { flex: 1 },
   stage: { flex: 1, overflow: 'hidden' },
   stageSpread: { margin: 14, borderRadius: 4, shadowColor: '#000', shadowOpacity: 0.35, shadowRadius: 18, shadowOffset: { width: 0, height: 8 }, elevation: 10 },

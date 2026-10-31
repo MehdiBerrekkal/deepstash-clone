@@ -81,6 +81,8 @@ export type ReaderSettings = {
   listenRate?: number;
   /** The voice for English text: a system voice id, "piper:<voice>" for a natural voice, or unset for the best available. */
   voice?: string;
+  /** Books with a LibriVox recording: read by the human narrator (default) or by a synthetic voice. */
+  narrator?: 'human' | 'ai';
   /** The voice for French text (books, cards, quizzes); `voice` is for English. */
   voiceFr?: string;
   /** Set when the natural voice was too slow on this device, so it isn't picked automatically. */
