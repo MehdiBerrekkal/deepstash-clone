@@ -346,7 +346,8 @@ export async function confirmFound(b: FoundBook): Promise<FoundBook | null> {
     const full = await withDeathYears(b);
     if (!publicDomainEU(full.people)) return null;
     if (full.source === 'standard') return full;
-    const file = await gutenbergFile(full.ref);
+    // The Archive sometimes drops a request under load: try once more before giving up on a book.
+    const file = await gutenbergFile(full.ref).catch(() => new Promise((r) => setTimeout(r, 800)).then(() => gutenbergFile(full.ref)));
     if (!file) return null;
     const title = /\?/.test(full.title) || full.lang === 'fr' ? (await gutenbergTitle(full.ref)) ?? full.title.replace(/\?/g, '') : full.title;
     // A plain ".txt" without "-0"/"-8" is a 7-bit edition: no accents.
