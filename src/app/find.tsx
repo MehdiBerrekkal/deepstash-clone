@@ -2,6 +2,7 @@ import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { usePalette } from '@/lib/appearance';
 import { downloadFound, findBooks, publicDomainEU, withDeathYears, type FoundBook, type Lang } from '@/lib/findBooks';
 import { saveBook } from '@/lib/ownbooks';
 import { useStore } from '@/lib/store';
@@ -173,6 +174,8 @@ export default function FindScreen() {
 }
 
 function BookSheet({ book: initial, inLibrary, onClose, onDone, onAdd }: { book: FoundBook; inLibrary?: string; onClose: () => void; onDone: (id: string) => void; onAdd: ReturnType<typeof useStore>['addOwnBook'] }) {
+  // Modals render outside the app's colour scope on the web, so paint the sheet with real colours.
+  const palette = usePalette();
   const [book, setBook] = useState(initial);
   const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -214,7 +217,7 @@ function BookSheet({ book: initial, inLibrary, onClose, onDone, onAdd }: { book:
   return (
     <Modal transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={styles.sheet} onPress={() => {}}>
+        <Pressable style={[styles.sheet, { backgroundColor: palette.background }]} onPress={() => {}}>
           <ScrollView contentContainerStyle={styles.sheetBody}>
             <View style={styles.sheetTop}>
               <Image source={{ uri: book.cover }} style={styles.bigCover} resizeMode="cover" />
