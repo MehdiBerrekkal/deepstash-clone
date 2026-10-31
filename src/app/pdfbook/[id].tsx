@@ -6,6 +6,7 @@ import { ActivityIndicator, Image, Platform, Pressable, StyleSheet, Text, View, 
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ZoomPane } from '@/components/ZoomPane';
 import { PageFlip, type PageFlipHandle } from '@/components/PageFlip';
 import { PdfEngine, type PdfApi } from '@/components/PdfEngine';
 import { Scrubber } from '@/components/Scrubber';
@@ -148,6 +149,13 @@ function PdfBook({ id, source }: { id: string; source: 'own' | 'private' }) {
     if (Math.abs(width - size.width) > 1 || Math.abs(height - size.height) > 1) setSize({ width, height });
   };
 
+  const zoomUri = (index: number) => pages[`${index}@${renderWidth}`] ?? Object.entries(pages).find(([k]) => k.startsWith(`${index}@`))?.[1];
+  // The zoomed page fills the screen width (or height), keeping its shape.
+  const zoomBox = (() => {
+    const w = Math.min(size.width - MARGIN, (size.height - MARGIN) / ratio);
+    return { w, h: w * ratio };
+  })();
+
   const renderPage = (index: number, width: number) => {
     const uri = pages[`${index}@${renderWidth}`] ?? Object.entries(pages).find(([k]) => k.startsWith(`${index}@`))?.[1];
     // Fit the page inside the paper, keeping its shape.
@@ -159,7 +167,7 @@ function PdfBook({ id, source }: { id: string; source: 'own' | 'private' }) {
       <Pressable accessible={false} onPress={onTap} style={[styles.paper, { width, height: size.height, backgroundColor: theme.paper }]}>
         <View style={[styles.sheet, { width: w, height: h, overflow: 'hidden' }]}>
           {uri ? (
-            <Image source={{ uri }} style={{ width: w, height: h, transform: [{ scale: zoom }] }} resizeMode="contain" />
+            <Image source={{ uri }} style={{ width: w, height: h }} resizeMode="contain" />
           ) : (
             <View style={[styles.center, { backgroundColor: '#fff' }]}>
               <ActivityIndicator color={theme.soft} />
@@ -187,6 +195,11 @@ function PdfBook({ id, source }: { id: string; source: 'own' | 'private' }) {
             <View style={styles.center}>
               <ActivityIndicator color={theme.soft} />
               <Text style={[styles.message, { color: theme.soft, fontFamily: displayItalic }]}>Opening the book…</Text>
+            </View>
+          ) : zoom > 1 && zoomUri(current) ? (
+            // Zoomed: pan and pinch this page; page turns come back at 1× (double tap, or the 1× button).
+            <View style={[styles.center, { backgroundColor: theme.paper }]}>
+              <ZoomPane uri={zoomUri(current)!} width={zoomBox.w} height={zoomBox.h} zoom={zoom} onZoom={setZoom} />
             </View>
           ) : (
             <PageFlip

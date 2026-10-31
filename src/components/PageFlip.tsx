@@ -1,7 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { forwardRef, useImperativeHandle, useLayoutEffect, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { GestureDetector, usePanGesture, usePinchGesture, useSimultaneousGestures } from 'react-native-gesture-handler';
+import { GestureDetector, useCompetingGestures, usePanGesture, usePinchGesture } from 'react-native-gesture-handler';
 import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming, type SharedValue } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
@@ -56,6 +56,8 @@ export const PageFlip = forwardRef<PageFlipHandle, Props>(function PageFlip(
   const startX = useSharedValue(0);
   const busy = useSharedValue(false);
   const pinch = useSharedValue(1);
+  const focalX = useSharedValue(0);
+  const focalY = useSharedValue(0);
   const canBack = index > 0;
   const canForward = index < leafCount - 1;
 
@@ -121,18 +123,31 @@ export const PageFlip = forwardRef<PageFlipHandle, Props>(function PageFlip(
       animateTo(target, p);
     },
   });
+  // Pinch previews the new text size around your fingers, then settles into it (the book re-paginates). It never
+  // shrinks below the page, so no empty edges show, and a page turn that had just begun falls back flat.
   const pinchGesture = usePinchGesture({
-    onUpdate: (e) => {
-      pinch.set(Math.min(2, Math.max(0.6, e.scale)));
+    onActivate: (e) => {
+      focalX.set(e.focalX);
+      focalY.set(e.focalY);
+      if (progress.get() !== 0) animateTo(0, progress.get());
     },
-    onDeactivate: () => {
-      const scale = pinch.get();
-      pinch.set(withTiming(1, { duration: 150 }));
-      if (onPinchEnd && Math.abs(scale - 1) > 0.05) scheduleOnRN(onPinchEnd, scale);
+    onUpdate: (e) => {
+      pinch.set(Math.min(1.8, Math.max(1, e.scale < 1 ? 1 - (1 - e.scale) * 0.25 : e.scale)));
+    },
+    onDeactivate: (e) => {
+      const scale = e.scale;
+      pinch.set(withTiming(1, { duration: 180, easing }));
+      if (onPinchEnd && Math.abs(scale - 1) > 0.08) scheduleOnRN(onPinchEnd, Math.min(1.8, Math.max(0.6, scale)));
     },
   });
-  const gestures = useSimultaneousGestures(pan, pinchGesture);
-  const stageStyle = useAnimatedStyle(() => ({ transform: [{ scale: pinch.get() }] }));
+  // One gesture at a time: two fingers zoom, one finger turns pages. They never fight.
+  const gestures = useCompetingGestures(pinchGesture, pan);
+  const stageStyle = useAnimatedStyle(() => {
+    const s = pinch.get();
+    const dx = focalX.get() - width / 2;
+    const dy = focalY.get() - height / 2;
+    return { transform: [{ translateX: dx }, { translateY: dy }, { scale: s }, { translateX: -dx }, { translateY: -dy }] };
+  });
 
   const page = (i: number, w: number) => (i >= 0 && i < pageCount ? renderPage(i, w) : null);
 
