@@ -46,6 +46,30 @@ function parseChapter(html: string, fallbackTitle: string) {
   return { title: title.slice(0, 120), paragraphs };
 }
 
+/**
+ * A Project Gutenberg HTML book: the licence header and footer trimmed, then one chapter per <h2> heading
+ * (or <h3> when a book has few <h2>s).
+ */
+export function parseHtmlBook(html: string, title: string, author: string): FullBook {
+  let body = html.match(/<body[^>]*>([\s\S]*)<\/body>/i)?.[1] ?? html;
+  body = body.replace(/<section[^>]*pg-(header|footer)[\s\S]*?<\/section>/gi, '').replace(/<div[^>]*id=["']pg-(header|footer)["'][\s\S]*?<\/div>/gi, '');
+  const start = body.search(/\*\*\*\s*START OF (THE|THIS) PROJECT GUTENBERG/i);
+  if (start >= 0) body = body.slice(body.indexOf('***', start + 3) + 3);
+  const small = body.search(/\*\s*END\s*\*?\s*THE SMALL PRINT/i);
+  if (small >= 0) body = body.slice(small).replace(/^[^<]*/, '');
+  const end = body.search(/\*\*\*\s*END OF (THE|THIS) PROJECT GUTENBERG|End of (the )?Project Gutenberg/i);
+  if (end >= 0) body = body.slice(0, end);
+  const level = (body.match(/<h2\b/gi)?.length ?? 0) >= 3 ? 'h2' : (body.match(/<h3\b/gi)?.length ?? 0) >= 3 ? 'h3' : 'h2';
+  const parts = body.split(new RegExp(`(?=<${level}\\b)`, 'i'));
+  const chapters: FullBook['chapters'] = [];
+  for (const part of parts) {
+    const chapter = parseChapter(`<body>${part}</body>`, chapters.length ? `Section ${chapters.length + 1}` : title);
+    if (chapter.paragraphs.join(' ').length > 40) chapters.push(chapter);
+  }
+  if (chapters.length === 0) throw new Error('No readable text was found in this book.');
+  return { title, author, chapters };
+}
+
 /** Reads a DRM-free EPUB entirely on the device. Throws a readable message for files it can't open. */
 export async function parseEpub(data: ArrayBuffer | Uint8Array, fileName: string): Promise<FullBook> {
   const zip = await JSZip.loadAsync(data);

@@ -67,7 +67,7 @@ export default function FullReaderScreen() {
 function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; start?: ReaderPosition }) {
   const readerId = `${kind === 'own' ? 'own' : 'classic'}:${id}`;
   const { readerSettings, setReaderSettings, readerProgress, setReaderPosition, bookmarks, toggleBookmark, removeBookmark, highlights } = useStore();
-  const { logReading, markReaderFinished, readingLog, finishedReaders } = useStore();
+  const { logReading, markReaderFinished, readingLog, finishedReaders, ownBooks } = useStore();
   const [rawBook, setBook] = useState<FullBook | null>(null);
   // Typeset once, before paginating, so page offsets line up with the text that's drawn.
   const book = useMemo<FullBook | null>(
@@ -107,7 +107,7 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
   const font = READER_FONTS[fontKey];
   const fontSize = readerSettings.fontSize;
   const lineHeight = Math.round(fontSize * font.leading);
-  const language = (kind === 'own' ? undefined : classicById[id]?.lang) ?? 'en';
+  const language = (kind === 'own' ? ownBooks.find((b) => b.id === id)?.lang : classicById[id]?.lang) ?? 'en';
   const listenRate = readerSettings.listenRate ?? 1;
   // If the natural voice proves too slow here, stop choosing it automatically.
   const onNaturalFailed = useCallback(() => setReaderSettings({ naturalOff: true }), [setReaderSettings]);

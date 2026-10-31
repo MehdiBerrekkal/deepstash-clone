@@ -21,6 +21,12 @@ export type OwnBook = {
   addedAt: string;
   /** Native: where the PDF copy lives. */
   uri?: string;
+  /** Book language ("en", "fr"), for reading aloud. */
+  lang?: string;
+  /** Where a book found with "Find a book" came from, e.g. "Project Gutenberg". */
+  source?: string;
+  /** Its page on that site. */
+  sourceUrl?: string;
 };
 
 const WEB_KEY = (id: string) => `deepstash-clone/own-book/${id}`;

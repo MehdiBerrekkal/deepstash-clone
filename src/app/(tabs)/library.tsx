@@ -120,6 +120,15 @@ export default function LibraryScreen() {
         style={styles.search}
       />
 
+      <Pressable accessibilityLabel="Find a free book" onPress={() => router.push('/find')} style={styles.find}>
+        <Text style={styles.findIcon}>🔎</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.findTitle}>Find a free book</Text>
+          <Text style={styles.findSub}>Thousands of classics in English and French, one tap to download</Text>
+        </View>
+        <Text style={styles.findChev}>›</Text>
+      </Pressable>
+
       {q ? (
         <>
           <Text style={styles.count}>
@@ -150,13 +159,13 @@ export default function LibraryScreen() {
               return (
                 <View key={b.id} style={styles.ownRow}>
                   <Pressable onPress={() => openOwn(b)} style={styles.ownInfo}>
-                    <Text style={styles.ownBadge}>{b.kind === 'pdf' ? 'PDF' : 'EPUB'}</Text>
+                    <Text style={styles.ownBadge}>{b.kind === 'pdf' ? 'PDF' : b.source ? (b.lang === 'fr' ? 'FR' : 'FREE') : 'EPUB'}</Text>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.ownBook} numberOfLines={1}>
                         {b.title}
                       </Text>
                       <Text style={styles.ownMeta} numberOfLines={1}>
-                        {b.kind === 'pdf' ? b.fileName : b.author}
+                        {b.kind === 'pdf' ? b.fileName : b.source ? `${b.author} · ${b.source}` : b.author}
                         {fraction != null ? ` · ${Math.round(fraction * 100)}%` : ''}
                       </Text>
                     </View>
@@ -251,6 +260,11 @@ function ClassicShelf({ title, items }: { title: string; items: typeof classics 
 }
 
 const styles = StyleSheet.create({
+  find: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, borderRadius: 18, backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.accent },
+  findIcon: { fontSize: 24 },
+  findTitle: { color: colors.text, fontWeight: '900', fontSize: 16 },
+  findSub: { color: colors.muted, fontSize: 13, marginTop: 2 },
+  findChev: { color: colors.accent, fontSize: 28, fontWeight: '300' },
   shelf: { gap: 10 },
   shelfTitle: { color: colors.text, fontSize: 20, fontWeight: '800', paddingHorizontal: 16 },
   shelfRow: { gap: 14, paddingHorizontal: 16 },

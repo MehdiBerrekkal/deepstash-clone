@@ -1,4 +1,5 @@
 import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { useState } from 'react';
 import { Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 
 import { BookCover } from '@/components/BookCover';
@@ -8,10 +9,38 @@ import { classicBySourceId, classicReaderId } from '@/lib/fullbook';
 import { useStore } from '@/lib/store';
 import { colors, onCardScope, readMinutes, serif, sourceKindLabel } from '@/lib/theme';
 
+/** Legal ways to read a book that's still in copyright: borrow it, preview it, or buy it. */
+function GetThisBook({ title, author }: { title: string; author: string }) {
+  const q = encodeURIComponent(`${title} ${author}`);
+  const options = [
+    { label: 'Borrow free on Open Library', note: 'Free online lending, like a library', url: `https://openlibrary.org/search?q=${q}&mode=everything` },
+    { label: 'Borrow with Libby', note: 'Free e-book and audiobook loans with a library card', url: `https://libbyapp.com/search/everywhere/search/query-${encodeURIComponent(title)}/page-1` },
+    { label: 'Preview on Google Books', note: 'Read the first pages', url: `https://www.google.com/search?tbm=bks&q=${q}` },
+    { label: 'Buy on Kobo', note: 'E-book, DRM-free when the publisher allows', url: `https://www.kobo.com/search?query=${q}` },
+    { label: 'Buy on Amazon', note: 'Kindle, paperback or audiobook', url: `https://www.amazon.com/s?k=${q}` },
+    { label: 'Buy from Bookshop.org', note: 'Supports independent bookshops', url: `https://bookshop.org/search?keywords=${q}` },
+  ];
+  return (
+    <View style={styles.getBox}>
+      {options.map((o) => (
+        <Pressable key={o.label} accessibilityLabel={o.label} onPress={() => Linking.openURL(o.url)} style={styles.getRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.getLabel}>{o.label}</Text>
+            <Text style={styles.getNote}>{o.note}</Text>
+          </View>
+          <Text style={styles.getArrow}>↗</Text>
+        </Pressable>
+      ))}
+      <Text style={styles.freeHint}>Got the EPUB? Open it in Library → “Open your own book” to read it here with voices and highlights.</Text>
+    </View>
+  );
+}
+
 export default function BookScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { sourceById, ideasBySource, topicById, bookProgress, sources, readerProgress } = useStore();
   const book = sourceById[id];
+  const [getOpen, setGetOpen] = useState(false);
 
   if (!book) return <Text style={styles.muted}>Book not found.</Text>;
 
@@ -72,13 +101,12 @@ export default function BookScreen() {
             </>
           ) : (
             book.kind === 'book' && (
-              <Pressable
-                onPress={() => Linking.openURL(`https://openlibrary.org/search?q=${encodeURIComponent(`${book.title} ${book.author}`)}`)}
-                style={styles.fullBook}>
-                <Text style={styles.fullBookText}>Get the full book on Open Library ↗</Text>
+              <Pressable accessibilityLabel="Get this book" onPress={() => setGetOpen((o) => !o)} style={styles.fullBook}>
+                <Text style={styles.fullBookText}>📖 Get this book {getOpen ? '▴' : '▾'}</Text>
               </Pressable>
             )
           )}
+          {getOpen && <GetThisBook title={book.title} author={book.author} />}
           <View style={styles.secondaryRow}>
             <FavoriteButton favoriteKey={`book:${book.id}`} title={book.title} size="large" />
             <Pressable
@@ -153,4 +181,9 @@ const styles = StyleSheet.create({
   ideaDone: { color: colors.accent },
   ideaTitle: { color: colors.text, fontSize: 15, fontWeight: '600', flex: 1 },
   muted: { color: colors.muted, padding: 24 },
+  getBox: { gap: 8, padding: 12, borderRadius: 18, backgroundColor: colors.surface },
+  getRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10, paddingHorizontal: 8, minHeight: 52, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
+  getLabel: { color: colors.text, fontWeight: '800', fontSize: 15 },
+  getNote: { color: colors.muted, fontSize: 12, marginTop: 2 },
+  getArrow: { color: colors.accent, fontSize: 18, fontWeight: '800' },
 });

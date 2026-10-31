@@ -141,6 +141,11 @@ export default function ExploreScreen() {
         style={styles.search}
         clearButtonMode="while-editing"
       />
+      {!!q && (
+        <Pressable accessibilityLabel="Search free libraries" onPress={() => router.push({ pathname: '/find', params: { q } })} style={styles.findLink}>
+          <Text style={styles.findLinkText}>🔎 Find “{q}” in free libraries (Gutenberg, Standard Ebooks) ›</Text>
+        </Pressable>
+      )}
       <KindFilter
         value={scope}
         onChange={(k) => {
@@ -225,6 +230,8 @@ function HighlightRow({ h }: { h: Highlight }) {
 }
 
 const styles = StyleSheet.create({
+  findLink: { paddingVertical: 10, paddingHorizontal: 14, borderRadius: 14, borderWidth: 1, borderColor: colors.accent },
+  findLinkText: { color: colors.accent, fontWeight: '800', fontSize: 13 },
   container: { flex: 1, backgroundColor: colors.background },
   search: {
     margin: 16,
