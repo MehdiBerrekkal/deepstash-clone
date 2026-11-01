@@ -5,7 +5,9 @@ import { Pressable, ScrollView, Share, StyleSheet, Text, View, useWindowDimensio
 import { CardBody, POEM_PREVIEW_LINES } from '@/components/CardBody';
 import { haptic } from '@/lib/haptics';
 import { detectLang, voiceForLanguage } from '@/lib/lang';
+import { cardAudioUrl } from '@/lib/cardAudio';
 import { speakOnce } from '@/lib/listen';
+import { isNatural, playClip, unlockAudio } from '@/lib/neuralVoice';
 import { useStore } from '@/lib/store';
 import { cardKindById, colors, onCardScope, sourceKindLabel } from '@/lib/theme';
 import type { Idea } from '@/lib/types';
@@ -58,7 +60,15 @@ export function IdeaCard({ idea, height, counter, hideSource = false, scrollable
     if (speaking) return speaking();
     const words = idea.kind === 'quote' ? `${idea.body} ... ${idea.author}` : `${idea.title}. ${idea.body}`;
     const lang = detectLang(words);
-    setSpeaking(() => speakOnce(words, () => setSpeaking(null), lang, voiceForLanguage(readerSettings, lang)));
+    const chosen = voiceForLanguage(readerSettings, lang);
+    const fallback = () => setSpeaking(() => speakOnce(words, () => setSpeaking(null), lang, chosen));
+    // The studio recording, unless you picked a specific device voice.
+    const recorded = !chosen || isNatural(chosen) ? cardAudioUrl(idea.id) : null;
+    if (!recorded) return fallback();
+    unlockAudio();
+    const playback = playClip({ url: recorded, seconds: 0, ms: 0 });
+    setSpeaking(() => playback.stop);
+    playback.done.then(() => setSpeaking(null), fallback);
   };
   // Stop reading when the card scrolls away and unmounts.
   useEffect(() => () => speaking?.(), [speaking]);
