@@ -397,6 +397,15 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
         </View>
       </SafeAreaView>
 
+      {/* iPhone home-screen app (iOS 26+): an opaque strip under the status bar, so iOS tints its bar a solid colour
+          instead of blurring whatever sits at the top of the page (it was smearing the controls). */}
+      {Platform.OS === 'web' && insets.top > 0 && (
+        <View
+          pointerEvents="none"
+          style={[styles.statusStrip, { height: insets.top, backgroundColor: chrome ? theme.chrome : spread ? theme.desk : theme.paper }]}
+        />
+      )}
+
       {chrome && (
         <Animated.View
           entering={FadeIn.duration(180)}
@@ -1023,6 +1032,7 @@ const styles = StyleSheet.create({
   folio: { position: 'absolute', bottom: 14, fontSize: 16 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 },
   message: { fontSize: 18, textAlign: 'center', lineHeight: 26 },
+  statusStrip: { position: (Platform.OS === 'web' ? 'fixed' : 'absolute') as 'absolute', top: 0, left: 0, right: 0, zIndex: 20 },
   topBar: {
     position: 'absolute',
     top: 0,
