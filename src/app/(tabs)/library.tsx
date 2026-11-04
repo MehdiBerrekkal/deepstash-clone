@@ -171,7 +171,7 @@ export default function LibraryScreen() {
               const fraction = readerProgress[`own:${b.id}`]?.fraction;
               return (
                 <View key={b.id} style={styles.ownRow}>
-                  <Pressable onPress={() => openOwn(b)} onLongPress={() => ownActions(b)} delayLongPress={450} style={styles.ownInfo}>
+                  <Pressable onPress={() => openOwn(b)} onLongPress={() => ownActions(b)} delayLongPress={450} {...({ dataSet: { longpress: '1' } } as object)} style={styles.ownInfo}>
                     <Text style={styles.ownBadge}>{b.kind === 'pdf' ? 'PDF' : b.source ? (b.lang === 'fr' ? 'FR' : 'FREE') : 'EPUB'}</Text>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.ownBook} numberOfLines={1}>

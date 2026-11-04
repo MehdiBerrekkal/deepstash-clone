@@ -25,12 +25,23 @@ type Props = {
   onLongPress?: () => void;
 };
 
-// iOS Safari: a long press on a cover shouldn't select text or offer to save the image.
+// iOS Safari: a long press on a cover shouldn't select its text or offer to save the image, so the menu can open.
+// !important beats the inline user-select React Native Web puts on text.
 if (Platform.OS === 'web' && typeof document !== 'undefined' && !document.getElementById('longpress-style')) {
   const style = document.createElement('style');
   style.id = 'longpress-style';
-  style.textContent = '[data-longpress], [data-longpress] * { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }';
+  style.textContent =
+    '[data-longpress], [data-longpress] * { -webkit-touch-callout: none !important; -webkit-user-select: none !important; user-select: none !important; -webkit-user-drag: none !important; }';
   document.head.appendChild(style);
+  document.addEventListener('contextmenu', (e) => {
+    if ((e.target as Element | null)?.closest?.('[data-longpress]')) e.preventDefault();
+  });
+  // If iOS still starts a selection inside a cover, drop it.
+  document.addEventListener('selectionchange', () => {
+    const node = document.getSelection()?.anchorNode;
+    const el = node && (node.nodeType === 1 ? (node as Element) : node.parentElement);
+    if (el?.closest?.('[data-longpress]')) document.getSelection()?.removeAllRanges();
+  });
 }
 
 /** A typographic cover in the topic's colour, with the Open Library cover on top once it loads. */
