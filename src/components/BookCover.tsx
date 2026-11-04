@@ -31,7 +31,7 @@ if (Platform.OS === 'web' && typeof document !== 'undefined' && !document.getEle
   const style = document.createElement('style');
   style.id = 'longpress-style';
   style.textContent =
-    '[data-longpress], [data-longpress] * { -webkit-touch-callout: none !important; -webkit-user-select: none !important; user-select: none !important; -webkit-user-drag: none !important; }';
+    '[data-longpress], [data-longpress] * { -webkit-touch-callout: none !important; -webkit-user-select: none !important; user-select: none !important; -webkit-user-drag: none !important; } [data-longpress] img { pointer-events: none !important; }';
   document.head.appendChild(style);
   document.addEventListener('contextmenu', (e) => {
     if ((e.target as Element | null)?.closest?.('[data-longpress]')) e.preventDefault();
