@@ -8,6 +8,8 @@ import { useStore } from '@/lib/store';
 
 /** Books asked of the AI this session, so a failure isn't retried in a loop. */
 const askedAi = new Set<string>();
+/** AI requests still running, by book. */
+const aiRunning = new Map<string, Promise<string | null>>();
 
 /** Gemini's free plan is often busy for a moment: try again after 1 and 3 minutes while the app stays open. */
 const RETRY_MS = [60_000, 180_000];
@@ -38,6 +40,9 @@ export function useMakeOwnIdeas() {
     }
     if (!opts.manual && (!account || askedAi.has(book.id))) return { count: r.ideas.length, ai: Promise.resolve(account ? null : 'Sign in to have AI write the cards.') };
     askedAi.add(book.id);
+    // One AI request per book at a time: a second one would only use up the free quota twice.
+    const running = aiRunning.get(book.id);
+    if (running) return { count: r.ideas.length, ai: running };
     const req = { title: book.title, author: book.author === 'PDF' ? undefined : book.author, lang: r.lang, kid, parts: r.passages };
     const ai = askWithRetries(() => aiIdeas(req, opts)).then((res) => {
       if ('error' in res) return res.error;
@@ -48,6 +53,8 @@ export function useMakeOwnIdeas() {
       setOwnBookIdeas(book.id, { ideas: res.ideas, ideasVersion: OWN_IDEAS_VERSION, ideasBy: 'ai', description, topicId: r.topicId, lang: r.lang });
       return null;
     });
+    aiRunning.set(book.id, ai);
+    ai.finally(() => aiRunning.delete(book.id));
     return { count: r.ideas.length, ai };
   };
 }

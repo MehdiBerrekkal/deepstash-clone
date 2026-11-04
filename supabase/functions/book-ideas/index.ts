@@ -97,16 +97,14 @@ Deno.serve(async (req) => {
       break;
     }
     const timeout = Math.min(50_000, left - 10_000);
-    let res = await ask(model, timeout, true);
-    // Some models can't switch thinking off; ask those again without that setting.
-    if (res.status === 400) {
-      const text = await res.text();
-      res = /thinking/i.test(text) ? await ask(model, timeout, false) : new Response(text, { status: 400 });
-    }
+    let res = await ask(model, timeout, !/lite/.test(model));
+    // Flash-Lite answers fast without that setting and refuses it with a bare 400; any other model that
+    // refuses it is asked again without it.
+    if (res.status === 400) res = await ask(model, timeout, false);
     // Google's "high demand" errors usually pass within a second or two.
     if (res.status === 503 && Date.now() - started < 80_000) {
       await new Promise((r) => setTimeout(r, 1500));
-      res = await ask(model, timeout, true);
+      res = await ask(model, timeout, !/lite/.test(model));
     }
     if (!res.ok) {
       errors.push(`${model}: ${res.status} ${(await res.text()).replace(/\s+/g, ' ').slice(0, 700)}`);
