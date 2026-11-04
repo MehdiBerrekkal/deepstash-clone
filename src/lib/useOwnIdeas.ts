@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { aiIdeas } from '@/lib/bookAi';
 import type { FullBook } from '@/lib/fullbook';
@@ -83,4 +83,40 @@ export function useOwnIdeasBackfill() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ownBooks, ready, account]);
+}
+
+/** What happened to each book's AI request this session, for the book page. */
+const aiStatus = new Map<string, string>();
+const inFlight = new Set<string>();
+
+/**
+ * On one of your book's pages: if its cards are still picked passages, asks the AI now (once per visit) and returns
+ * a line saying what's happening, or null.
+ */
+export function useAiOnOpen(book: OwnBook | undefined): string | null {
+  const { account } = useStore();
+  const make = useMakeOwnIdeas();
+  const [, force] = useState(0);
+  const id = book?.id;
+  const wants = !!book && !!account && book.ideasBy !== 'ai' && book.kind === 'epub';
+  useEffect(() => {
+    if (!wants || !book || inFlight.has(book.id)) return;
+    let alive = true;
+    inFlight.add(book.id);
+    aiStatus.set(book.id, '✨ AI (Gemini) is writing the summaries… (10–30 seconds)');
+    (async () => {
+      await Promise.resolve();
+      if (alive) force((n) => n + 1);
+      const text = await loadSavedBook(book.id).catch(() => null);
+      const err = text ? await make(book, text, { manual: true }).ai : 'this book’s text isn’t on this device. Long-press it, delete it, and add the file again here.';
+      inFlight.delete(book.id);
+      aiStatus.set(book.id, err ? `AI couldn’t write the summaries yet: ${err}` : '✨ Done: these are now AI summaries.');
+      if (alive) force((n) => n + 1);
+    })();
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, wants]);
+  return id ? (aiStatus.get(id) ?? null) : null;
 }

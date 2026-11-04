@@ -7,6 +7,7 @@ import { FavoriteButton } from '@/components/FavoriteButton';
 import { Shelf } from '@/components/Shelf';
 import { classicBySourceId, classicReaderId } from '@/lib/fullbook';
 import { ownSourceId } from '@/lib/ownbooks';
+import { useAiOnOpen } from '@/lib/useOwnIdeas';
 import { useStore } from '@/lib/store';
 import { colors, onCardScope, readMinutes, serif, sourceKindLabel } from '@/lib/theme';
 
@@ -43,6 +44,8 @@ export default function BookScreen() {
   const book = sourceById[id];
   // One of your own books (its ideas were made by the app from its text).
   const own = id?.startsWith('own-') ? ownBooks.find((b) => ownSourceId(b.id) === id) : undefined;
+  // Picked passages still? Ask the AI for summaries now, and say how it's going.
+  const aiNote = useAiOnOpen(own);
   const [getOpen, setGetOpen] = useState(false);
 
   if (!book) return <Text style={styles.muted}>Book not found.</Text>;
@@ -155,6 +158,7 @@ export default function BookScreen() {
           )}
 
           <Text style={styles.heading}>Key ideas</Text>
+          {own && aiNote && own.ideasBy !== 'ai' && <Text style={styles.aiNote}>{aiNote}</Text>}
           {own && (
             <Text style={styles.freeHint}>
               {own.ideasBy === 'ai'
@@ -193,6 +197,7 @@ const styles = StyleSheet.create({
   secondaryRow: { flexDirection: 'row', gap: 10 },
   fullBook: { paddingVertical: 14, borderRadius: 999, alignItems: 'center', borderWidth: 1, borderColor: colors.accent },
   fullBookText: { color: colors.accent, fontWeight: '800', fontSize: 15 },
+  aiNote: { color: colors.accent, fontSize: 14, fontWeight: '700', lineHeight: 20 },
   freeHint: { color: colors.muted, fontSize: 13, lineHeight: 19 },
   licenseLink: { color: colors.accent, fontWeight: '700' },
   secondary: { flex: 1, paddingVertical: 12, borderRadius: 999, alignItems: 'center', backgroundColor: colors.surface },
