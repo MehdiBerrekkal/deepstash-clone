@@ -77,7 +77,7 @@ export function BookCover({
         style={{ width }}>
         <View style={[styles.cover, onCardScope, { width, height, backgroundColor: topic?.color ?? colors.surface }]}>
           <View style={styles.spine} />
-          <Text style={[styles.title, { fontSize: Math.max(11, width / 8) }]} numberOfLines={5}>
+          <Text style={[styles.title, { fontSize: titleSize(book.title, width) }, favoriteKey !== null && styles.titleBesideHeart]} numberOfLines={5}>
             {book.title}
           </Text>
           <Text style={[styles.author, { fontSize: Math.max(9, width / 13) }]} numberOfLines={2}>
@@ -116,6 +116,15 @@ export function BookCover({
   );
 }
 
+/**
+ * The cover title's font size: width / 8, made smaller when its longest word wouldn't fit on one line, so
+ * "Enchiridion" never breaks in two. A bold serif letter is about half the font size wide.
+ */
+function titleSize(title: string, width: number): number {
+  const longest = Math.max(...title.split(/\s+/).map((w) => w.length));
+  return Math.max(9, Math.min(width / 8, (width - 28) / (longest * 0.52)));
+}
+
 const styles = StyleSheet.create({
   cover: {
     borderRadius: 8,
@@ -133,6 +142,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.25)',
   },
   title: { color: colors.text, fontWeight: '800', fontFamily: serif },
+  // The title starts below the heart in the top-right corner, so the heart never covers it.
+  titleBesideHeart: { marginTop: 24 },
   author: { color: colors.text, opacity: 0.8 },
   progressTrack: {
     position: 'absolute',

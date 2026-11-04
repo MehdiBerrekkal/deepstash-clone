@@ -1,8 +1,8 @@
-import { Stack } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { Stack as JSStack, TransitionPresets } from 'expo-router/js-stack';
 import { useFonts } from 'expo-font';
 import { useEffect } from 'react';
-import { Platform } from 'react-native';
+import { Platform, Pressable, Text } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { CelebrationHost } from '@/components/Celebration';
@@ -66,7 +66,11 @@ function ThemedStack() {
   if (Platform.OS === 'web') {
     return (
       <JSStack
-        screenOptions={({ route }) => ({
+        screenOptions={({ route, navigation }) => ({
+          // Opened straight from a link or after the app reloaded: nothing to go back to, so ← goes home.
+          ...(!navigation.canGoBack() && route.name !== '(tabs)'
+            ? { headerLeft: () => <HomeButton color={palette.text} /> }
+            : {}),
           ...(route.name === 'idea/[id]' ? TransitionPresets.ModalSlideFromBottomIOS : TransitionPresets.SlideFromRightIOS),
           gestureEnabled: true,
           // Its keyboard handling calls an API react-native-web doesn't have.
@@ -99,5 +103,14 @@ function ThemedStack() {
         <Stack.Screen key={s.name} name={s.name} options={s.options} />
       ))}
     </Stack>
+  );
+}
+
+/** The header's ← on a screen with nothing behind it: goes to the home screen. */
+function HomeButton({ color }: { color: string }) {
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel="Home" onPress={() => router.replace('/')} hitSlop={10} style={{ paddingHorizontal: 16, paddingVertical: 6 }}>
+      <Text style={{ color, fontSize: 24, lineHeight: 28 }}>←</Text>
+    </Pressable>
   );
 }
