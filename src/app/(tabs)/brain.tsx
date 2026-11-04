@@ -71,7 +71,7 @@ export default function BrainScreen() {
               return (
                 <View key={g} style={[styles.sessionGame, { borderColor: r ? '#3DDC97' : `${dm.color}66` }, g === nextGame && { borderColor: dm.color, backgroundColor: `${dm.color}1A` }]}>
                   <Text style={[styles.sessionGlyph, { color: r ? '#3DDC97' : dm.color }]}>{r ? '✓' : `${i + 1}`}</Text>
-                  <Text style={styles.sessionName} numberOfLines={2}>
+                  <Text style={[styles.sessionName, longestWord(gameText(gd, lang).name) > 10 && styles.sessionNameLong]} numberOfLines={2}>
                     {gameText(gd, lang).name}
                   </Text>
                   <Text style={[styles.sessionArea, { color: dm.color }]}>{r ? `${r.points} pts` : t(dm.name)}</Text>
@@ -276,6 +276,8 @@ export default function BrainScreen() {
   );
 }
 
+const longestWord = (s: string) => Math.max(...s.split(/\s+/).map((w) => w.length));
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: 16, gap: 14, paddingBottom: 40, maxWidth: 760, width: '100%', alignSelf: 'center' },
@@ -343,6 +345,8 @@ const styles = StyleSheet.create({
   sessionGame: { flex: 1, minHeight: 96, borderRadius: 16, borderWidth: 1, padding: 10, gap: 4, backgroundColor: 'rgba(255,255,255,0.03)' },
   sessionGlyph: { fontWeight: '900', fontSize: 16 },
   sessionName: { color: '#F2F4FF', fontWeight: '800', fontSize: 13, lineHeight: 17 },
+  // A long word ("Quantitative") doesn't fit the tile at full size and would be cut in two.
+  sessionNameLong: { fontSize: 11, lineHeight: 15 },
   sessionArea: { fontSize: 11, fontWeight: '800', marginTop: 'auto' },
   sessionBtn: { alignItems: 'center', paddingVertical: 15, borderRadius: 16, backgroundColor: '#B78CFF', minHeight: 50 },
   sessionBtnText: { color: '#0B0D14', fontWeight: '900', fontSize: 16 },
