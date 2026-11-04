@@ -90,25 +90,14 @@ export function paintScreen() {
   document.documentElement.style.background = color;
   document.body.style.background = color;
   document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', color));
-  edgeMarker().style.backgroundColor = color;
-}
-
-/**
- * iOS 26+ blurs the top of a home-screen web app (its "scroll edge effect") unless a fixed element with a solid
- * colour sits across the top edge; then it tints the status bar that colour instead. This marker is that element:
- * fixed, full width, over 10px tall, with a colour, but painted with background-clip: text so nothing shows.
- */
-function edgeMarker() {
-  let el = document.getElementById('ios-edge-marker');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'ios-edge-marker';
-    el.setAttribute('aria-hidden', 'true');
-    el.style.cssText =
-      'position:fixed;top:0;left:0;right:0;height:12px;pointer-events:none;z-index:2147483647;-webkit-background-clip:text;background-clip:text;color:transparent';
-    document.body.appendChild(el);
+  // iOS 26+ blurs the top of a home-screen web app (its "scroll edge effect") unless what sits at the top edge is
+  // inside a fixed, viewport-sized container with a solid background. The app's root is made that container.
+  const root = document.getElementById('root');
+  if (root) {
+    root.style.position = 'fixed';
+    root.style.inset = '0';
+    root.style.backgroundColor = color;
   }
-  return el;
 }
 
 /**
