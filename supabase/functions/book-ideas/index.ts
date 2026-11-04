@@ -88,12 +88,25 @@ Deno.serve(async (req) => {
   // Every Flash and Flash-Lite model has its own free quota, so when one is busy or used up, the next is tried.
   const models = [...new Set([...PREFERRED, ...(await flashModels(key))])].slice(0, 8);
   const ask = askFor(key, body);
+  // The function is stopped after 150 s, so each model gets at most 50 s and nothing new starts after 100 s.
+  const started = Date.now();
   for (const model of models) {
-    let res = await ask(model);
+    const left = 140_000 - (Date.now() - started);
+    if (left < 40_000) {
+      errors.push(`${model}: 503 skipped, out of time`);
+      break;
+    }
+    const timeout = Math.min(50_000, left - 10_000);
+    let res = await ask(model, timeout, true);
+    // Some models can't switch thinking off; ask those again without that setting.
+    if (res.status === 400) {
+      const text = await res.text();
+      res = /thinking/i.test(text) ? await ask(model, timeout, false) : new Response(text, { status: 400 });
+    }
     // Google's "high demand" errors usually pass within a second or two.
-    if (res.status === 503) {
+    if (res.status === 503 && Date.now() - started < 80_000) {
       await new Promise((r) => setTimeout(r, 1500));
-      res = await ask(model);
+      res = await ask(model, timeout, true);
     }
     if (!res.ok) {
       errors.push(`${model}: ${res.status} ${(await res.text()).replace(/\s+/g, ' ').slice(0, 700)}`);
@@ -116,19 +129,22 @@ Deno.serve(async (req) => {
     }
   }
   console.error(errors.join(' | '));
-  if (errors.length && errors.every((e) => / (429|503) /.test(e))) return json({ error: 'busy' }, 429);
+  if (errors.length && errors.every((e) => / (429|503|504) /.test(e))) return json({ error: 'busy' }, 429);
   return json({ error: 'failed' }, 502);
 });
 
 function askFor(key: string, body: Body) {
-  return (model: string) =>
+  return (model: string, timeoutMs: number, noThinking: boolean): Promise<Response> =>
     fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
       method: 'POST',
+      signal: AbortSignal.timeout(timeoutMs),
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: prompt(body) }] }],
         generationConfig: {
           temperature: 0.6,
+          // Thinking makes long books take minutes; these cards don't need it.
+          ...(noThinking ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
           responseMimeType: 'application/json',
           responseSchema: {
             type: 'OBJECT',
@@ -142,5 +158,5 @@ function askFor(key: string, body: Body) {
           },
         },
       }),
-    });
+    }).catch((e) => new Response(String(e?.name === 'TimeoutError' ? 'took too long' : e), { status: 504 }));
 }

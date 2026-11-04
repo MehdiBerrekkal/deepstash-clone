@@ -103,7 +103,7 @@ export function useAiOnOpen(book: OwnBook | undefined): string | null {
     if (!wants || !book || inFlight.has(book.id)) return;
     let alive = true;
     inFlight.add(book.id);
-    aiStatus.set(book.id, '✨ AI (Gemini) is writing the summaries… (10–30 seconds)');
+    aiStatus.set(book.id, '✨ AI (Gemini) is writing the summaries… (usually under a minute, longer if Google is busy)');
     (async () => {
       await Promise.resolve();
       if (alive) force((n) => n + 1);
