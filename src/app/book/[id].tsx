@@ -157,7 +157,9 @@ export default function BookScreen() {
           <Text style={styles.heading}>Key ideas</Text>
           {own && (
             <Text style={styles.freeHint}>
-              Picked out of your book by the app: the passages that carry each part&apos;s main points. Tap one to read it, then stash the cards you want to keep. Private to you.
+              {own.ideasBy === 'ai'
+                ? 'Summarised from your book by AI (Google Gemini), in its own words. Tap one to read it, then stash the cards you want to keep.'
+                : 'Picked out of your book by the app: the passages that carry each part’s main points. Sign in to have AI write them as summaries instead. Tap one to read it, then stash the cards you want to keep.'}
             </Text>
           )}
           {ideas.map((idea, i) => {

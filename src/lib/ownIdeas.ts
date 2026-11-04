@@ -15,6 +15,8 @@ export type OwnIdeasResult = {
   description: string;
   topicId: string;
   lang: 'en' | 'fr';
+  /** For each card, a longer set of the part's key passages, for an AI to summarise (see bookAi.ts). */
+  passages: { title?: string; text: string }[];
 };
 
 /** Bumped when the method changes, so older books get their ideas made again. */
@@ -24,6 +26,7 @@ const MAX_IDEAS = 12;
 const MIN_IDEAS = 5;
 const MIN_WORDS = 45;
 const MAX_WORDS = 120;
+const PASSAGE_WORDS = 700;
 
 const STOP_EN = new Set(
   `a about above after again against all also am an and any are aren as at be because been before being below between both but by can cannot could did do does doing don down during each even ever every few for from further get gets got had has have having he her here hers herself him himself his how i if in into is isn it its itself just let like made make many may me might more most much must my myself never no nor not now of off often on once one only or other ought our ours ourselves out over own per perhaps quite rather really said same say says see seem seemed shall she should since so some still such than that the their theirs them themselves then there these they thing things this those though through thus to too under until up upon us very was we well were what when where whether which while who whom whose why will with within without would yet you your yours yourself yourselves first two three new way ways time times year years man men mr mrs went come came go going know knew think thought told tell back day days long little great good old take took put asked find found give gave keep kept want wanted done whole place part case nothing less another others something anything everything`.split(
@@ -170,6 +173,7 @@ export function makeOwnIdeas(book: FullBook, opts: { kid?: boolean } = {}): OwnI
   const capitalisedOnly = (w: string) => !lowerSeen.has(w);
 
   const ideas: OwnIdea[] = [];
+  const passages: OwnIdeasResult['passages'] = [];
   const usedTitles = new Set<string>();
   parts.forEach((part, index) => {
     const freq = partFreqs[index];
@@ -202,6 +206,17 @@ export function makeOwnIdeas(book: FullBook, opts: { kid?: boolean } = {}): OwnI
       if (picked.length >= 4) break;
     }
     if (!picked.length) return;
+    // A wider pick (about 700 words) gives an AI enough to summarise the part well.
+    const wide: typeof scored = [];
+    let wideWords = 0;
+    for (const c of ranked) {
+      if (wideWords >= PASSAGE_WORDS) break;
+      if (wide.some((p) => p.s === c.s)) continue;
+      wide.push(c);
+      wideWords += wordCount(c.s);
+    }
+    wide.sort((a, b) => a.order - b.order);
+    const passageText = wide.map((p) => p.s).join(' ');
     picked.sort((a, b) => a.order - b.order);
     const body = picked
       .map((p, i) => {
@@ -226,6 +241,7 @@ export function makeOwnIdeas(book: FullBook, opts: { kid?: boolean } = {}): OwnI
     }
     usedTitles.add(title);
     ideas.push({ title, body });
+    passages.push({ title: goodTitle(part.title) ?? undefined, text: passageText });
   });
 
   const themes = [...bookFreq.keys()]
@@ -237,7 +253,7 @@ export function makeOwnIdeas(book: FullBook, opts: { kid?: boolean } = {}): OwnI
       ? `${ideas.length} idées principales tirées de votre livre par l'app. Thèmes : ${themes.join(', ')}.`
       : `${ideas.length} main ideas the app picked out of your book. It keeps coming back to ${themes.slice(0, -1).join(', ')}${themes.length > 1 ? ' and ' : ''}${themes[themes.length - 1] ?? ''}.`;
 
-  return { ideas, description, topicId: guessTopic(bookFreq, !!opts.kid), lang };
+  return { ideas, description, topicId: guessTopic(bookFreq, !!opts.kid), lang, passages };
 }
 
 /** Turns PDF page texts into the book shape the idea maker reads (one paragraph per line-run). */

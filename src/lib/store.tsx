@@ -135,7 +135,7 @@ type Store = Content &
     markBrainDaily: (part: 'game' | 'quiz') => void;
     addOwnBook: (book: OwnBook) => void;
     /** Saves the main-idea cards made for one of your books. */
-    setOwnBookIdeas: (id: string, patch: Pick<OwnBook, 'ideas' | 'ideasVersion' | 'description' | 'topicId' | 'lang'>) => void;
+    setOwnBookIdeas: (id: string, patch: Pick<OwnBook, 'ideas' | 'ideasVersion' | 'ideasBy' | 'description' | 'topicId' | 'lang'>) => void;
     removeOwnBook: (id: string) => void;
     markDownloaded: (id: string) => void;
   };
@@ -583,7 +583,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const addOwnBook = useCallback((book: OwnBook) => setUser((u) => ({ ...u, ownBooks: [book, ...u.ownBooks] })), []);
   const setOwnBookIdeas = useCallback(
-    (id: string, patch: Pick<OwnBook, 'ideas' | 'ideasVersion' | 'description' | 'topicId' | 'lang'>) =>
+    (id: string, patch: Pick<OwnBook, 'ideas' | 'ideasVersion' | 'ideasBy' | 'description' | 'topicId' | 'lang'>) =>
       setUser((u) => ({ ...u, ownBooks: u.ownBooks.map((b) => (b.id === id ? { ...b, ...patch, lang: b.lang ?? patch.lang } : b)) })),
     [],
   );

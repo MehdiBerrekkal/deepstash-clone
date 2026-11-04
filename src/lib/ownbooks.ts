@@ -30,6 +30,8 @@ export type OwnBook = {
   /** Main-idea cards the app made from the book's text (see ownIdeas.ts), shown like a library book's key ideas. */
   ideas?: { title: string; body: string }[];
   ideasVersion?: number;
+  /** "ai": written by Gemini in its own words; otherwise passages the app picked from the book. */
+  ideasBy?: 'ai' | 'picked';
   /** A short blurb for the book's page, and the topic the ideas sit under. */
   description?: string;
   topicId?: string;

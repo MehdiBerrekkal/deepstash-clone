@@ -58,8 +58,9 @@ async function pdfBytes(id: string, source: 'own' | 'private', ownBooks: ReturnT
 /** Your own PDF: reads its text once (after the first pages are drawn) and makes its main-idea cards. Returns a note to show. */
 function usePdfIdeas(api: PdfApi | null, count: number, ownBook: OwnBook | undefined, queueRef: { current: Promise<unknown> }) {
   const makeIdeas = useMakeOwnIdeas();
+  const { account } = useStore();
   const [note, setNote] = useState<string | null>(null);
-  const wants = !!ownBook && needsIdeas(ownBook);
+  const wants = !!ownBook && needsIdeas(ownBook, !!account);
   useEffect(() => {
     if (!api || !count || !wants || !ownBook) return;
     let alive = true;
@@ -69,6 +70,7 @@ function usePdfIdeas(api: PdfApi | null, count: number, ownBook: OwnBook | undef
         (texts) => {
           if (!alive) return;
           const n = makeIdeas(ownBook, pdfPagesAsBook(ownBook.title, texts));
+          if (ownBook.ideas?.length && !n) return;
           setNote(n ? `💡 ${n} main ideas ready` : 'No text found in this PDF to make ideas from (it may be scanned images).');
           timer = setTimeout(() => setNote(null), 5000);
         },
