@@ -18,6 +18,7 @@ import { loadPdfData, ownSourceId, type OwnBook } from '@/lib/ownbooks';
 import { pdfPagesAsBook } from '@/lib/ownIdeas';
 import { needsIdeas, useMakeOwnIdeas } from '@/lib/useOwnIdeas';
 import { setScreenColor } from '@/lib/safeArea';
+import { usePushOrBack } from '@/lib/nav';
 import { useStore } from '@/lib/store';
 
 const SPREAD_MIN_WIDTH = 700;
@@ -96,6 +97,7 @@ function usePdfIdeas(api: PdfApi | null, count: number, ownBook: OwnBook | undef
 function PdfBook({ id, source, forceAi }: { id: string; source: 'own' | 'private'; forceAi: boolean }) {
   const readerId = `pdf:${source}:${id}`;
   const { ownBooks, readerSettings, readerProgress, setReaderPosition } = useStore();
+  const pushOrBack = usePushOrBack();
   const ownBook = source === 'own' ? ownBooks.find((b) => b.id === id) : undefined;
   const title = source === 'own' ? ownBook?.title ?? 'PDF' : classicById[id]?.title ?? 'PDF';
 
@@ -277,7 +279,7 @@ function PdfBook({ id, source, forceAi }: { id: string; source: 'own' | 'private
             {title}
           </Text>
           {!!ownBook?.ideas?.length && (
-            <Pressable accessibilityLabel="Main ideas" onPress={() => router.push({ pathname: '/book/[id]', params: { id: ownSourceId(ownBook.id) } })} style={styles.iconButton}>
+            <Pressable accessibilityLabel="Main ideas" onPress={() => pushOrBack({ pathname: '/book/[id]', params: { id: ownSourceId(ownBook.id) } })} style={styles.iconButton}>
               <Text style={[styles.zoom, { color: theme.chromeText }]}>💡</Text>
             </Pressable>
           )}
@@ -293,7 +295,7 @@ function PdfBook({ id, source, forceAi }: { id: string; source: 'own' | 'private
       )}
       {ideasNote && (
         <Pressable
-          onPress={() => ownBook?.ideas?.length && router.push({ pathname: '/book/[id]', params: { id: ownSourceId(ownBook.id) } })}
+          onPress={() => ownBook?.ideas?.length && pushOrBack({ pathname: '/book/[id]', params: { id: ownSourceId(ownBook.id) } })}
           style={[styles.ideasNote, { top: insets.top + 64, backgroundColor: theme.chrome, borderColor: theme.rule }]}>
           <Text style={{ color: theme.chromeText, fontWeight: '700', textAlign: 'center' }}>{ideasNote}</Text>
         </Pressable>

@@ -8,6 +8,7 @@ import { Shelf } from '@/components/Shelf';
 import { classicBySourceId, classicReaderId } from '@/lib/fullbook';
 import { ownSourceId } from '@/lib/ownbooks';
 import { useAiOnOpen } from '@/lib/useOwnIdeas';
+import { usePushOrBack } from '@/lib/nav';
 import { useStore } from '@/lib/store';
 import { colors, onCardScope, readMinutes, serif, sourceKindLabel } from '@/lib/theme';
 
@@ -41,6 +42,7 @@ function GetThisBook({ title, author }: { title: string; author: string }) {
 export default function BookScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { sourceById, ideasBySource, topicById, bookProgress, sources, readerProgress, ownBooks, account } = useStore();
+  const pushOrBack = usePushOrBack();
   const book = sourceById[id];
   // One of your own books (its ideas were made by the app from its text).
   const own = id?.startsWith('own-') ? ownBooks.find((b) => ownSourceId(b.id) === id) : undefined;
@@ -59,8 +61,8 @@ export default function BookScreen() {
   const openOwn = () =>
     own &&
     (own.kind === 'epub'
-      ? router.push({ pathname: '/reader/[id]', params: { id: own.id, kind: 'own' } })
-      : router.push({ pathname: '/pdfbook/[id]', params: { id: own.id, source: 'own' } }));
+      ? pushOrBack({ pathname: '/reader/[id]', params: { id: own.id, kind: 'own' } })
+      : pushOrBack({ pathname: '/pdfbook/[id]', params: { id: own.id, source: 'own' } }));
   const fullText = classicBySourceId[book.id];
   const fullProgress = fullText ? readerProgress[classicReaderId(fullText.id)] : undefined;
 
@@ -102,7 +104,7 @@ export default function BookScreen() {
             </Pressable>
           ) : fullText ? (
             <Pressable
-              onPress={() => router.push({ pathname: '/reader/[id]', params: { id: fullText.id, kind: 'classic' } })}
+              onPress={() => pushOrBack({ pathname: '/reader/[id]', params: { id: fullText.id, kind: 'classic' } })}
               style={styles.fullBook}>
               <Text style={styles.fullBookText}>
                 📚 {fullProgress ? `Continue the full book · ${Math.round(fullProgress.fraction * 100)}%` : 'Read the full book · free'}

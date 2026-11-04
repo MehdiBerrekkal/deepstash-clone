@@ -29,6 +29,7 @@ import { celebrate } from '@/lib/celebrate';
 import { setScreenColor } from '@/lib/safeArea';
 import { searchBook, type BookHit } from '@/lib/search';
 import { CHARS_PER_WORD, DEFAULT_WPM, formatDuration, readingSpeed } from '@/lib/stats';
+import { usePushOrBack } from '@/lib/nav';
 import { useStore } from '@/lib/store';
 import type { Highlight, ReaderFont, ReaderPosition, ReaderTheme } from '@/lib/types';
 import { WORD_TAP_ATTR, wordAtPress } from '@/lib/wordAt';
@@ -71,6 +72,7 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
   const readerId = `${kind === 'own' ? 'own' : 'classic'}:${id}`;
   const { readerSettings, setReaderSettings, readerProgress, setReaderPosition, bookmarks, toggleBookmark, removeBookmark, highlights } = useStore();
   const { logReading, markReaderFinished, readingLog, finishedReaders, ownBooks } = useStore();
+  const pushOrBack = usePushOrBack();
   const [rawBook, setBook] = useState<FullBook | null>(null);
   // Typeset once, before paginating, so page offsets line up with the text that's drawn.
   const book = useMemo<FullBook | null>(
@@ -429,7 +431,7 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
             <Text style={[styles.icon, { color: audio.sentence ? '#B5492F' : theme.chromeText }]}>{audio.playing ? '❚❚' : '🎧'}</Text>
           </Pressable>
           {kind === 'own' && !!ownBooks.find((b) => b.id === id)?.ideas?.length && (
-            <Pressable accessibilityLabel="Main ideas" onPress={() => router.push({ pathname: '/book/[id]', params: { id: ownSourceId(id) } })} style={styles.iconButton}>
+            <Pressable accessibilityLabel="Main ideas" onPress={() => pushOrBack({ pathname: '/book/[id]', params: { id: ownSourceId(id) } })} style={styles.iconButton}>
               <Text style={[styles.icon, { color: theme.chromeText, fontSize: 18 }]}>💡</Text>
             </Pressable>
           )}
