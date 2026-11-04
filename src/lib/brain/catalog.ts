@@ -1,5 +1,6 @@
 import { int, numberOptions, pick, shuffle, type Item, type Rng, type Skill } from '@/lib/brain/core';
 import { GAMES_FR } from '@/lib/brain/gamesFr';
+import { ADULT_ONLY_GAMES } from '@/lib/audience';
 import { makeAnalogy, makeMatrix } from '@/lib/brain/figures';
 import { makeLetters, makeNumberMatrix, makeSeries, makeSeating, makeSyllogism, makeVerbal, makeWordProblem } from '@/lib/brain/reasoning';
 import { makeCubeNet, makeFolding, makeRotation2D } from '@/lib/brain/spatial';
@@ -117,7 +118,7 @@ export const GAMES: GameDef[] = [
   { id: 'folding', name: 'Paper Folding', skill: 'spatial', type: 'items', make: makeFolding, items: 8, perItem: 60, test: true, blurb: 'Fold, punch, unfold', howTo: 'A square sheet is folded as shown, then holes are punched through all the layers. Picture unfolding it: every hole is mirrored across each fold.', why: 'Spatial visualisation: mentally transforming a shape step by step.' },
   { id: 'cubenet', name: 'Cube Nets', skill: 'spatial', type: 'items', make: makeCubeNet, items: 8, perItem: 60, test: true, blurb: 'Which cube does it fold into?', howTo: 'The flat net folds into a cube. Choose the cube view that is possible. Faces two apart in a straight line end up opposite, and the order of faces must not be mirrored.', why: 'Spatial visualisation: folding a flat pattern into 3D in your head.' },
   { id: 'rotation3d', name: 'Mental Rotation', skill: 'spatial', type: 'items', make: makeRotation2D, items: 10, perItem: 45, test: true, blurb: 'Turned, or flipped over?', howTo: 'Find the shape that is the target turned around on the page, without flipping it over. The others are mirror images or have a square moved. Pick a distinctive corner of the target and look for it in each option.', why: 'Mental rotation: keeping an object’s structure while turning it.' },
-  { id: 'nback', name: 'Dual N-Back', skill: 'memory', type: 'nback', blurb: 'Working memory at its limit', howTo: 'A square lights up on the grid while a letter is spoken. Press “Position” when the square is where it was N steps back, and “Sound” when the letter is the same as N steps back. N grows as you improve.', why: 'Working memory: updating what you hold in mind, second by second.' },
+  { id: 'nback', name: 'Dual N-Back', skill: 'memory', type: 'nback', blurb: 'Working memory at its limit', howTo: 'A square lights up on the grid with a shape inside it. Press “Position” when the square is where it was N steps back, and “Shape” when the shape is the same as N steps back. N grows as you improve.', why: 'Working memory: updating what you hold in mind, second by second.' },
   { id: 'span', name: 'Digit Span', skill: 'memory', type: 'span', blurb: 'Forwards, then backwards', howTo: 'Digits appear one at a time. Type them back in the same order; at higher levels, in reverse order. The list gets longer each time you succeed.', why: 'Short-term memory span, and mental manipulation when reversed.' },
   { id: 'corsi', name: 'Block Span', skill: 'memory', type: 'corsi', blurb: 'Remember a path of blocks', howTo: 'Blocks light up one after another. Tap them in the same order. The path grows by one after each success.', why: 'Visuospatial memory: holding a path in mind.' },
   { id: 'code', name: 'Symbol Coding', skill: 'focus', type: 'sprint', make: makeCode, seconds: 60, blurb: 'Processing speed, 60 seconds', howTo: 'Use the key to find the number paired with the symbol, as fast as you can. Accuracy counts as much as speed.', why: 'Processing speed: how fast you look up and act on information.' },
@@ -129,19 +130,23 @@ export const GAMES: GameDef[] = [
 export const gameById = Object.fromEntries(GAMES.map((g) => [g.id, g])) as Record<string, GameDef>;
 
 /** Today's daily-challenge game (date as "2026-10-30"). */
-export function dailyGame(date: string) {
+export function dailyGame(date: string, kid = false) {
   let h = 0;
   for (const c of date) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-  return GAMES[h % GAMES.length];
+  const games = gamesFor(kid);
+  return games[h % games.length];
 }
 
+/** The games shown to kids or adults: kids skip the ones built on abstract nonsense words and money maths. */
+export const gamesFor = (kid: boolean) => (kid ? GAMES.filter((g) => !ADULT_ONLY_GAMES.has(g.id)) : GAMES);
+
 /** Today's three-game session: one game from each of your two weakest areas, then one from somewhere else. */
-export function sessionGames(skills: Partial<Record<Skill, number>>, played: Record<string, number>, date: string): string[] {
+export function sessionGames(skills: Partial<Record<Skill, number>>, played: Record<string, number>, date: string, kid = false): string[] {
   let h = 0;
   for (const c of date) h = (h * 31 + c.charCodeAt(0)) >>> 0;
   const areas = (['logic', 'spatial', 'memory', 'focus', 'math', 'verbal'] as Skill[]).sort((a, b) => (skills[a] ?? -1) - (skills[b] ?? -1) || ((h >> a.length) & 1) - 0.5);
   const pickFrom = (skill: Skill, salt: number) => {
-    const games = GAMES.filter((g) => g.skill === skill).sort((a, b) => (played[a.id] ?? 0) - (played[b.id] ?? 0));
+    const games = gamesFor(kid).filter((g) => g.skill === skill).sort((a, b) => (played[a.id] ?? 0) - (played[b.id] ?? 0));
     const least = games.filter((g) => (played[g.id] ?? 0) === (played[games[0].id] ?? 0));
     return least[(h + salt) % least.length].id;
   };

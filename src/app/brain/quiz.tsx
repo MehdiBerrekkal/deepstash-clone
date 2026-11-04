@@ -7,7 +7,7 @@ import { displayFont } from '@/lib/bookType';
 import { seeded, type Rng } from '@/lib/brain/core';
 import { sfx } from '@/lib/brain/sfx';
 import { celebrate } from '@/lib/celebrate';
-import { QUIZ, QUIZ_CATEGORIES, type QuizCategory, type QuizQuestion } from '@/data/brain/quiz';
+import { QUIZ, QUIZ_CATEGORIES, isKidQuestion, type QuizCategory, type QuizQuestion } from '@/data/brain/quiz';
 import { haptic } from '@/lib/haptics';
 import { detectLang, voiceForLanguage } from '@/lib/lang';
 import { speakOnce } from '@/lib/listen';
@@ -28,9 +28,10 @@ function shuffle<T>(rng: Rng, xs: T[]): T[] {
 }
 
 /** A set of questions: easy first, harder later. The daily set is three questions everyone gets that day. */
-function buildSet(category: QuizCategory | 'daily', seed: string, hard: boolean): QuizQuestion[] {
+function buildSet(category: QuizCategory | 'daily', seed: string, hard: boolean, kid: boolean): QuizQuestion[] {
   const rng = seeded(seed);
-  if (category === 'daily') return shuffle(rng, QUIZ.filter((q) => q.category !== 'culture' && q.level === 3)).slice(0, 3);
+  // Kids get their daily questions from the kids' sets, a little easier.
+  if (category === 'daily') return shuffle(rng, QUIZ.filter((q) => (kid ? isKidQuestion(q) && q.category !== 'kids-fr' && q.level >= 2 : !isKidQuestion(q) && q.category !== 'culture' && q.level === 3))).slice(0, 3);
   const pool = QUIZ.filter((q) => q.category === category);
   const by = (l: number, n: number) => shuffle(rng, pool.filter((q) => q.level === l)).slice(0, n);
   const set = hard ? [...by(2, 4), ...by(3, 6)] : [...by(1, 2), ...by(2, 4), ...by(3, 4)];
@@ -49,12 +50,12 @@ function shuffled(q: QuizQuestion, rng: Rng) {
 export default function QuizScreen() {
   const { category, mode } = useLocalSearchParams<{ category: QuizCategory | 'daily'; mode?: 'standard' | 'timed' | 'hard' }>();
   const timed = mode === 'timed';
-  const { recordBrain, markBrainDaily, brain, readerSettings } = useStore();
+  const { recordBrain, markBrainDaily, brain, readerSettings, audience } = useStore();
   const daily = category === 'daily';
   const meta = QUIZ_CATEGORIES.find((c) => c.id === category);
   const french = meta?.lang === 'fr';
-  const [seed] = useState(() => (daily ? `quiz-${localDate()}` : `${category}-${Math.random()}`));
-  const [questions] = useState(() => buildSet(category, seed, mode === 'hard'));
+  const [seed] = useState(() => (daily ? `quiz-${localDate()}${audience === 'kid' ? '-kid' : ''}` : `${category}-${Math.random()}`));
+  const [questions] = useState(() => buildSet(category, seed, mode === 'hard', audience === 'kid'));
   const [left, setLeft] = useState(QUESTION_SECONDS);
   const [rng] = useState(() => seeded(`${seed}-options`));
   const [order] = useState(() => questions.map((q) => shuffled(q, rng)));

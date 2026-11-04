@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import { bundledContent, type Content } from '@/data/content';
 import { rankFeed, type FeedItem } from '@/lib/feed';
@@ -10,11 +10,16 @@ import { supabase } from '@/lib/supabase';
 import type { Appearance } from '@/lib/theme';
 import { mergeUser } from '@/lib/backup';
 import type { Skill } from '@/lib/brain/core';
+import { isKidId, type Audience } from '@/lib/audience';
+import { loadCloud, saveCloud, type Account } from '@/lib/auth';
 import type {
   Bookmark, BookProgress, CardKind, DayLog, Highlight, Idea, ReaderPosition, ReaderProgress, ReaderSettings, Source, Stash, Streak, Topic,
 } from '@/lib/types';
 
 const STORAGE_KEY = 'deepstash-clone/user-state/v1';
+const keyFor = (accountId?: string | null) => (accountId ? `${STORAGE_KEY}/${accountId}` : STORAGE_KEY);
+/** Set by the sign-up screen (to the new email) when the person wants this device's guest progress in their account. */
+export const IMPORT_KEY = 'deepstash-clone/import-guest';
 const MAX_READ_HISTORY = 5000;
 
 type UserState = {
@@ -59,6 +64,14 @@ type UserState = {
   lastBackup?: string;
   /** The interface language: follow the device, or English / French. */
   uiLanguage?: 'auto' | 'en' | 'fr';
+  /** Kid or adult, chosen on the first screen: decides which topics, books, games and quizzes appear. */
+  audience?: Audience;
+  /** Birth year, asked by the IQ-style test for its age norms. */
+  birthYear?: number;
+  /** Device guest only: chose to use the app without an account. */
+  guest?: boolean;
+  /** When this state was last saved (to pick the newer of the device and online copies). */
+  savedAt?: string;
 };
 
 type Store = Content &
@@ -108,6 +121,16 @@ type Store = Content &
     importUser: (data: Record<string, unknown>, mode: 'merge' | 'replace') => void;
     markBackedUp: () => void;
     setUiLanguage: (l: 'auto' | 'en' | 'fr') => void;
+    setAudience: (a: Audience) => void;
+    /** The signed-in account, or null for the device's guest. */
+    account: Account | null;
+    /** A password-reset link was just opened: the app should ask for a new password. */
+    recovering: boolean;
+    setRecovering: (on: boolean) => void;
+    continueAsGuest: () => void;
+    setBirthYear: (y: number) => void;
+    /** All topics and cards, for both kids and adults (stashes may hold either). */
+    allContent: Content;
     markBrainHowTo: (id: string) => void;
     markBrainDaily: (part: 'game' | 'quiz') => void;
     addOwnBook: (book: OwnBook) => void;
@@ -143,7 +166,21 @@ export type BrainState = {
 };
 export type BrainRun = { id: string; n: number; right: number; points: number; d: number; streak: number; hardest: number; seconds: number; history: boolean[]; saved: number };
 export type BrainSession = { date: string; games: string[]; done: Record<string, { points: number; right: number; total: number; xp: number; from: number; to: number }> };
-export type BrainTest = { date: string; mode: 'full' | 'quick'; iq: number; correct: number; total: number; seconds: number; domains: Partial<Record<Skill, { right: number; total: number }>> };
+export type BrainTest = {
+  date: string;
+  mode: 'full' | 'quick';
+  iq: number;
+  correct: number;
+  total: number;
+  seconds: number;
+  domains: Partial<Record<Skill, { right: number; total: number }>>;
+  /** Newer tests: the age the score was normed for, a 95% range, index scores and subtest scaled scores (1-19). */
+  age?: number;
+  range?: [number, number];
+  indexes?: Record<string, number>;
+  subtests?: Record<string, number>;
+  version?: number;
+};
 export type BrainResult = { id: string; skill: Skill; points: number; perf: number; xp: number; rating?: number; seconds?: number };
 
 const EMPTY_DAY: DayLog = { seconds: 0, pages: 0, words: 0, cards: 0 };
@@ -198,7 +235,8 @@ function bumpStreak(streak: Streak): Streak {
 }
 
 async function fetchRemoteContent(): Promise<Content | null> {
-  if (!supabase) return null;
+  // The database holds accounts; it only replaces the bundled cards when it has been filled with content on purpose.
+  if (!supabase || process.env.EXPO_PUBLIC_SUPABASE_CONTENT !== '1') return null;
   const [topics, sources, ideas] = await Promise.all([
     supabase.from('topics').select('id, name, emoji, color').order('name'),
     supabase.from('sources').select('id, title, author, kind'),
@@ -216,9 +254,9 @@ async function fetchRemoteContent(): Promise<Content | null> {
     return { ...bundled, ...s, topicId, description: bundled?.description ?? '' };
   });
   return {
-    topics: topics.data,
-    sources: remoteSources,
-    ideas: [...remoteIdeas, ...bundledContent.ideas.filter((i) => i.kind !== 'idea')],
+    topics: [...topics.data, ...bundledContent.topics.filter((t) => isKidId(t.id))],
+    sources: [...remoteSources, ...bundledContent.sources.filter((x) => isKidId(x.topicId))],
+    ideas: [...remoteIdeas, ...bundledContent.ideas.filter((i) => i.kind !== 'idea' || isKidId(i.topicId))],
   };
 }
 
@@ -227,32 +265,96 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserState>(initialUserState);
   const [ready, setReady] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const raw = await AsyncStorage.getItem(STORAGE_KEY);
-        const stored = raw ? JSON.parse(raw) : {};
-        const saved: UserState = { ...initialUserState, ...stored };
-        // Books saved as "Want to read" before favorites existed become favorites.
-        if (!stored.favoriteBooks && Array.isArray(stored.savedBookIds)) saved.favoriteBooks = stored.savedBookIds.map((id: string) => `book:${id}`);
-        delete (saved as Partial<UserState> & { savedBookIds?: string[] }).savedBookIds;
-        setUser({ ...saved, streak: bumpStreak(saved.streak) });
-      } catch {
-        setUser((u) => ({ ...u, streak: bumpStreak(u.streak) }));
+  // Each account has its own saved state (the device guest keeps the original key), so people sharing a device never
+  // see each other's settings or progress. `owner` is the key the state in memory belongs to.
+  const [account, setAccount] = useState<Account | null>(null);
+  const [recovering, setRecovering] = useState(false);
+  const owner = useRef<string | null>(null);
+  const accountRef = useRef<Account | null>(null);
+  const cloudTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const loadFor = useCallback(async (acc: Account | null) => {
+    setReady(false);
+    owner.current = null;
+    const key = keyFor(acc?.id);
+    let stored: Record<string, unknown> = {};
+    let hadLocal = false;
+    try {
+      const raw = await AsyncStorage.getItem(key);
+      if (raw) {
+        stored = JSON.parse(raw);
+        hadLocal = true;
       }
-      setReady(true);
-    })();
-    fetchRemoteContent().then((remote) => remote && setContent(remote));
+    } catch {
+      // unreadable: start fresh
+    }
+    if (acc) {
+      const cloud = await loadCloud(acc.id).catch(() => null);
+      if (cloud && (!stored.savedAt || cloud.updatedAt > String(stored.savedAt))) stored = cloud.data;
+      else if (!cloud && !hadLocal) {
+        // A brand-new account: bring this device's guest progress along only if the person asked for it at sign-up.
+        const want = await AsyncStorage.getItem(IMPORT_KEY).catch(() => null);
+        if (want && want.toLowerCase() === acc.email.toLowerCase()) {
+          const guest = await AsyncStorage.getItem(STORAGE_KEY).catch(() => null);
+          if (guest) stored = { ...JSON.parse(guest), guest: undefined };
+        }
+        AsyncStorage.removeItem(IMPORT_KEY).catch(() => {});
+      }
+    }
+    const saved: UserState = { ...initialUserState, ...stored };
+    // Books saved as "Want to read" before favorites existed become favorites.
+    if (!stored.favoriteBooks && Array.isArray(stored.savedBookIds)) saved.favoriteBooks = (stored.savedBookIds as string[]).map((id) => `book:${id}`);
+    delete (saved as Partial<UserState> & { savedBookIds?: string[] }).savedBookIds;
+    owner.current = key;
+    setUser({ ...saved, streak: bumpStreak(saved.streak) });
+    setReady(true);
   }, []);
 
   useEffect(() => {
-    if (!ready) return;
-    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(user)).catch(() => {});
+    fetchRemoteContent().then((remote) => remote && setContent(remote));
+    if (!supabase) {
+      Promise.resolve().then(() => loadFor(null));
+      return;
+    }
+    const toAccount = (s: { user: { id: string; email?: string } } | null): Account | null => (s ? { id: s.user.id, email: s.user.email ?? '' } : null);
+    let first = true;
+    const switchTo = (a: Account | null) => {
+      if (!first && (accountRef.current?.id ?? null) === (a?.id ?? null)) return;
+      first = false;
+      accountRef.current = a;
+      setAccount(a);
+      loadFor(a);
+    };
+    supabase.auth.getSession().then(({ data }) => switchTo(toAccount(data.session)), () => switchTo(null));
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') setRecovering(true);
+      if (event === 'INITIAL_SESSION') return;
+      // Outside the auth callback, as Supabase recommends for follow-up calls.
+      setTimeout(() => switchTo(toAccount(session)), 0);
+    });
+    return () => sub.subscription.unsubscribe();
+  }, [loadFor]);
+
+  useEffect(() => {
+    if (!ready || !owner.current) return;
+    const payload = { ...user, savedAt: new Date().toISOString() };
+    AsyncStorage.setItem(owner.current, JSON.stringify(payload)).catch(() => {});
+    const acc = accountRef.current;
+    if (acc && owner.current === keyFor(acc.id)) {
+      // Online copy, a few seconds after the last change.
+      if (cloudTimer.current) clearTimeout(cloudTimer.current);
+      cloudTimer.current = setTimeout(() => saveCloud(acc.id, payload as unknown as Record<string, unknown>).catch(() => {}), 2500);
+    }
   }, [user, ready]);
 
+  const continueAsGuest = useCallback(() => setUser((u) => ({ ...u, guest: true })), []);
+
+  // Kids and adults keep their own followed topics: setting one group's leaves the other's alone.
   const setFollowedTopics = useCallback((ids: string[]) => {
-    setUser((u) => ({ ...u, followedTopicIds: ids }));
+    setUser((u) => ({ ...u, followedTopicIds: [...u.followedTopicIds.filter((id) => isKidId(id) !== (u.audience === 'kid')), ...ids] }));
   }, []);
+  const setAudience = useCallback((audience: Audience) => setUser((u) => ({ ...u, audience })), []);
+  const setBirthYear = useCallback((birthYear: number) => setUser((u) => ({ ...u, birthYear })), []);
 
   const createStash = useCallback((name: string) => {
     const stash: Stash = { id: `${Date.now()}`, name: name.trim(), ideaIds: [], createdAt: new Date().toISOString() };
@@ -522,9 +624,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const newLeft = Math.max(0, NEW_PER_DAY - (user.reviewNew.date === date ? user.reviewNew.count : 0));
     const fresh = items.filter((k) => !user.reviews[k]).slice(0, newLeft);
     const reviewQueue = [...due, ...fresh];
+    // Only the chosen group's topics, cards and idea books are listed; the indexes keep everything.
+    const kid = user.audience === 'kid';
+    const mine = (topicId: string) => isKidId(topicId) === kid;
     return {
-      ...content,
+      topics: content.topics.filter((t) => mine(t.id)),
+      sources: content.sources.filter((s) => mine(s.topicId)),
+      ideas: content.ideas.filter((i) => mine(i.topicId)),
+      allContent: content,
       ...user,
+      followedTopicIds: user.followedTopicIds.filter(mine),
+      setAudience,
+      setBirthYear,
+      account,
+      recovering,
+      setRecovering,
+      continueAsGuest,
       today,
       ready,
       ...indexes,
@@ -573,7 +688,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [
     content, user, ready, indexes, setFollowedTopics, createStash, deleteStash, toggleInStash, toggleLike, markRead, setBookPosition,
     finishBook, toggleFavoriteBook, setDailyGoal, resetProgress, setReaderSettings, setReaderPosition, toggleBookmark, removeBookmark,
-    saveClip, addHighlight, updateHighlight, removeHighlight, logReading, setMinuteGoal, markReaderFinished, gradeReview, setNotInterested, setAppearance, recordBrain, addBrainTest, setBrainSound, patchBrain, exportUser, importUser, markBackedUp, setUiLanguage, markBrainHowTo, markBrainDaily, addOwnBook, removeOwnBook, markDownloaded,
+    saveClip, addHighlight, updateHighlight, removeHighlight, logReading, setMinuteGoal, markReaderFinished, gradeReview, setNotInterested, setAppearance, recordBrain, addBrainTest, setBrainSound, patchBrain, exportUser, importUser, markBackedUp, setUiLanguage, markBrainHowTo, markBrainDaily, addOwnBook, removeOwnBook, markDownloaded, setAudience, setBirthYear, account, recovering, continueAsGuest,
   ]);
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

@@ -19,6 +19,11 @@ jobs:
     runs-on: ubuntu-latest
     env:
       WEB_BASE_URL: /deepstash-clone
+      # Accounts (log in, sign up, password reset) on the "deepstach" Supabase project. Both values are public by design:
+      # they ship inside the web app, and row-level security keeps each account's data private.
+      # Repository variables SUPABASE_URL / SUPABASE_ANON_KEY override them.
+      EXPO_PUBLIC_SUPABASE_URL: ${{ vars.SUPABASE_URL || 'https://zhrdgfpkmbjzmjmudvis.supabase.co' }}
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY || 'sb_publishable_oxHOC1fUE0IkqHJ3ja2QHg_DvDG2NTZ' }}
     steps:
       - uses: actions/checkout@v4
 

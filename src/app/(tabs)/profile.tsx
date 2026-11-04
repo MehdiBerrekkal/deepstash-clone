@@ -12,6 +12,7 @@ import { classicById } from '@/lib/fullbook';
 import { calendarWeeks, compactNumber, formatDuration, minutesOf, readingSpeed, readingStreak } from '@/lib/stats';
 import { localDate, useStore } from '@/lib/store';
 import { colors, type Appearance } from '@/lib/theme';
+import { accountsEnabled, friendlyError, sendReset, signOut } from '@/lib/auth';
 import { useT } from '@/lib/i18n';
 
 const GOALS = [5, 10, 20, 30];
@@ -30,7 +31,8 @@ export default function ProfileScreen() {
   } = useStore();
   const [confirmReset, setConfirmReset] = useState(false);
   const t = useT();
-  const { uiLanguage, setUiLanguage } = useStore();
+  const { uiLanguage, setUiLanguage, audience, setAudience, account } = useStore();
+  const [accountNote, setAccountNote] = useState<string | null>(null);
 
   const fullFinished = Object.keys(finishedReaders)
     .filter((key) => key.startsWith('classic:') && classicById[key.slice(8)])
@@ -87,6 +89,53 @@ export default function ProfileScreen() {
             ))}
           </View>
         </View>
+      </View>
+
+      {accountsEnabled && (
+        <View style={styles.card}>
+          <Text style={styles.heading}>🔐 {t('Account')}</Text>
+          {account ? (
+            <>
+              <Text style={styles.muted}>{t('Logged in as {email}. Your settings and progress are saved to this account.', { email: account.email })}</Text>
+              <View style={styles.segment}>
+                <Pressable
+                  accessibilityLabel="Change password"
+                  onPress={() => sendReset(account.email).then(() => setAccountNote(t('We sent a link to {email} to choose a new password.', { email: account.email })), (e) => setAccountNote(friendlyError(e)))}
+                  style={styles.segmentItem}>
+                  <Text style={styles.segmentText}>{t('Change password')}</Text>
+                </Pressable>
+                <Pressable accessibilityLabel="Log out" onPress={() => signOut().then(() => router.replace('/auth'))} style={styles.segmentItem}>
+                  <Text style={styles.segmentText}>{t('Log out')}</Text>
+                </Pressable>
+              </View>
+              {accountNote && <Text style={styles.muted}>{accountNote}</Text>}
+            </>
+          ) : (
+            <>
+              <Text style={styles.muted}>{t('You’re using the app without an account, so everything stays on this device. Create one to keep your own private settings and progress on any device.')}</Text>
+              <Pressable accessibilityLabel="Log in or create an account" onPress={() => router.push('/auth')} style={[styles.segmentItem, styles.segmentOn]}>
+                <Text style={[styles.segmentText, styles.segmentTextOn]}>{t('Log in or create an account')}</Text>
+              </Pressable>
+            </>
+          )}
+        </View>
+      )}
+
+      <View style={styles.card}>
+        <Text style={styles.heading}>👤 {t('Who is using the app?')}</Text>
+        <View style={styles.segment}>
+          {(['kid', 'adult'] as const).map((a) => (
+            <Pressable
+              key={a}
+              accessibilityLabel={a === 'kid' ? 'Kid mode' : 'Adult mode'}
+              accessibilityState={{ selected: audience === a }}
+              onPress={() => setAudience(a)}
+              style={[styles.segmentItem, audience === a && styles.segmentOn]}>
+              <Text style={[styles.segmentText, audience === a && styles.segmentTextOn]}>{a === 'kid' ? `🧒 ${t('Kid')}` : `🧑 ${t('Adult')}`}</Text>
+            </Pressable>
+          ))}
+        </View>
+        <Text style={styles.muted}>{t('Changes the topics and cards, the Library shelves, the games and quizzes, and the age norms of the IQ-style test.')}</Text>
       </View>
 
       <View style={styles.card}>

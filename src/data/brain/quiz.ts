@@ -2,16 +2,22 @@
  * Original quiz questions for the Brain section. Each entry: [level 1-3, question, options, index of the answer,
  * short explanation]. Kept as plain data so more can be added easily.
  */
-export type QuizCategory = 'logic' | 'verbal' | 'numerical' | 'spatial' | 'general' | 'culture';
+export type QuizCategory = 'logic' | 'verbal' | 'numerical' | 'spatial' | 'general' | 'culture' | 'kids-puzzles' | 'kids-words' | 'kids-numbers' | 'kids-world' | 'kids-fr';
 type Row = [1 | 2 | 3, string, string[], number, string];
 
-export const QUIZ_CATEGORIES: { id: QuizCategory; name: string; emoji: string; blurb: string; skill: 'logic' | 'verbal' | 'math' | 'spatial'; lang?: 'fr' }[] = [
+export const QUIZ_CATEGORIES: { id: QuizCategory; name: string; emoji: string; blurb: string; skill: 'logic' | 'verbal' | 'math' | 'spatial'; lang?: 'fr'; kid?: boolean }[] = [
   { id: 'logic', name: 'Logic', emoji: '🧩', blurb: 'Deductions, syllogisms and tricky reasoning', skill: 'logic' },
   { id: 'verbal', name: 'Words', emoji: '🔤', blurb: 'Analogies, meanings and odd words out', skill: 'verbal' },
   { id: 'numerical', name: 'Numbers', emoji: '🔢', blurb: 'Patterns, percentages and quick reasoning', skill: 'math' },
   { id: 'spatial', name: 'Space', emoji: '🧊', blurb: 'Shapes, folds, turns and directions', skill: 'spatial' },
   { id: 'general', name: 'Knowledge', emoji: '🌍', blurb: 'Science, history, geography and more', skill: 'verbal' },
   { id: 'culture', name: 'Culture générale', emoji: '🇫🇷', blurb: 'Questions en français', skill: 'verbal', lang: 'fr' },
+  // Kid mode shows only these.
+  { id: 'kids-puzzles', name: 'Brain teasers', emoji: '🧩', blurb: 'Little puzzles to make you think', skill: 'logic', kid: true },
+  { id: 'kids-words', name: 'Word fun', emoji: '🔤', blurb: 'Opposites, pairs and odd ones out', skill: 'verbal', kid: true },
+  { id: 'kids-numbers', name: 'Number fun', emoji: '🔢', blurb: 'Patterns, sums and counting tricks', skill: 'math', kid: true },
+  { id: 'kids-world', name: 'Our world', emoji: '🌍', blurb: 'Animals, space, the body and history', skill: 'verbal', kid: true },
+  { id: 'kids-fr', name: 'Quiz des enfants', emoji: '🇫🇷', blurb: 'Questions en français', skill: 'verbal', lang: 'fr', kid: true },
 ];
 
 const logic: Row[] = [
@@ -198,6 +204,103 @@ const culture: Row[] = [
   [3, 'En quelle année Napoléon a-t-il été sacré empereur ?', ['1799', '1804', '1812', '1815'], 1, 'Le 2 décembre 1804.'],
 ];
 
+// ---------- kids ----------
+
+const kidsPuzzles: Row[] = [
+  [1, 'Sam is taller than Lily. Lily is taller than Max. Who is the tallest?', ['Sam', 'Lily', 'Max', "Can't tell"], 0, 'Sam is taller than Lily, and Lily is taller than Max.'],
+  [1, 'What comes next: red, blue, red, blue, red, …?', ['Red', 'Blue', 'Green', 'Yellow'], 1, 'The colours take turns: red, blue, red, blue.'],
+  [1, 'All cats have whiskers. Tom is a cat. Does Tom have whiskers?', ['Yes', 'No', 'Maybe'], 0, 'Every cat has whiskers, and Tom is a cat.'],
+  [1, 'Which one is not a fruit?', ['Apple', 'Banana', 'Carrot', 'Pear'], 2, 'A carrot is a vegetable.'],
+  [1, 'If today is Monday, what day is tomorrow?', ['Sunday', 'Tuesday', 'Wednesday', 'Friday'], 1, 'Tuesday comes after Monday.'],
+  [1, 'A hen lays eggs. A cow gives…?', ['Wool', 'Milk', 'Eggs', 'Honey'], 1, 'Cows give milk.'],
+  [2, 'Mia has 3 brothers. Each brother has 1 sister. How many sisters are there?', ['1', '3', '4', '0'], 0, 'They all share the same sister: Mia.'],
+  [2, 'What can you hold in your right hand but never in your left hand?', ['A ball', 'Your left hand', 'A pencil', 'A cup'], 1, 'Your left hand can hold your right hand, but not itself!'],
+  [2, 'A clock shows 3 o’clock. Where is the long hand?', ['On 3', 'On 12', 'On 6', 'On 9'], 1, 'At any o’clock time, the long minute hand points to 12.'],
+  [2, 'Leo finished the race before Ana but after Zoe. Who came first?', ['Leo', 'Ana', 'Zoe', "Can't tell"], 2, 'Zoe, then Leo, then Ana.'],
+  [2, 'Which shape has no corners?', ['Square', 'Triangle', 'Circle', 'Star'], 2, 'A circle is round all the way.'],
+  [2, 'What gets wetter the more it dries?', ['A towel', 'The sun', 'A rock', 'A shoe'], 0, 'A towel gets wet as it dries you.'],
+  [3, 'A farmer has 5 sheep. All but 2 run away. How many are left?', ['3', '2', '5', '0'], 1, '“All but 2” means 2 stay.'],
+  [3, 'Four children sit in a row. Ben is at one end. Ella sits next to Ben. Finn is not next to Ella. Where is Finn?', ['Next to Ben', 'At the other end', 'In the middle', "Can't tell"], 1, 'Ben, Ella, then the last two seats; Finn can’t be next to Ella, so he is at the far end.'],
+  [3, 'All of Nina’s pets are dogs. Rex is one of Nina’s pets. What is Rex?', ['A cat', 'A dog', 'A fish', "Can't tell"], 1, 'Every pet Nina has is a dog, so Rex is a dog.'],
+  [3, 'If you turn a "b" upside down, which letter do you see?', ['d', 'p', 'q', 'b'], 2, 'Upside down (turned halfway round), b becomes q.'],
+];
+
+const kidsWords: Row[] = [
+  [1, 'What is the opposite of "hot"?', ['Warm', 'Cold', 'Sunny', 'Wet'], 1, 'Hot and cold are opposites.'],
+  [1, 'Puppy is to dog as kitten is to…', ['Mouse', 'Cat', 'Lion', 'Bird'], 1, 'A puppy grows into a dog; a kitten grows into a cat.'],
+  [1, 'Which word rhymes with "cat"?', ['Dog', 'Hat', 'Cup', 'Sun'], 1, 'Cat and hat end with the same sound.'],
+  [1, 'Which one does not belong: red, blue, chair, green?', ['Red', 'Blue', 'Chair', 'Green'], 2, 'The others are colours.'],
+  [1, 'What does "tiny" mean?', ['Very big', 'Very small', 'Very fast', 'Very loud'], 1, 'Tiny means very small.'],
+  [1, 'Bird is to sky as fish is to…', ['Water', 'Tree', 'Road', 'Nest'], 0, 'Birds fly in the sky; fish swim in water.'],
+  [2, 'Which word means the same as "happy"?', ['Sad', 'Glad', 'Mad', 'Bored'], 1, 'Glad means happy.'],
+  [2, 'What is the opposite of "brave"?', ['Strong', 'Scared', 'Kind', 'Clever'], 1, 'A brave person isn’t easily scared.'],
+  [2, 'Foot is to shoe as hand is to…', ['Sock', 'Glove', 'Hat', 'Ring'], 1, 'You wear a shoe on your foot and a glove on your hand.'],
+  [2, 'Which word can go before "ball", "flake" and "man"?', ['Foot', 'Snow', 'Sun', 'Rain'], 1, 'Snowball, snowflake, snowman.'],
+  [2, 'An "enormous" elephant is…', ['Very small', 'Very large', 'Very old', 'Very grey'], 1, 'Enormous means huge.'],
+  [2, 'Which one is not an animal sound?', ['Bark', 'Moo', 'Jump', 'Quack'], 2, 'Jump is an action, not a sound.'],
+  [3, 'What does "curious" mean?', ['Wanting to know more', 'Very tired', 'Angry', 'Shy'], 0, 'Curious people want to find things out.'],
+  [3, 'Author is to book as painter is to…', ['Brush', 'Picture', 'Colour', 'Wall'], 1, 'An author makes a book; a painter makes a picture.'],
+  [3, 'Which word is the odd one out: whisper, shout, yell, scream?', ['Whisper', 'Shout', 'Yell', 'Scream'], 0, 'A whisper is quiet; the others are loud.'],
+  [3, 'If someone is "exhausted", they are…', ['Very hungry', 'Very tired', 'Very happy', 'Very late'], 1, 'Exhausted means worn out.'],
+];
+
+const kidsNumbers: Row[] = [
+  [1, 'What is 5 + 3?', ['7', '8', '9', '6'], 1, '5 + 3 = 8.'],
+  [1, 'What comes next: 2, 4, 6, 8, …?', ['9', '10', '12', '11'], 1, 'Count up in twos.'],
+  [1, 'How many legs do 2 dogs have?', ['4', '6', '8', '10'], 2, 'Each dog has 4 legs: 4 + 4 = 8.'],
+  [1, 'What is 10 − 4?', ['5', '6', '7', '4'], 1, '10 − 4 = 6.'],
+  [1, 'Which number is the biggest?', ['19', '91', '29', '9'], 1, '91 has 9 tens.'],
+  [1, 'How many days are in a week?', ['5', '6', '7', '10'], 2, 'Monday to Sunday: 7 days.'],
+  [2, 'What comes next: 5, 10, 15, 20, …?', ['22', '25', '30', '21'], 1, 'Count up in fives.'],
+  [2, 'You have 12 sweets and share them equally with a friend. How many each?', ['4', '6', '8', '12'], 1, '12 shared by 2 is 6 each.'],
+  [2, 'What is 3 × 4?', ['7', '12', '10', '14'], 1, '3 groups of 4 make 12.'],
+  [2, 'What is half of 20?', ['5', '10', '15', '2'], 1, '10 + 10 = 20.'],
+  [2, 'A pizza is cut into 8 slices. You eat 3. How many are left?', ['5', '4', '6', '3'], 0, '8 − 3 = 5.'],
+  [2, 'What comes next: 1, 3, 5, 7, …?', ['8', '9', '10', '11'], 1, 'Odd numbers: add 2 each time.'],
+  [3, 'What comes next: 1, 2, 4, 8, …?', ['10', '12', '16', '14'], 2, 'Each number doubles.'],
+  [3, 'A book costs 7 and a pen costs 3. How much for 2 books and 1 pen?', ['10', '13', '17', '20'], 2, '7 + 7 + 3 = 17.'],
+  [3, 'How many minutes are in half an hour?', ['20', '30', '45', '50'], 1, 'An hour has 60 minutes; half is 30.'],
+  [3, 'What comes next: 1, 4, 9, 16, …?', ['20', '25', '24', '36'], 1, 'Square numbers: 1×1, 2×2, 3×3, 4×4, then 5×5 = 25.'],
+];
+
+const kidsWorld: Row[] = [
+  [1, 'Which animal is the biggest?', ['Elephant', 'Blue whale', 'Giraffe', 'Hippo'], 1, 'The blue whale is the biggest animal that ever lived.'],
+  [1, 'Which planet do we live on?', ['Mars', 'Earth', 'Venus', 'Jupiter'], 1, 'We live on Earth, the third planet from the Sun.'],
+  [1, 'What do bees make?', ['Milk', 'Honey', 'Silk', 'Bread'], 1, 'Bees make honey from flower nectar.'],
+  [1, 'How many legs does a spider have?', ['6', '8', '10', '4'], 1, 'Spiders have 8 legs; insects have 6.'],
+  [1, 'What do plants need from the sky to grow?', ['Moonlight', 'Sunlight', 'Wind', 'Snow'], 1, 'Plants use sunlight to make their food.'],
+  [1, 'What is frozen water called?', ['Steam', 'Ice', 'Rain', 'Cloud'], 1, 'Water turns to ice when it freezes.'],
+  [2, 'Which is the closest star to Earth?', ['The Moon', 'The Sun', 'Mars', 'The North Star'], 1, 'The Sun is a star, and it’s the closest one.'],
+  [2, 'What does a caterpillar turn into?', ['A bee', 'A butterfly', 'A spider', 'A snail'], 1, 'It makes a chrysalis and comes out as a butterfly.'],
+  [2, 'Which organ pumps your blood?', ['Brain', 'Heart', 'Lungs', 'Stomach'], 1, 'Your heart pumps blood around your body.'],
+  [2, 'Which is the largest ocean?', ['Atlantic', 'Indian', 'Pacific', 'Arctic'], 2, 'The Pacific is the biggest and deepest ocean.'],
+  [2, 'Who built the pyramids of Giza?', ['The ancient Egyptians', 'The Vikings', 'The Romans', 'The Aztecs'], 0, 'They were built in ancient Egypt about 4,500 years ago.'],
+  [2, 'Which animal is a mammal?', ['Shark', 'Dolphin', 'Trout', 'Octopus'], 1, 'Dolphins breathe air and feed their babies milk.'],
+  [3, 'Which planet is called the Red Planet?', ['Venus', 'Mars', 'Saturn', 'Mercury'], 1, 'Mars looks red because of rusty dust.'],
+  [3, 'How many bones does a grown-up have?', ['106', '206', '306', '26'], 1, 'An adult skeleton has 206 bones.'],
+  [3, 'What gas do we need to breathe in?', ['Oxygen', 'Smoke', 'Helium', 'Steam'], 0, 'Our lungs take oxygen from the air.'],
+  [3, 'Who was the first person to walk on the Moon?', ['Yuri Gagarin', 'Neil Armstrong', 'Buzz Lightyear', 'Marie Curie'], 1, 'Neil Armstrong, in 1969.'],
+];
+
+const kidsFr: Row[] = [
+  [1, 'Combien de pattes a un chat ?', ['2', '4', '6', '8'], 1, 'Un chat a quatre pattes.'],
+  [1, 'Quelle est la couleur du ciel quand il fait beau ?', ['Vert', 'Bleu', 'Rouge', 'Violet'], 1, 'Le ciel est bleu par beau temps.'],
+  [1, 'Quel est le contraire de « grand » ?', ['Petit', 'Gros', 'Long', 'Haut'], 0, 'Grand et petit sont des contraires.'],
+  [1, 'Combien font 4 + 4 ?', ['6', '7', '8', '9'], 2, '4 + 4 = 8.'],
+  [1, 'Quel animal fait « meuh » ?', ['Le chien', 'La vache', 'Le canard', 'Le chat'], 1, 'La vache fait meuh.'],
+  [1, 'Quelle saison vient après l’hiver ?', ['L’été', 'Le printemps', 'L’automne', 'Noël'], 1, 'Le printemps suit l’hiver.'],
+  [2, 'Quelle est la capitale de la France ?', ['Lyon', 'Marseille', 'Paris', 'Nice'], 2, 'Paris est la capitale.'],
+  [2, 'Que fabriquent les abeilles ?', ['Du lait', 'Du miel', 'Du pain', 'De la laine'], 1, 'Les abeilles fabriquent du miel.'],
+  [2, 'Combien de jours y a-t-il dans une semaine ?', ['5', '6', '7', '8'], 2, 'Du lundi au dimanche : 7 jours.'],
+  [2, 'Dans la fable, qui chantait tout l’été ?', ['La fourmi', 'La cigale', 'Le corbeau', 'Le renard'], 1, 'La Cigale et la Fourmi, de Jean de La Fontaine.'],
+  [2, 'Quel est le plus grand animal du monde ?', ['L’éléphant', 'La baleine bleue', 'La girafe', 'Le requin'], 1, 'La baleine bleue est le plus grand animal de tous les temps.'],
+  [2, 'Que devient une chenille ?', ['Une abeille', 'Un papillon', 'Une araignée', 'Un escargot'], 1, 'Elle devient un papillon.'],
+  [3, 'Sur quelle planète vivons-nous ?', ['Mars', 'La Terre', 'Vénus', 'Jupiter'], 1, 'Nous vivons sur la Terre.'],
+  [3, 'Combien font 6 × 2 ?', ['8', '10', '12', '14'], 2, '6 × 2 = 12.'],
+  [3, 'Qui a écrit « Le Tour du monde en quatre-vingts jours » ?', ['Victor Hugo', 'Jules Verne', 'Molière', 'La Fontaine'], 1, 'Jules Verne, en 1872.'],
+  [3, 'Quel est l’océan le plus grand ?', ['Atlantique', 'Indien', 'Pacifique', 'Arctique'], 2, 'L’océan Pacifique.'],
+];
+
 export type QuizQuestion = { id: string; category: QuizCategory; level: 1 | 2 | 3; question: string; options: string[]; answer: number; why: string };
 
 const toQuestions = (category: QuizCategory, rows: Row[]): QuizQuestion[] =>
@@ -210,4 +313,12 @@ export const QUIZ: QuizQuestion[] = [
   ...toQuestions('spatial', spatial),
   ...toQuestions('general', general),
   ...toQuestions('culture', culture),
+  ...toQuestions('kids-puzzles', kidsPuzzles),
+  ...toQuestions('kids-words', kidsWords),
+  ...toQuestions('kids-numbers', kidsNumbers),
+  ...toQuestions('kids-world', kidsWorld),
+  ...toQuestions('kids-fr', kidsFr),
 ];
+
+/** Whether a question belongs to the kids' sets. */
+export const isKidQuestion = (q: QuizQuestion) => q.category.startsWith('kids-');

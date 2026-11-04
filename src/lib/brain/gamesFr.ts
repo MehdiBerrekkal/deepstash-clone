@@ -75,7 +75,7 @@ export const GAMES_FR: Record<string, { name: string; blurb: string; howTo: stri
   nback: {
     name: 'Double N-Back',
     blurb: 'La mémoire de travail à sa limite',
-    howTo: 'Une case s’allume sur la grille pendant qu’une lettre est prononcée. Appuyez sur « Position » quand la case est la même que N étapes plus tôt, et sur « Son » quand la lettre est la même que N étapes plus tôt. N grandit quand vous progressez.',
+    howTo: 'Une case s’allume sur la grille avec une forme dedans. Appuyez sur « Position » quand la case est la même que N étapes plus tôt, et sur « Forme » quand la forme est la même que N étapes plus tôt. N grandit quand vous progressez.',
     why: 'La mémoire de travail : mettre à jour ce que vous gardez en tête, seconde après seconde.',
   },
   span: {

@@ -3,6 +3,7 @@ import { Tabs } from 'expo-router/js-tabs';
 import { Text, type ColorValue } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { accountsEnabled } from '@/lib/auth';
 import { useStore } from '@/lib/store';
 import { usePalette } from '@/lib/appearance';
 import { useT } from '@/lib/i18n';
@@ -14,13 +15,18 @@ const icon = (glyph: string) =>
   };
 
 export default function TabsLayout() {
-  const { ready, followedTopicIds } = useStore();
+  const { ready, followedTopicIds, audience, account, guest, recovering } = useStore();
   const insets = useSafeAreaInsets();
   // Real colours (not CSS variables): navigation tints icons with them.
   const colors = usePalette();
   const t = useT();
 
   if (!ready) return null;
+  // Accounts first (log in, create one, or carry on as this device's guest), then kid or adult, then topics.
+  if (recovering) return <Redirect href="/reset-password" />;
+  if (accountsEnabled && !account && !guest) return <Redirect href="/auth" />;
+  // Kid or adult comes first, before anything else; then the topics for that group.
+  if (!audience) return <Redirect href="/welcome" />;
   if (followedTopicIds.length === 0) return <Redirect href="/onboarding" />;
 
   return (

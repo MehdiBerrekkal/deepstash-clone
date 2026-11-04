@@ -1,0 +1,748 @@
+{
+ "topics": [
+  {
+   "id": "kids-animals",
+   "name": "Animals",
+   "emoji": "🦁",
+   "color": "#2E7D4F"
+  },
+  {
+   "id": "kids-space",
+   "name": "Space",
+   "emoji": "🚀",
+   "color": "#283C82"
+  },
+  {
+   "id": "kids-body",
+   "name": "Your body",
+   "emoji": "🫀",
+   "color": "#A23B4C"
+  },
+  {
+   "id": "kids-earth",
+   "name": "Planet Earth",
+   "emoji": "🌋",
+   "color": "#8A5A1E"
+  },
+  {
+   "id": "kids-history",
+   "name": "History",
+   "emoji": "🏰",
+   "color": "#6B4E9B"
+  },
+  {
+   "id": "kids-inventions",
+   "name": "Inventions",
+   "emoji": "💡",
+   "color": "#B7791F"
+  },
+  {
+   "id": "kids-life",
+   "name": "Feelings & friends",
+   "emoji": "💛",
+   "color": "#C0567A"
+  },
+  {
+   "id": "kids-stories",
+   "name": "Stories",
+   "emoji": "📖",
+   "color": "#2B6C8F"
+  },
+  {
+   "id": "kids-poems",
+   "name": "Poems",
+   "emoji": "🪶",
+   "color": "#5B3A6B"
+  }
+ ],
+ "facts": [
+  {
+   "topic": "kids-animals",
+   "title": "An octopus has three hearts",
+   "body": "Two hearts pump blood through the gills, and a third pumps it around the rest of the body. Its blood is blue, not red, because it carries oxygen with copper instead of iron. Try this: next time you see an octopus picture, count its arms. There are always eight."
+  },
+  {
+   "topic": "kids-animals",
+   "title": "Cows have best friends",
+   "body": "Scientists found that cows are calmer and less stressed when they stand next to a cow they know well. They choose friends in the herd and like to stay with them. Animals have feelings too, just like you."
+  },
+  {
+   "topic": "kids-animals",
+   "title": "Sea otters hold hands while they sleep",
+   "body": "Sea otters sleep floating on their backs. So that they don't drift away from each other, they often hold paws or wrap themselves in long seaweed like a blanket."
+  },
+  {
+   "topic": "kids-animals",
+   "title": "A blue whale is the biggest animal ever",
+   "body": "A blue whale can be about 30 metres long: as long as three school buses in a row. Its heart is as big as a small car, and its call is louder than a jet engine. It is bigger than any dinosaur that ever lived."
+  },
+  {
+   "topic": "kids-animals",
+   "title": "Bees dance to give directions",
+   "body": "When a honeybee finds flowers, it flies home and does a 'waggle dance'. The direction of the wiggle points the way, and how long it wiggles tells the others how far to fly. A dance is a map!"
+  },
+  {
+   "topic": "kids-animals",
+   "title": "Penguins give pebbles as presents",
+   "body": "Some penguins look for the smoothest, nicest pebble they can find and give it to the penguin they want as a partner. The pebbles are then used to build a nest."
+  },
+  {
+   "topic": "kids-animals",
+   "title": "Owls can't move their eyes",
+   "body": "An owl's eyes are shaped like tubes, so they can't roll around like yours. Instead, an owl can turn its head very far, about three quarters of a full circle, to look behind it."
+  },
+  {
+   "topic": "kids-animals",
+   "title": "Elephants never really forget",
+   "body": "Elephants have excellent memories. The oldest female in a herd remembers where to find water, even years later, and leads her family there in dry seasons. Old elephants are the herd's library."
+  },
+  {
+   "topic": "kids-animals",
+   "title": "A snail can sleep for three years",
+   "body": "When the weather is too dry, a snail can seal itself inside its shell with a layer of slime and rest for a very long time, waiting for rain."
+  },
+  {
+   "topic": "kids-animals",
+   "title": "Butterflies taste with their feet",
+   "body": "Butterflies have taste sensors on their feet. When one lands on a leaf, it 'tastes' it to check whether it is a good place to lay eggs."
+  },
+  {
+   "topic": "kids-animals",
+   "title": "Dolphins have names",
+   "body": "Every dolphin has its own whistle that works like a name. Other dolphins use that whistle to call it. Mothers whistle their own sound to their baby over and over so it learns it."
+  },
+  {
+   "topic": "kids-space",
+   "title": "Sunlight is eight minutes old",
+   "body": "Light from the Sun takes about eight minutes to reach Earth. So when you see the Sun, you are seeing it as it was eight minutes ago. Never look straight at the Sun, though: it can hurt your eyes."
+  },
+  {
+   "topic": "kids-space",
+   "title": "A day on Venus is longer than its year",
+   "body": "Venus spins very slowly. It takes about 243 Earth days to turn around once, but only 225 Earth days to go around the Sun. So one Venus day is longer than one Venus year!"
+  },
+  {
+   "topic": "kids-space",
+   "title": "Footprints on the Moon will last for ages",
+   "body": "There is no wind or rain on the Moon. The footprints the astronauts left in 1969 are probably still there, and could stay for millions of years."
+  },
+  {
+   "topic": "kids-space",
+   "title": "Jupiter has a storm bigger than Earth",
+   "body": "The Great Red Spot on Jupiter is a giant storm, wider than our whole planet. People have watched it through telescopes for more than 150 years."
+  },
+  {
+   "topic": "kids-space",
+   "title": "Stars are other suns",
+   "body": "Every star you see at night is a sun, many of them far bigger than ours. They look tiny only because they are incredibly far away."
+  },
+  {
+   "topic": "kids-space",
+   "title": "Astronauts grow taller in space",
+   "body": "Without gravity pressing down, the soft discs in an astronaut's back spread out a little. They can grow a few centimetres taller, then shrink back when they come home."
+  },
+  {
+   "topic": "kids-space",
+   "title": "Saturn could float",
+   "body": "Saturn is made mostly of gas and is lighter for its size than water. If you had a bathtub big enough, Saturn would float in it."
+  },
+  {
+   "topic": "kids-space",
+   "title": "The Moon is moving away",
+   "body": "Every year the Moon drifts about 4 centimetres further from Earth: about as fast as your fingernails grow."
+  },
+  {
+   "topic": "kids-space",
+   "title": "Mars has the tallest volcano",
+   "body": "Olympus Mons on Mars is about two and a half times as tall as Mount Everest. It is so wide that if you stood on it, you couldn't see its edge."
+  },
+  {
+   "topic": "kids-space",
+   "title": "There's no sound in space",
+   "body": "Sound needs air (or water) to travel. Space is almost empty, so even a huge explosion out there would make no noise at all. Astronauts talk to each other by radio."
+  },
+  {
+   "topic": "kids-body",
+   "title": "Your heart beats about 100,000 times a day",
+   "body": "Put your hand on your chest: that thump is your heart pumping blood all around your body. It never takes a day off, even while you sleep. Running and playing keep it strong."
+  },
+  {
+   "topic": "kids-body",
+   "title": "You have more than 200 bones",
+   "body": "A grown-up has 206 bones. Babies are born with nearly 300, but some of them join together as they grow. The smallest bone is inside your ear and is smaller than a grain of rice."
+  },
+  {
+   "topic": "kids-body",
+   "title": "Your brain grows while you sleep",
+   "body": "Sleep isn't wasted time. While you sleep, your brain sorts out what you learned that day and stores it. Kids need about 9 to 12 hours of sleep a night to grow and learn well."
+  },
+  {
+   "topic": "kids-body",
+   "title": "No one has your fingerprints",
+   "body": "Look at the tips of your fingers: the little swirls and lines are your fingerprints. No one else in the world has exactly the same ones, not even a twin."
+  },
+  {
+   "topic": "kids-body",
+   "title": "Your nose remembers smells",
+   "body": "Your nose can tell apart a huge number of smells, and smells are linked to memories. That's why a smell can suddenly remind you of a place or a person."
+  },
+  {
+   "topic": "kids-body",
+   "title": "Your stomach makes a new lining",
+   "body": "The inside of your stomach makes strong acid to break down food. To protect itself, it covers its walls with a fresh layer of slime every couple of weeks."
+  },
+  {
+   "topic": "kids-body",
+   "title": "Muscles grow when you use them",
+   "body": "When you run, climb or swim, your muscles work hard. Afterwards your body repairs them and makes them a bit stronger. Moving every day keeps your body happy."
+  },
+  {
+   "topic": "kids-body",
+   "title": "You blink about 15 times a minute",
+   "body": "Each blink washes your eyes with tears and cleans away dust. You blink so fast you don't even notice the dark moment."
+  },
+  {
+   "topic": "kids-body",
+   "title": "Laughing is good for you",
+   "body": "When you laugh, your body relaxes and releases chemicals that make you feel good. Laughing with friends even helps you feel closer to them."
+  },
+  {
+   "topic": "kids-earth",
+   "title": "Most of Earth is covered in water",
+   "body": "About 71% of our planet is covered by oceans. From space, Earth looks like a blue marble. That's why people call it the Blue Planet."
+  },
+  {
+   "topic": "kids-earth",
+   "title": "Mount Everest grows every year",
+   "body": "The highest mountain on Earth is still being pushed up as two pieces of the Earth's crust press together. It gets a few millimetres taller each year."
+  },
+  {
+   "topic": "kids-earth",
+   "title": "Rainbows are actually circles",
+   "body": "A rainbow is sunlight split into colours by raindrops. From the ground you only see an arch, but from a plane you can sometimes see the full circle."
+  },
+  {
+   "topic": "kids-earth",
+   "title": "Lightning is hotter than the Sun's surface",
+   "body": "A bolt of lightning can be about five times hotter than the surface of the Sun. Thunder is the sound of air bursting as it heats up so fast."
+  },
+  {
+   "topic": "kids-earth",
+   "title": "Trees talk to each other",
+   "body": "Under the ground, tree roots are linked by tiny threads of fungus. Trees can share water and food through this network, a bit like an underground internet."
+  },
+  {
+   "topic": "kids-earth",
+   "title": "The Amazon makes its own rain",
+   "body": "The Amazon rainforest is so big that the water breathed out by its trees forms clouds, which then rain back down on the forest."
+  },
+  {
+   "topic": "kids-earth",
+   "title": "Deserts can be cold",
+   "body": "A desert is a place with very little rain, not always a hot one. Antarctica, covered in ice, is the biggest desert on Earth."
+  },
+  {
+   "topic": "kids-earth",
+   "title": "Volcanoes build new land",
+   "body": "When lava cools it turns into rock. The islands of Hawaii were all made by volcanoes, and they are still growing."
+  },
+  {
+   "topic": "kids-earth",
+   "title": "Every snowflake has six sides",
+   "body": "Snowflakes form when water freezes in the clouds. Because of the way water molecules fit together, almost every snowflake has six arms."
+  },
+  {
+   "topic": "kids-history",
+   "title": "Mammoths were alive when the pyramids were built",
+   "body": "The Great Pyramid of Egypt was built about 4,500 years ago. At that time, a few woolly mammoths were still alive on a small island in the Arctic!"
+  },
+  {
+   "topic": "kids-history",
+   "title": "Cleopatra lived closer to us than to the pyramids",
+   "body": "Cleopatra lived about 2,000 years ago. The Great Pyramid was already around 2,500 years old in her time. For her, the pyramids were ancient history too."
+  },
+  {
+   "topic": "kids-history",
+   "title": "The Romans had fast food",
+   "body": "In ancient Rome, many people had no kitchen at home. They bought hot food from street counters called thermopolia, a bit like takeaway shops today."
+  },
+  {
+   "topic": "kids-history",
+   "title": "Vikings were great explorers",
+   "body": "About 1,000 years ago, Viking sailors crossed the ocean in wooden ships and reached North America, almost 500 years before Columbus."
+  },
+  {
+   "topic": "kids-history",
+   "title": "Paper was invented in China",
+   "body": "About 2,000 years ago, people in China made paper from tree bark, rags and plants. Before that, people wrote on clay, silk, bamboo or animal skins."
+  },
+  {
+   "topic": "kids-history",
+   "title": "Castles had toilets in the walls",
+   "body": "Medieval castles often had little toilets built into the outside walls. Everything fell down a chute into the moat or a pit below. Yuck!"
+  },
+  {
+   "topic": "kids-history",
+   "title": "Knights trained from age seven",
+   "body": "A boy who wanted to become a knight started as a page at about seven, learning manners and riding. Then he became a squire, helping a knight, before he could be knighted himself."
+  },
+  {
+   "topic": "kids-history",
+   "title": "The first Olympics were in Greece",
+   "body": "The ancient Olympic Games began in Greece almost 2,800 years ago. Winners didn't get medals: they were crowned with a wreath of olive leaves."
+  },
+  {
+   "topic": "kids-history",
+   "title": "Ibn Battuta travelled for 30 years",
+   "body": "Ibn Battuta, born in Tangier, Morocco, set off in 1325 and travelled across Africa, the Middle East, India and China. He covered more ground than almost anyone of his time and wrote about it all."
+  },
+  {
+   "topic": "kids-inventions",
+   "title": "The printing press spread books",
+   "body": "Around 1450, Johannes Gutenberg made a machine that printed pages with metal letters. Books could be made quickly, so many more people could learn to read."
+  },
+  {
+   "topic": "kids-inventions",
+   "title": "A lot of inventions were accidents",
+   "body": "A cook left a pot on the stove, a scientist forgot a dish of mould: many great discoveries, like penicillin, a medicine that fights germs, were found by people who noticed something strange and got curious."
+  },
+  {
+   "topic": "kids-inventions",
+   "title": "The first plane flight lasted 12 seconds",
+   "body": "In 1903 the Wright brothers flew the first powered plane. The very first flight lasted just 12 seconds. Today planes fly around the world. Every big idea starts small."
+  },
+  {
+   "topic": "kids-inventions",
+   "title": "Al-Khwarizmi gave us the word algorithm",
+   "body": "More than 1,000 years ago in Baghdad, the mathematician al-Khwarizmi wrote books about solving problems step by step. The word 'algorithm', used for computers today, comes from his name."
+  },
+  {
+   "topic": "kids-inventions",
+   "title": "Light bulbs took many tries",
+   "body": "Inventors tested thousands of materials to find one that would glow in a bulb without burning up. Mistakes were part of the work: each one showed them what not to try next."
+  },
+  {
+   "topic": "kids-inventions",
+   "title": "The wheel came later than you'd think",
+   "body": "People were farming, making pots and even writing before they invented the wheel, about 5,500 years ago. The tricky part was the axle that lets it turn."
+  },
+  {
+   "topic": "kids-inventions",
+   "title": "Velcro copies a plant",
+   "body": "An engineer noticed burrs from a plant sticking to his dog's fur. Under a microscope he saw tiny hooks, and copied the idea to invent Velcro. Nature is full of clever ideas."
+  },
+  {
+   "topic": "kids-inventions",
+   "title": "Marie Curie won two Nobel Prizes",
+   "body": "Marie Curie studied radioactivity and discovered two new elements. She was the first person ever to win two Nobel Prizes, in two different sciences."
+  },
+  {
+   "topic": "kids-inventions",
+   "title": "Computers used to fill whole rooms",
+   "body": "The first electronic computers, in the 1940s, were as big as a room and much less powerful than a phone today."
+  },
+  {
+   "topic": "kids-life",
+   "title": "Mistakes help your brain grow",
+   "body": "When something is hard and you keep trying, your brain builds new connections. A mistake isn't a sign you're bad at something: it's a sign you're learning. Try saying 'I can't do it yet.'"
+  },
+  {
+   "topic": "kids-life",
+   "title": "Name your feelings",
+   "body": "When you feel upset, try putting a name on it: angry, sad, worried, jealous. Just saying the word out loud helps the feeling get smaller and helps others understand you."
+  },
+  {
+   "topic": "kids-life",
+   "title": "Take a dragon breath",
+   "body": "When you're very angry, breathe in slowly through your nose, then breathe out long and slow like a dragon blowing smoke. Do it three times. It tells your body to calm down."
+  },
+  {
+   "topic": "kids-life",
+   "title": "Being a good friend",
+   "body": "Good friends listen, take turns, share and say sorry when they get it wrong. You can practise today: ask a friend a question about something they love, and really listen to the answer."
+  },
+  {
+   "topic": "kids-life",
+   "title": "Kindness is contagious",
+   "body": "When someone is kind to you, you feel like being kind to someone else. One small kind act, like holding a door or saying something nice, can travel a long way."
+  },
+  {
+   "topic": "kids-life",
+   "title": "It's brave to ask for help",
+   "body": "Everyone needs help sometimes, even grown-ups. Asking a teacher or parent for help when something is hard or scary is a brave and clever thing to do."
+  },
+  {
+   "topic": "kids-life",
+   "title": "Big jobs in small steps",
+   "body": "A messy room or a long homework can feel huge. Split it into small steps: first the books, then the clothes. Finishing one small step makes the next one easier."
+  },
+  {
+   "topic": "kids-life",
+   "title": "Everyone is different, and that's good",
+   "body": "People look different, speak different languages and like different things. Being curious about others, instead of laughing at differences, makes the world more interesting."
+  },
+  {
+   "topic": "kids-life",
+   "title": "Say thank you for three things",
+   "body": "Before bed, think of three good things that happened today, even tiny ones. People who do this often feel happier and sleep better."
+  }
+ ],
+ "quotes": [
+  {
+   "topic": "kids-life",
+   "author": "Dr. Seuss",
+   "cite": "I Can Read With My Eyes Shut!",
+   "text": "The more that you read, the more things you will know. The more that you learn, the more places you'll go."
+  },
+  {
+   "topic": "kids-life",
+   "author": "Dr. Seuss",
+   "cite": "Happy Birthday to You!",
+   "text": "Today you are You, that is truer than true. There is no one alive who is Youer than You."
+  },
+  {
+   "topic": "kids-inventions",
+   "author": "Albert Einstein",
+   "cite": "Letter to Carl Seelig, 1952",
+   "text": "I have no special talents. I am only passionately curious."
+  },
+  {
+   "topic": "kids-inventions",
+   "author": "Albert Einstein",
+   "cite": "The Saturday Evening Post, 1929",
+   "text": "Imagination is more important than knowledge."
+  },
+  {
+   "topic": "kids-stories",
+   "author": "Lewis Carroll",
+   "cite": "Through the Looking-Glass",
+   "text": "Why, sometimes I've believed as many as six impossible things before breakfast."
+  },
+  {
+   "topic": "kids-stories",
+   "author": "Lewis Carroll",
+   "cite": "Alice's Adventures in Wonderland",
+   "text": "It's no use going back to yesterday, because I was a different person then."
+  },
+  {
+   "topic": "kids-life",
+   "author": "Louisa May Alcott",
+   "cite": "Little Women",
+   "text": "I'm not afraid of storms, for I'm learning how to sail my ship."
+  },
+  {
+   "topic": "kids-life",
+   "author": "L. M. Montgomery",
+   "cite": "Anne of Green Gables",
+   "text": "Isn't it nice to think that tomorrow is a new day with no mistakes in it yet?"
+  },
+  {
+   "topic": "kids-history",
+   "author": "Malala Yousafzai",
+   "cite": "Speech at the United Nations, 2013",
+   "text": "One child, one teacher, one book, one pen can change the world."
+  },
+  {
+   "topic": "kids-inventions",
+   "author": "Marie Curie",
+   "cite": "quoted by her daughter Eve Curie",
+   "text": "We must have perseverance and above all confidence in ourselves."
+  },
+  {
+   "topic": "kids-stories",
+   "author": "J. R. R. Tolkien",
+   "cite": "The Fellowship of the Ring",
+   "text": "Not all those who wander are lost."
+  },
+  {
+   "topic": "kids-stories",
+   "author": "J. M. Barrie",
+   "cite": "Peter and Wendy",
+   "text": "Second to the right, and straight on till morning."
+  }
+ ],
+ "books": [
+  {
+   "id": "kids-alice",
+   "title": "Alice's Adventures in Wonderland",
+   "author": "Lewis Carroll",
+   "kind": "book",
+   "year": 1865,
+   "description": "Alice follows a white rabbit down a hole into a world where nothing makes sense.",
+   "ideas": [
+    [
+     "Curiosity opens doors",
+     "Alice sees a rabbit with a pocket watch and, instead of shrugging, she follows it. Her curiosity takes her on the adventure of a lifetime. Asking 'why?' and 'what if?' is how explorers and scientists begin. Today: follow one question you're curious about and find the answer."
+    ],
+    [
+     "It's fine to feel confused",
+     "In Wonderland Alice keeps growing, shrinking and meeting strange creatures. She often feels muddled, but she keeps going and keeps asking questions. Feeling confused is normal when something is new."
+    ],
+    [
+     "Stand up for yourself politely",
+     "At the end, Alice faces the bossy Queen of Hearts and says what she thinks: 'You're nothing but a pack of cards!' She learns her own voice matters, even with grown-up rulers."
+    ]
+   ]
+  },
+  {
+   "id": "kids-secret-garden",
+   "title": "The Secret Garden",
+   "author": "Frances Hodgson Burnett",
+   "kind": "book",
+   "year": 1911,
+   "description": "A lonely girl finds a locked garden and brings it, and herself, back to life.",
+   "ideas": [
+    [
+     "Fresh air and growing things help",
+     "Mary arrives grumpy and pale. As she digs and plants in the hidden garden, she grows strong and cheerful. Time outside, with plants and animals, really does make people feel better. Today: go outside and look closely at one plant."
+    ],
+    [
+     "Friends help each other heal",
+     "Mary, Dickon and Colin each have a problem. Together, working in the garden, they help one another become happier and braver. Good friends make us better."
+    ],
+    [
+     "Small care, big change",
+     "The garden doesn't bloom in a day. It takes weeks of weeding and watering. Little bits of effort, done again and again, can make something wonderful."
+    ]
+   ]
+  },
+  {
+   "id": "kids-willows",
+   "title": "The Wind in the Willows",
+   "author": "Kenneth Grahame",
+   "kind": "book",
+   "year": 1908,
+   "description": "Mole, Ratty, Badger and the boastful Mr Toad share adventures by the river.",
+   "ideas": [
+    [
+     "Show-offs get into trouble",
+     "Mr Toad wants every new thing, especially fast motor cars, and brags about it. His showing off lands him in prison! Being proud of yourself is good; bragging and being reckless is not."
+    ],
+    [
+     "Good friends don't give up on you",
+     "Even after Toad behaves badly, Ratty, Mole and Badger help him win back his home. True friends tell you the truth and still stand by you."
+    ],
+    [
+     "Enjoy simple things",
+     "Ratty says there is nothing half so much worth doing as simply messing about in boats. A picnic, a river, a friend: simple pleasures can be the best."
+    ]
+   ]
+  },
+  {
+   "id": "kids-treasure-island",
+   "title": "Treasure Island",
+   "author": "Robert Louis Stevenson",
+   "kind": "book",
+   "year": 1883,
+   "description": "Young Jim Hawkins sails to find pirate treasure and meets the tricky Long John Silver.",
+   "ideas": [
+    [
+     "Charming isn't the same as good",
+     "Long John Silver is friendly and funny, and Jim likes him. But Silver is secretly a pirate leader. People are judged by what they do, not just how nice they seem."
+    ],
+    [
+     "Courage can be quick thinking",
+     "Jim is just a boy, but by keeping calm, listening carefully and acting fast, he saves his friends more than once. Bravery isn't only for the strongest."
+    ],
+    [
+     "Greed causes trouble",
+     "Almost every danger in the story comes from people wanting the treasure all to themselves. Sharing and honesty make for fewer enemies."
+    ]
+   ]
+  },
+  {
+   "id": "kids-eighty-days",
+   "title": "Around the World in Eighty Days",
+   "author": "Jules Verne",
+   "kind": "book",
+   "year": 1872,
+   "description": "Phileas Fogg bets he can travel all the way around the world in just 80 days.",
+   "ideas": [
+    [
+     "Plans need a Plan B",
+     "Fogg has a perfect timetable, but trains break down and ships are late. He keeps finding new ways: an elephant, a sailing sledge! When a plan fails, look for another path."
+    ],
+    [
+     "Helping is worth the delay",
+     "Fogg risks losing his bet to rescue Aouda, a woman in danger. He loses time but gains a friend, and in the end, a family. Kindness is never wasted time."
+    ],
+    [
+     "Time zones hold a surprise",
+     "Travelling east, Fogg gains a day without noticing, because he crossed the date line. He thought he had lost, but he had won! Geography can be full of surprises."
+    ]
+   ]
+  },
+  {
+   "id": "kids-anne",
+   "title": "Anne of Green Gables",
+   "author": "L. M. Montgomery",
+   "kind": "book",
+   "year": 1908,
+   "description": "Chatty, imaginative Anne, an orphan, finds a home and a best friend on Prince Edward Island.",
+   "ideas": [
+    [
+     "Imagination makes life brighter",
+     "Anne gives names to lakes, trees and paths, turning ordinary places into magical ones. Using your imagination can make even a boring walk an adventure."
+    ],
+    [
+     "Say sorry and start again",
+     "Anne often loses her temper and makes mistakes, like dyeing her hair green by accident! She learns to apologise and try again. A mistake is not the end of the story."
+    ],
+    [
+     "A best friend is a treasure",
+     "Anne longs for a 'kindred spirit', a friend who really understands her. When she meets Diana, they promise to be friends forever. Look after your friendships."
+    ]
+   ]
+  },
+  {
+   "id": "kids-jungle-book",
+   "title": "The Jungle Book",
+   "author": "Rudyard Kipling",
+   "kind": "book",
+   "year": 1894,
+   "description": "Mowgli, a boy raised by wolves, learns the Law of the Jungle from Baloo the bear and Bagheera the panther.",
+   "ideas": [
+    [
+     "Learn from wise friends",
+     "Baloo teaches Mowgli the 'master words' to speak to every animal. Listening to teachers and older friends, even when lessons feel boring, can save you later."
+    ],
+    [
+     "You can belong to more than one world",
+     "Mowgli is a boy among wolves and a wolf among people. He learns that he can belong to both. Many people feel this way, and it's a strength."
+    ],
+    [
+     "Brave doesn't mean big",
+     "Rikki-Tikki-Tavi, a small mongoose in another story of the book, protects his family from two cobras. Courage is about heart, not size."
+    ]
+   ]
+  },
+  {
+   "id": "kids-aesop",
+   "title": "Aesop's Fables",
+   "author": "Aesop",
+   "kind": "book",
+   "year": null,
+   "description": "Short animal stories from ancient Greece, each with a lesson at the end.",
+   "ideas": [
+    [
+     "Slow and steady wins the race",
+     "The fast hare is so sure he'll win that he takes a nap. The tortoise keeps plodding and crosses the line first. Keeping at something beats being quick but lazy."
+    ],
+    [
+     "Little friends can be great friends",
+     "A lion spares a tiny mouse. Later, the lion is caught in a net, and the mouse chews through the ropes to free him. Never think someone is too small to help."
+    ],
+    [
+     "Don't cry wolf",
+     "A shepherd boy shouts 'Wolf!' for fun again and again. When a real wolf comes, no one believes him. If you tell lies, people stop trusting the truth from you."
+    ]
+   ]
+  },
+  {
+   "id": "kids-christmas-carol",
+   "title": "A Christmas Carol",
+   "author": "Charles Dickens",
+   "kind": "book",
+   "year": 1843,
+   "description": "Grumpy, greedy Ebenezer Scrooge is visited by three ghosts on Christmas Eve.",
+   "ideas": [
+    [
+     "It's never too late to change",
+     "Scrooge has been mean for years. After seeing his past, present and future, he wakes up determined to be kind, and he is. People can always choose to become better."
+    ],
+    [
+     "Money isn't everything",
+     "Scrooge is rich but miserable and alone. The Cratchits are poor but loving and happy together. Being kind and close to people matters more than having lots of things."
+    ],
+    [
+     "Notice others",
+     "The ghosts show Scrooge people he never looked at: his clerk's sick son, Tiny Tim. Paying attention to how others feel is the first step to helping."
+    ]
+   ]
+  },
+  {
+   "id": "kids-call-of-the-wild",
+   "title": "The Call of the Wild",
+   "author": "Jack London",
+   "kind": "book",
+   "year": 1903,
+   "description": "Buck, a big pet dog, is taken to the frozen north and learns to survive as a sled dog.",
+   "ideas": [
+    [
+     "You can adapt",
+     "Buck goes from a warm home to snow, cold and hard work. He learns quickly how to stay warm and work with the team. People, like Buck, can get used to big changes."
+    ],
+    [
+     "Kindness earns loyalty",
+     "Most men treat Buck harshly, but John Thornton is gentle and caring. Buck becomes his devoted friend and even saves his life. Treat animals, and people, with kindness."
+    ],
+    [
+     "Teamwork pulls the sled",
+     "A sled only moves when all the dogs pull together. Quarrels in the team slow everyone down. Working as a team gets big jobs done."
+    ]
+   ]
+  }
+ ],
+ "poems": [
+  {
+   "title": "My Shadow",
+   "author": "Robert Louis Stevenson",
+   "year": 1885,
+   "text": "I have a little shadow that goes in and out with me,\nAnd what can be the use of him is more than I can see.\nHe is very, very like me from the heels up to the head;\nAnd I see him jump before me, when I jump into my bed.\n\nThe funniest thing about him is the way he likes to grow—\nNot at all like proper children, which is always very slow;\nFor he sometimes shoots up taller like an india-rubber ball,\nAnd he sometimes gets so little that there's none of him at all.\n\nHe hasn't got a notion of how children ought to play,\nAnd can only make a fool of me in every sort of way.\nHe stays so close beside me, he's a coward you can see;\nI'd think shame to stick to nursie as that shadow sticks to me!\n\nOne morning, very early, before the sun was up,\nI rose and found the shining dew on every buttercup;\nBut my lazy little shadow, like an arrant sleepy-head,\nHad stayed at home behind me and was fast asleep in bed."
+  },
+  {
+   "title": "The Swing",
+   "author": "Robert Louis Stevenson",
+   "year": 1885,
+   "text": "How do you like to go up in a swing,\nUp in the air so blue?\nOh, I do think it the pleasantest thing\nEver a child can do!\n\nUp in the air and over the wall,\nTill I can see so wide,\nRivers and trees and cattle and all\nOver the countryside—\n\nTill I look down on the garden green,\nDown on the roof so brown—\nUp in the air I go flying again,\nUp in the air and down!"
+  },
+  {
+   "title": "Bed in Summer",
+   "author": "Robert Louis Stevenson",
+   "year": 1885,
+   "text": "In winter I get up at night\nAnd dress by yellow candle-light.\nIn summer, quite the other way,\nI have to go to bed by day.\n\nI have to go to bed and see\nThe birds still hopping on the tree,\nOr hear the grown-up people's feet\nStill going past me in the street.\n\nAnd does it not seem hard to you,\nWhen all the sky is clear and blue,\nAnd I should like so much to play,\nTo have to go to bed by day?"
+  },
+  {
+   "title": "Rain",
+   "author": "Robert Louis Stevenson",
+   "year": 1885,
+   "text": "The rain is raining all around,\nIt falls on field and tree,\nIt rains on the umbrellas here,\nAnd on the ships at sea."
+  },
+  {
+   "title": "Who Has Seen the Wind?",
+   "author": "Christina Rossetti",
+   "year": 1872,
+   "text": "Who has seen the wind?\nNeither I nor you:\nBut when the leaves hang trembling,\nThe wind is passing through.\n\nWho has seen the wind?\nNeither you nor I:\nBut when the trees bow down their heads,\nThe wind is passing by."
+  },
+  {
+   "title": "What Is Pink?",
+   "author": "Christina Rossetti",
+   "year": 1872,
+   "text": "What is pink? a rose is pink\nBy the fountain's brink.\nWhat is red? a poppy's red\nIn its barley bed.\nWhat is blue? the sky is blue\nWhere the clouds float thro'.\nWhat is white? a swan is white\nSailing in the light.\nWhat is yellow? pears are yellow,\nRich and ripe and mellow.\nWhat is green? the grass is green,\nWith small flowers between.\nWhat is violet? clouds are violet\nIn the summer twilight.\nWhat is orange? why, an orange,\nJust an orange!"
+  },
+  {
+   "title": "The Owl and the Pussy-cat",
+   "author": "Edward Lear",
+   "year": 1871,
+   "text": "The Owl and the Pussy-cat went to sea\nIn a beautiful pea-green boat,\nThey took some honey, and plenty of money,\nWrapped up in a five-pound note.\nThe Owl looked up to the stars above,\nAnd sang to a small guitar,\n'O lovely Pussy! O Pussy my love,\nWhat a beautiful Pussy you are,\nYou are,\nYou are!\nWhat a beautiful Pussy you are!'\n\nPussy said to the Owl, 'You elegant fowl!\nHow charmingly sweet you sing!\nO let us be married! too long we have tarried:\nBut what shall we do for a ring?'\nThey sailed away, for a year and a day,\nTo the land where the Bong-Tree grows\nAnd there in a wood a Piggy-wig stood\nWith a ring at the end of his nose,\nHis nose,\nHis nose,\nWith a ring at the end of his nose.\n\n'Dear Pig, are you willing to sell for one shilling\nYour ring?' Said the Piggy, 'I will.'\nSo they took it away, and were married next day\nBy the Turkey who lives on the hill.\nThey dined on mince, and slices of quince,\nWhich they ate with a runcible spoon;\nAnd hand in hand, on the edge of the sand,\nThey danced by the light of the moon,\nThe moon,\nThe moon,\nThey danced by the light of the moon."
+  },
+  {
+   "title": "The Star",
+   "author": "Jane Taylor",
+   "year": 1806,
+   "text": "Twinkle, twinkle, little star,\nHow I wonder what you are!\nUp above the world so high,\nLike a diamond in the sky.\n\nWhen the blazing sun is gone,\nWhen he nothing shines upon,\nThen you show your little light,\nTwinkle, twinkle, all the night."
+  },
+  {
+   "title": "La Cigale et la Fourmi",
+   "author": "Jean de La Fontaine",
+   "year": 1668,
+   "text": "La Cigale, ayant chanté\nTout l'été,\nSe trouva fort dépourvue\nQuand la bise fut venue :\nPas un seul petit morceau\nDe mouche ou de vermisseau.\nElle alla crier famine\nChez la Fourmi sa voisine,\nLa priant de lui prêter\nQuelque grain pour subsister\nJusqu'à la saison nouvelle.\n« Je vous paierai, lui dit-elle,\nAvant l'Oût, foi d'animal,\nIntérêt et principal. »\nLa Fourmi n'est pas prêteuse :\nC'est là son moindre défaut.\n« Que faisiez-vous au temps chaud ?\nDit-elle à cette emprunteuse.\n— Nuit et jour à tout venant\nJe chantais, ne vous déplaise.\n— Vous chantiez ? j'en suis fort aise.\nEh bien ! dansez maintenant. »"
+  },
+  {
+   "title": "Le Corbeau et le Renard",
+   "author": "Jean de La Fontaine",
+   "year": 1668,
+   "text": "Maître Corbeau, sur un arbre perché,\nTenait en son bec un fromage.\nMaître Renard, par l'odeur alléché,\nLui tint à peu près ce langage :\n« Hé ! bonjour, Monsieur du Corbeau.\nQue vous êtes joli ! que vous me semblez beau !\nSans mentir, si votre ramage\nSe rapporte à votre plumage,\nVous êtes le Phénix des hôtes de ces bois. »\nÀ ces mots le Corbeau ne se sent pas de joie ;\nEt pour montrer sa belle voix,\nIl ouvre un large bec, laisse tomber sa proie.\nLe Renard s'en saisit, et dit : « Mon bon Monsieur,\nApprenez que tout flatteur\nVit aux dépens de celui qui l'écoute :\nCette leçon vaut bien un fromage, sans doute. »\nLe Corbeau, honteux et confus,\nJura, mais un peu tard, qu'on ne l'y prendrait plus."
+  }
+ ]
+}
