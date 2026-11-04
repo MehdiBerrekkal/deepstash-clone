@@ -29,7 +29,7 @@ const MAX_TEXT_PAGES = 400;
 
 /** A PDF read like a printed book: rendered pages on paper, the page-curl, two-page spreads, zoom and progress. */
 export default function PdfBookScreen() {
-  const { id, source } = useLocalSearchParams<{ id: string; source?: 'own' | 'private' }>();
+  const { id, source, ai } = useLocalSearchParams<{ id: string; source?: 'own' | 'private'; ai?: string }>();
   const { ready } = useStore();
   if (!ready) {
     return (
@@ -39,7 +39,7 @@ export default function PdfBookScreen() {
       </View>
     );
   }
-  return <PdfBook id={id} source={source === 'private' ? 'private' : 'own'} />;
+  return <PdfBook id={id} source={source === 'private' ? 'private' : 'own'} forceAi={ai === '1'} />;
 }
 
 async function pdfBytes(id: string, source: 'own' | 'private', ownBooks: ReturnType<typeof useStore>['ownBooks']) {
@@ -56,11 +56,11 @@ async function pdfBytes(id: string, source: 'own' | 'private', ownBooks: ReturnT
 }
 
 /** Your own PDF: reads its text once (after the first pages are drawn) and makes its main-idea cards. Returns a note to show. */
-function usePdfIdeas(api: PdfApi | null, count: number, ownBook: OwnBook | undefined, queueRef: { current: Promise<unknown> }) {
+function usePdfIdeas(api: PdfApi | null, count: number, ownBook: OwnBook | undefined, queueRef: { current: Promise<unknown> }, forceAi: boolean) {
   const makeIdeas = useMakeOwnIdeas();
   const { account } = useStore();
   const [note, setNote] = useState<string | null>(null);
-  const wants = !!ownBook && needsIdeas(ownBook, !!account);
+  const wants = !!ownBook && (forceAi || needsIdeas(ownBook, !!account));
   useEffect(() => {
     if (!api || !count || !wants || !ownBook) return;
     let alive = true;
@@ -69,10 +69,17 @@ function usePdfIdeas(api: PdfApi | null, count: number, ownBook: OwnBook | undef
       api.text(MAX_TEXT_PAGES).then(
         (texts) => {
           if (!alive) return;
-          const n = makeIdeas(ownBook, pdfPagesAsBook(ownBook.title, texts));
+          const { count: n, ai } = makeIdeas(ownBook, pdfPagesAsBook(ownBook.title, texts), { manual: forceAi });
           if (ownBook.ideas?.length && !n) return;
           setNote(n ? `💡 ${n} main ideas ready` : 'No text found in this PDF to make ideas from (it may be scanned images).');
           timer = setTimeout(() => setNote(null), 5000);
+          if (n && (account || forceAi))
+            ai.then((err) => {
+              if (!alive) return;
+              if (timer) clearTimeout(timer);
+              setNote(err ? `AI couldn’t write the cards: ${err}` : '✨ AI summaries ready');
+              timer = setTimeout(() => setNote(null), 6000);
+            });
         },
         () => {},
       ),
@@ -86,7 +93,7 @@ function usePdfIdeas(api: PdfApi | null, count: number, ownBook: OwnBook | undef
   return note;
 }
 
-function PdfBook({ id, source }: { id: string; source: 'own' | 'private' }) {
+function PdfBook({ id, source, forceAi }: { id: string; source: 'own' | 'private'; forceAi: boolean }) {
   const readerId = `pdf:${source}:${id}`;
   const { ownBooks, readerSettings, readerProgress, setReaderPosition } = useStore();
   const ownBook = source === 'own' ? ownBooks.find((b) => b.id === id) : undefined;
@@ -130,7 +137,7 @@ function PdfBook({ id, source }: { id: string; source: 'own' | 'private' }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [api, id, source]);
 
-  const ideasNote = usePdfIdeas(api, count, ownBook, queue);
+  const ideasNote = usePdfIdeas(api, count, ownBook, queue, forceAi);
 
   // Render the visible pages and their neighbours, one at a time.
   useEffect(() => {

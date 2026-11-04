@@ -9,31 +9,46 @@ import { useStore } from '@/lib/store';
 /** Books asked of the AI this session, so a failure isn't retried in a loop. */
 const askedAi = new Set<string>();
 
+/** Lets a book be sent to the AI again (e.g. from "Rewrite ideas with AI"). */
+export const forgetAiTry = (id: string) => askedAi.delete(id);
+
+type BookRef = Pick<OwnBook, 'id' | 'title' | 'author' | 'ideasBy' | 'ideas'>;
+
 /**
  * Makes and saves the idea cards for one book: first the passages the app picks itself (instant, offline), then,
  * for signed-in accounts, cards written by AI in its own words, which replace them when they arrive.
- * Returns how many cards it made straight away.
+ * Returns how many cards it made straight away, and a promise of the AI step (an error message, or null when it worked).
  */
 export function useMakeOwnIdeas() {
   const { setOwnBookIdeas, audience, account } = useStore();
-  return (book: Pick<OwnBook, 'id' | 'title' | 'author' | 'ideasBy' | 'ideas'>, text: FullBook): number => {
+  return (book: BookRef, text: FullBook, opts: { manual?: boolean } = {}): { count: number; ai: Promise<string | null> } => {
     const kid = audience === 'kid';
     const r = makeOwnIdeas(text, { kid });
     if (book.ideasBy !== 'ai' || !book.ideas?.length) {
       setOwnBookIdeas(book.id, { ideas: r.ideas, ideasVersion: OWN_IDEAS_VERSION, ideasBy: 'picked', description: r.description, topicId: r.topicId, lang: r.lang });
     }
-    if (account && !askedAi.has(book.id) && r.passages.length) {
-      askedAi.add(book.id);
-      aiIdeas({ title: book.title, author: book.author === 'PDF' ? undefined : book.author, lang: r.lang, kid, parts: r.passages }).then((ideas) => {
-        if (!ideas) return;
-        const description =
-          r.lang === 'fr'
-            ? `${ideas.length} idées principales de votre livre, résumées par l'IA (Google Gemini) dans ses propres mots.`
-            : `${ideas.length} main ideas from your book, summarised in its own words by AI (Google Gemini).`;
-        setOwnBookIdeas(book.id, { ideas, ideasVersion: OWN_IDEAS_VERSION, ideasBy: 'ai', description, topicId: r.topicId, lang: r.lang });
-      });
-    }
-    return r.ideas.length;
+    if (!opts.manual && (!account || askedAi.has(book.id))) return { count: r.ideas.length, ai: Promise.resolve(account ? null : 'Sign in to have AI write the cards.') };
+    askedAi.add(book.id);
+    const ai = aiIdeas({ title: book.title, author: book.author === 'PDF' ? undefined : book.author, lang: r.lang, kid, parts: r.passages }, opts).then((res) => {
+      if ('error' in res) return res.error;
+      const description =
+        r.lang === 'fr'
+          ? `${res.ideas.length} idées principales de votre livre, résumées par l'IA (Google Gemini) dans ses propres mots.`
+          : `${res.ideas.length} main ideas from your book, summarised in its own words by AI (Google Gemini).`;
+      setOwnBookIdeas(book.id, { ideas: res.ideas, ideasVersion: OWN_IDEAS_VERSION, ideasBy: 'ai', description, topicId: r.topicId, lang: r.lang });
+      return null;
+    });
+    return { count: r.ideas.length, ai };
+  };
+}
+
+/** "Rewrite ideas with AI" for an EPUB: loads its text and asks again. PDFs are rewritten when they're opened. */
+export function useRewriteWithAi() {
+  const make = useMakeOwnIdeas();
+  return async (book: OwnBook): Promise<string | null> => {
+    const text = await loadSavedBook(book.id).catch(() => null);
+    if (!text) return 'This book’s text isn’t on this device. Open the file again from the Library first.';
+    return make(book, text, { manual: true }).ai;
   };
 }
 

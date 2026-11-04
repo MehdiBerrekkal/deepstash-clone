@@ -2,6 +2,7 @@ import { router, useNavigation } from 'expo-router';
 import { useLayoutEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { BookActions, openOwnBook, type BookActionTarget } from '@/components/BookActions';
 import { BookCover } from '@/components/BookCover';
 import { BookGrid } from '@/components/BookGrid';
 import { FavoriteButton } from '@/components/FavoriteButton';
@@ -9,7 +10,7 @@ import { Shelf } from '@/components/Shelf';
 import { classicAsSource } from '@/lib/classicSource';
 import { classicReaderId, classics, type Classic } from '@/lib/fullbook';
 import { hasNarration } from '@/lib/narration';
-import { deleteOwnBookFiles, ownSourceId, pickOwnBook, type OwnBook } from '@/lib/ownbooks';
+import { ownSourceId, pickOwnBook, type OwnBook } from '@/lib/ownbooks';
 import type { Source } from '@/lib/types';
 import { useStore } from '@/lib/store';
 import { colors } from '@/lib/theme';
@@ -17,7 +18,9 @@ import { useT } from '@/lib/i18n';
 import { KID_CLASSICS } from '@/lib/audience';
 
 export default function LibraryScreen() {
-  const { sources, topics, followedTopicIds, bookProgress, sourceById, readerProgress, ownBooks, addOwnBook, removeOwnBook, favoriteBooks, downloadedBooks, audience } = useStore();
+  const { sources, topics, followedTopicIds, bookProgress, sourceById, readerProgress, ownBooks, addOwnBook, favoriteBooks, downloadedBooks, audience } = useStore();
+  // The long-press menu for a book.
+  const [actions, setActions] = useState<BookActionTarget | null>(null);
   const kid = audience === 'kid';
   // Kid mode only lists children's books (and the family's own private ones).
   const shown = useMemo(() => (kid ? classics.filter((c) => KID_CLASSICS.has(c.id) || c.origin === 'private') : classics), [kid]);
@@ -73,10 +76,10 @@ export default function LibraryScreen() {
 
   const openOwn = async (book: OwnBook) => {
     setFileError(null);
-    if (book.kind === 'epub') return router.push({ pathname: '/reader/[id]', params: { id: book.id, kind: 'own' } });
-    // PDFs open in the book-style PDF reader on every platform.
-    router.push({ pathname: '/pdfbook/[id]', params: { id: book.id, source: 'own' } });
+    openOwnBook(book);
   };
+  const ownActions = (book: OwnBook) => setActions({ kind: 'own', book });
+  const classicActions = (book: Classic) => setActions({ kind: 'classic', book });
 
   const pick = async () => {
     setFileError(null);
@@ -94,10 +97,6 @@ export default function LibraryScreen() {
     }
   };
 
-  const remove = (book: OwnBook) => {
-    removeOwnBook(book.id);
-    deleteOwnBookFiles(book).catch(() => {});
-  };
 
   const shelves = useMemo(() => {
     const inProgress = Object.entries(bookProgress)
@@ -148,19 +147,19 @@ export default function LibraryScreen() {
             {classicResults.length ? ` · ${classicResults.length} free full ${classicResults.length === 1 ? 'book' : 'books'}` : ''}
           </Text>
           <BookGrid books={results} />
-          {classicResults.length > 0 && <ClassicShelf title="📚 Free full books" items={classicResults} />}
+          {classicResults.length > 0 && <ClassicShelf title="📚 Free full books" items={classicResults} onLongPress={classicActions} />}
         </>
       ) : (
         <>
-          {ownBooks.length > 0 && <OwnShelf title={t('📥 Your books · main ideas')} books={ownBooks} onOpen={openOwn} />}
-          {myBooks.length > 0 && <ClassicShelf title="🔒 My books" items={myBooks} />}
-          {recentlyAdded.length > 0 && <ClassicShelf title={t('✨ Recently added')} items={recentlyAdded} />}
-          <ClassicShelf title={t('🎙 Read aloud by a real narrator')} items={narrated} />
+          {ownBooks.length > 0 && <OwnShelf title={t('📥 Your books · main ideas')} books={ownBooks} onOpen={openOwn} onLongPress={ownActions} />}
+          {myBooks.length > 0 && <ClassicShelf title="🔒 My books" items={myBooks} onLongPress={classicActions} />}
+          {recentlyAdded.length > 0 && <ClassicShelf title={t('✨ Recently added')} items={recentlyAdded} onLongPress={classicActions} />}
+          <ClassicShelf title={t('🎙 Read aloud by a real narrator')} items={narrated} onLongPress={classicActions} />
           <Shelf title={t('Continue reading')} books={shelves.inProgress} />
           {classicShelves.map((s) => (
-            <ClassicShelf key={s.id} title={s.title} items={s.items} />
+            <ClassicShelf key={s.id} title={s.title} items={s.items} onLongPress={classicActions} />
           ))}
-          <ClassicShelf title="⬇ More full books · free to download" items={toDownload} />
+          <ClassicShelf title="⬇ More full books · free to download" items={toDownload} onLongPress={classicActions} />
           <Shelf title="🎁 Free from the author" books={shelves.free} />
           <View style={styles.own}>
             <Text style={styles.ownTitle}>{t('Your books')}</Text>
@@ -172,7 +171,7 @@ export default function LibraryScreen() {
               const fraction = readerProgress[`own:${b.id}`]?.fraction;
               return (
                 <View key={b.id} style={styles.ownRow}>
-                  <Pressable onPress={() => openOwn(b)} style={styles.ownInfo}>
+                  <Pressable onPress={() => openOwn(b)} onLongPress={() => ownActions(b)} delayLongPress={450} style={styles.ownInfo}>
                     <Text style={styles.ownBadge}>{b.kind === 'pdf' ? 'PDF' : b.source ? (b.lang === 'fr' ? 'FR' : 'FREE') : 'EPUB'}</Text>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.ownBook} numberOfLines={1}>
@@ -188,14 +187,14 @@ export default function LibraryScreen() {
                   <View style={styles.ownHeart}>
                     <FavoriteButton favoriteKey={`own:${b.id}`} title={b.title} />
                   </View>
-                  <Pressable accessibilityLabel={`Remove ${b.title}`} onPress={() => remove(b)} style={styles.ownRemove}>
-                    <Text style={styles.ownMeta}>✕</Text>
+                  <Pressable accessibilityLabel={`More for ${b.title}`} onPress={() => ownActions(b)} style={styles.ownRemove}>
+                    <Text style={styles.ownMore}>⋯</Text>
                   </Pressable>
                 </View>
               );
             })}
             <Text style={styles.footerText}>
-              DRM-free files only. They stay on this device and are never uploaded.
+              DRM-free files only. They stay on this device and are never uploaded. Long-press a book for more.
             </Text>
           </View>
           {shelves.byTopic.map(({ topic, books }) => (
@@ -209,12 +208,13 @@ export default function LibraryScreen() {
           </View>
         </>
       )}
+      {actions && <BookActions target={actions} onClose={() => setActions(null)} />}
     </ScrollView>
   );
 }
 
 /** Your own books as covers; a tap opens the book's page with its main ideas (or the book, until they're ready). */
-function OwnShelf({ title, books, onOpen }: { title: string; books: OwnBook[]; onOpen: (b: OwnBook) => void }) {
+function OwnShelf({ title, books, onOpen, onLongPress }: { title: string; books: OwnBook[]; onOpen: (b: OwnBook) => void; onLongPress: (b: OwnBook) => void }) {
   const { readerProgress, topics } = useStore();
   return (
     <View style={styles.shelf}>
@@ -245,6 +245,7 @@ function OwnShelf({ title, books, onOpen }: { title: string; books: OwnBook[]; o
               favoriteKey={`own:${item.id}`}
               subtitle={n ? `💡 ${n} main ideas` : item.kind === 'pdf' ? 'Open it to make its ideas' : 'Making its ideas…'}
               onPress={() => (n ? router.push({ pathname: '/book/[id]', params: { id: source.id } }) : onOpen(item))}
+              onLongPress={() => onLongPress(item)}
             />
           );
         }}
@@ -283,7 +284,7 @@ function shelfOf(c: Classic): NonNullable<Classic['shelf']> {
 const NEW_DAYS = 7;
 const isNew = (addedAt?: string) => !!addedAt && Date.now() - new Date(addedAt).getTime() < NEW_DAYS * 24 * 60 * 60 * 1000;
 
-function ClassicShelf({ title, items }: { title: string; items: typeof classics }) {
+function ClassicShelf({ title, items, onLongPress }: { title: string; items: typeof classics; onLongPress?: (c: Classic) => void }) {
   const { readerProgress, downloadedBooks } = useStore();
   if (items.length === 0) return null;
   return (
@@ -313,6 +314,7 @@ function ClassicShelf({ title, items }: { title: string; items: typeof classics 
                     : item.author
               }
               onPress={() => router.push({ pathname: '/classic/[id]', params: { id: item.id } })}
+              onLongPress={onLongPress && (() => onLongPress(item))}
             />
           );
         }}
@@ -341,6 +343,7 @@ const styles = StyleSheet.create({
   ownBook: { color: colors.text, fontWeight: '700' },
   ownMeta: { color: colors.muted, fontSize: 12 },
   ownRemove: { padding: 8 },
+  ownMore: { color: colors.text, fontSize: 20, fontWeight: '800' },
   ownHeart: { width: 36, height: 36 },
   headerHeart: { flexDirection: 'row', alignItems: 'center', gap: 4, marginRight: 16, paddingHorizontal: 4 },
   headerHeartIcon: { color: '#FF6B81', fontSize: 20 },

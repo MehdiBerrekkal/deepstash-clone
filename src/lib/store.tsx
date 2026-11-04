@@ -137,6 +137,7 @@ type Store = Content &
     /** Saves the main-idea cards made for one of your books. */
     setOwnBookIdeas: (id: string, patch: Pick<OwnBook, 'ideas' | 'ideasVersion' | 'ideasBy' | 'description' | 'topicId' | 'lang'>) => void;
     removeOwnBook: (id: string) => void;
+    renameOwnBook: (id: string, title: string) => void;
     markDownloaded: (id: string) => void;
   };
 
@@ -588,6 +589,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const renameOwnBook = useCallback(
+    (id: string, title: string) => setUser((u) => ({ ...u, ownBooks: u.ownBooks.map((b) => (b.id === id && title.trim() ? { ...b, title: title.trim() } : b)) })),
+    [],
+  );
+
   const removeOwnBook = useCallback((id: string) => {
     setUser((u) => {
       const { [`own:${id}`]: _progress, ...readerProgress } = u.readerProgress;
@@ -707,10 +713,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       addOwnBook,
       setOwnBookIdeas,
       removeOwnBook,
+      renameOwnBook,
       markDownloaded,
     };
   }, [
-    content, own, setOwnBookIdeas, user, ready, indexes, setFollowedTopics, createStash, deleteStash, toggleInStash, toggleLike, markRead, setBookPosition,
+    content, own, setOwnBookIdeas, renameOwnBook, user, ready, indexes, setFollowedTopics, createStash, deleteStash, toggleInStash, toggleLike, markRead, setBookPosition,
     finishBook, toggleFavoriteBook, setDailyGoal, resetProgress, setReaderSettings, setReaderPosition, toggleBookmark, removeBookmark,
     saveClip, addHighlight, updateHighlight, removeHighlight, logReading, setMinuteGoal, markReaderFinished, gradeReview, setNotInterested, setAppearance, recordBrain, addBrainTest, setBrainSound, patchBrain, exportUser, importUser, markBackedUp, setUiLanguage, markBrainHowTo, markBrainDaily, addOwnBook, removeOwnBook, markDownloaded, setAudience, setBirthYear, account, recovering, continueAsGuest,
   ]);

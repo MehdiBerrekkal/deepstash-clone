@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { FavoriteButton } from '@/components/FavoriteButton';
 import { useStore } from '@/lib/store';
@@ -21,7 +21,17 @@ type Props = {
   favoriteKey?: string | null;
   /** Small label on the cover, e.g. "NEW". */
   badge?: string;
+  /** Long press: a menu of actions for this book. */
+  onLongPress?: () => void;
 };
+
+// iOS Safari: a long press on a cover shouldn't select text or offer to save the image.
+if (Platform.OS === 'web' && typeof document !== 'undefined' && !document.getElementById('longpress-style')) {
+  const style = document.createElement('style');
+  style.id = 'longpress-style';
+  style.textContent = '[data-longpress], [data-longpress] * { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }';
+  document.head.appendChild(style);
+}
 
 /** A typographic cover in the topic's colour, with the Open Library cover on top once it loads. */
 export function BookCover({
@@ -33,6 +43,7 @@ export function BookCover({
   subtitle,
   favoriteKey,
   badge,
+  onLongPress,
 }: Props) {
   const { topicById, bookProgress, ideasBySource } = useStore();
   const [failed, setFailed] = useState(false);
@@ -49,6 +60,9 @@ export function BookCover({
         accessibilityRole="button"
         accessibilityLabel={`${book.title} by ${book.author}`}
         onPress={onPress ?? (() => router.push({ pathname: '/book/[id]', params: { id: book.id } }))}
+        onLongPress={onLongPress}
+        delayLongPress={450}
+        {...(onLongPress && Platform.OS === 'web' ? ({ dataSet: { longpress: '1' } } as object) : {})}
         style={{ width }}>
         <View style={[styles.cover, onCardScope, { width, height, backgroundColor: topic?.color ?? colors.surface }]}>
           <View style={styles.spine} />
