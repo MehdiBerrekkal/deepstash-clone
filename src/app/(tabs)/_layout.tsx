@@ -14,13 +14,15 @@ const icon = (glyph: string) =>
   };
 
 export default function TabsLayout() {
-  const { ready, followedTopicIds } = useStore();
+  const { ready, followedTopicIds, audience } = useStore();
   const insets = useSafeAreaInsets();
   // Real colours (not CSS variables): navigation tints icons with them.
   const colors = usePalette();
   const t = useT();
 
   if (!ready) return null;
+  // Kid or adult comes first, before anything else; then the topics for that group.
+  if (!audience) return <Redirect href="/welcome" />;
   if (followedTopicIds.length === 0) return <Redirect href="/onboarding" />;
 
   return (

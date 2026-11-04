@@ -6,11 +6,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { TopicChip } from '@/components/TopicChip';
 import { useStore } from '@/lib/store';
 import { colors } from '@/lib/theme';
+import { useT } from '@/lib/i18n';
 
 const MIN_TOPICS = 3;
 
 export default function OnboardingScreen() {
-  const { topics, followedTopicIds, setFollowedTopics } = useStore();
+  const { topics, followedTopicIds, setFollowedTopics, audience } = useStore();
+  const t = useT();
+  const kid = audience === 'kid';
   const [selected, setSelected] = useState<string[]>(followedTopicIds);
 
   const toggle = (id: string) =>
@@ -26,17 +29,20 @@ export default function OnboardingScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>What do you want to get smarter about?</Text>
-        <Text style={styles.subtitle}>Pick at least {MIN_TOPICS} topics. Your feed starts with these.</Text>
+        <Text style={styles.title}>{t(kid ? 'What do you love to learn about?' : 'What do you want to get smarter about?')}</Text>
+        <Text style={styles.subtitle}>{t('Pick at least {n} topics. Your feed starts with these.', { n: MIN_TOPICS })}</Text>
         <View style={styles.chips}>
           {topics.map((topic) => (
             <TopicChip key={topic.id} topic={topic} selected={selected.includes(topic.id)} onPress={() => toggle(topic.id)} />
           ))}
         </View>
+        <Pressable onPress={() => router.replace('/welcome')} hitSlop={8}>
+          <Text style={styles.switch}>{t(kid ? 'Not a kid? Switch to adult' : 'Setting this up for a kid? Switch to kid')}</Text>
+        </Pressable>
       </ScrollView>
       <Pressable disabled={!canContinue} onPress={done} style={[styles.button, !canContinue && styles.buttonDisabled]}>
         <Text style={styles.buttonText}>
-          {canContinue ? 'Start reading' : `Choose ${MIN_TOPICS - selected.length} more`}
+          {canContinue ? t('Start reading') : t('Choose {n} more', { n: MIN_TOPICS - selected.length })}
         </Text>
       </Pressable>
     </SafeAreaView>
@@ -48,6 +54,7 @@ const styles = StyleSheet.create({
   content: { padding: 24, gap: 12 },
   title: { color: colors.text, fontSize: 30, fontWeight: '800', lineHeight: 36, marginTop: 24 },
   subtitle: { color: colors.muted, fontSize: 16, marginBottom: 12 },
+  switch: { color: colors.muted, textDecorationLine: 'underline', marginTop: 16 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   button: { margin: 24, paddingVertical: 16, borderRadius: 999, alignItems: 'center', backgroundColor: colors.accent },
   buttonDisabled: { opacity: 0.4 },

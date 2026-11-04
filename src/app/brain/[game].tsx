@@ -1,5 +1,4 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import * as Speech from 'expo-speech';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
@@ -34,7 +33,7 @@ const RESUME_HOURS = 24;
 export default function GameScreen() {
   const { game: id, daily, session } = useLocalSearchParams<{ game: string; daily?: string; session?: string }>();
   const game = gameById[id];
-  const { brain, recordBrain, markBrainHowTo, markBrainDaily, setBrainSound, patchBrain } = useStore();
+  const { brain, recordBrain, markBrainHowTo, markBrainDaily, setBrainSound, patchBrain, audience } = useStore();
   const t = useT();
   const lang = useUiLang();
   const [phase, setPhase] = useState<Phase>('intro');
@@ -63,7 +62,7 @@ export default function GameScreen() {
     );
   }
   const dom = domainOf(game.skill);
-  const rating = brain.levels[id] ?? 2;
+  const rating = brain.levels[id] ?? (audience === 'kid' ? 1 : 2);
   const text = gameText(game, lang);
   const seen = brain.seen.includes(id);
   const saved = brain.run && brain.run.id === id && now() - brain.run.saved < RESUME_HOURS * 3600e3 ? brain.run : null;
@@ -571,7 +570,19 @@ function ItemsRun({ game, rating, seed, color, onDone, resume, save, onQuit }: {
 
 // ---------- dual n-back ----------
 
-const LETTERS = ['C', 'H', 'K', 'L', 'Q', 'R', 'S', 'T'];
+/** The second channel is a shape shown inside the lit square (it used to be a spoken letter, which was hard to hear). */
+const SHAPES = [
+  { glyph: '●', color: '#FF6FB5' },
+  { glyph: '▲', color: '#FFB547' },
+  { glyph: '■', color: '#4FD1FF' },
+  { glyph: '◆', color: '#3DDC97' },
+  { glyph: '★', color: '#F2C14E' },
+  { glyph: '✚', color: '#B78CFF' },
+  { glyph: '♥', color: '#FF5C70' },
+  { glyph: '☾', color: '#AEB5DA' },
+];
+const LETTERS = SHAPES.map((x) => x.glyph);
+const shapeColor = (g: string) => SHAPES.find((x) => x.glyph === g)?.color ?? '#fff';
 
 function makeNBack(N: number, total: number) {
   // About a third of trials match on each channel.
@@ -624,7 +635,6 @@ function NBack({ rating, color, onDone, practice }: CustomProps) {
     const on = setTimeout(() => {
       setLit(true);
       pressed.current = { pos: false, snd: false };
-      Speech.speak(seq.letters[i], { rate: 1.1 });
     }, 0);
     const clear = setTimeout(() => setFlash({}), 500);
     const off = setTimeout(() => setLit(false), 800);
@@ -666,7 +676,7 @@ function NBack({ rating, color, onDone, practice }: CustomProps) {
     }
     setFlash((f) => ({ ...f, [ch]: match ? 'ok' : 'bad' }));
   };
-  const hint = practice && i >= N && i < total ? [seq.pos[i] === seq.pos[i - N] && 'same square', seq.letters[i] === seq.letters[i - N] && 'same letter'].filter(Boolean).join(' and ') : '';
+  const hint = practice && i >= N && i < total ? [seq.pos[i] === seq.pos[i - N] && 'same square', seq.letters[i] === seq.letters[i - N] && 'same shape'].filter(Boolean).join(' and ') : '';
 
   return (
     <View style={styles.custom}>
@@ -674,20 +684,21 @@ function NBack({ rating, color, onDone, practice }: CustomProps) {
       <Text style={styles.ask}>{i < N ? `Remember the first ${N === 1 ? 'one' : N}…` : `Same as ${N} step${N > 1 ? 's' : ''} back?`}</Text>
       <View style={styles.nbGrid}>
         {Array.from({ length: 9 }, (_, k) => (
-          <View key={k} style={[styles.nbCell, lit && seq.pos[i] === k && { backgroundColor: color, borderColor: color, shadowColor: color, shadowOpacity: 0.7, shadowRadius: 14 }]} />
+          <View key={k} style={[styles.nbCell, styles.nbCellCenter, lit && seq.pos[i] === k && { backgroundColor: `${color}33`, borderColor: color, shadowColor: color, shadowOpacity: 0.7, shadowRadius: 14 }]}>
+            {lit && seq.pos[i] === k && i >= 0 && i < total && <Text style={[styles.nbShape, { color: shapeColor(seq.letters[i]) }]}>{seq.letters[i]}</Text>}
+          </View>
         ))}
       </View>
-      <Text style={styles.nbLetter}>{lit && i >= 0 && i < total ? seq.letters[i] : ' '}</Text>
       {practice && <Text style={[styles.hint, { color }]}>{hint ? `Match: ${hint} — press now` : ' '}</Text>}
       <View style={styles.row2}>
         {(['pos', 'snd'] as const).map((ch) => (
-          <Pressable key={ch} accessibilityLabel={ch === 'pos' ? 'Position match' : 'Sound match'} onPress={() => press(ch)} style={({ pressed: p }) => [styles.bigBtn, p && styles.optPressed, flash[ch] === 'ok' && styles.ok, flash[ch] === 'bad' && styles.bad, flash[ch] === 'miss' && styles.miss]}>
-            <Text style={styles.bigBtnText}>{ch === 'pos' ? 'Position' : 'Sound'}</Text>
+          <Pressable key={ch} accessibilityLabel={ch === 'pos' ? 'Position match' : 'Shape match'} onPress={() => press(ch)} style={({ pressed: p }) => [styles.bigBtn, p && styles.optPressed, flash[ch] === 'ok' && styles.ok, flash[ch] === 'bad' && styles.bad, flash[ch] === 'miss' && styles.miss]}>
+            <Text style={styles.bigBtnText}>{ch === 'pos' ? 'Position' : 'Shape'}</Text>
             <Text style={styles.bigBtnSub}>{flash[ch] === 'miss' ? 'missed a match' : flash[ch] === 'bad' ? 'not a match' : flash[ch] === 'ok' ? 'match ✓' : ' '}</Text>
           </Pressable>
         ))}
       </View>
-      <Text style={styles.cardHint}>The letter is spoken and shown. Press only when it matches {N} back. Turn your sound on for the letters.</Text>
+      <Text style={styles.cardHint}>Press Position when the square is where it was {N} back, and Shape when the shape is the same as {N} back. Both can match at once.</Text>
     </View>
   );
 }
@@ -1358,7 +1369,8 @@ const styles = StyleSheet.create({
   custom: { flex: 1, padding: 16, gap: 16, maxWidth: 620, width: '100%', alignSelf: 'center', alignItems: 'stretch' },
   nbGrid: { width: 252, height: 252, alignSelf: 'center', flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   nbCell: { width: 80, height: 80, borderRadius: 14, borderWidth: 1.5, borderColor: colors.border, backgroundColor: colors.surface },
-  nbLetter: { color: colors.text, fontSize: 36, fontWeight: '900', textAlign: 'center', height: 44 },
+  nbCellCenter: { alignItems: 'center', justifyContent: 'center' },
+  nbShape: { fontSize: 40, lineHeight: 46, fontWeight: '900' },
   row2: { flexDirection: 'row', gap: 12 },
   bigBtn: { flex: 1, paddingVertical: 16, borderRadius: 18, alignItems: 'center', backgroundColor: colors.surfaceRaised, borderWidth: 1.5, borderColor: colors.border, minHeight: 64 },
   bigBtnText: { color: colors.text, fontWeight: '900', fontSize: 16 },

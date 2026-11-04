@@ -16,6 +16,7 @@ import relationships from './library/relationships.json';
 import science from './library/science.json';
 import covers from './covers.json';
 import facts from './facts.json';
+import kids from './kids.json';
 import poems from './poems.json';
 import quotes from './quotes.json';
 
@@ -86,6 +87,16 @@ function build(): Content {
   for (const f of facts) {
     ideas.push({ id: `fact-${slug(f.title)}`, kind: 'fact', topicId: f.topic, title: f.title, body: f.body });
   }
+
+  // Kid mode's own topics, cards, poems and books (all ids start with "kids-"; see lib/audience).
+  topics.push(...kids.topics);
+  for (const book of kids.books) {
+    sources.push({ id: book.id, title: book.title, author: book.author, kind: 'book', topicId: 'kids-stories', description: book.description, year: book.year ?? undefined });
+    book.ideas.forEach(([title, body], i) => ideas.push({ id: `${book.id}-${i + 1}`, kind: 'idea', topicId: 'kids-stories', sourceId: book.id, title, body }));
+  }
+  for (const f of kids.facts) ideas.push({ id: `kids-fact-${slug(f.title)}`, kind: 'fact', topicId: f.topic, title: f.title, body: f.body });
+  kids.quotes.forEach((q, i) => ideas.push({ id: `kids-quote-${i + 1}-${slug(q.author)}`, kind: 'quote', topicId: q.topic, title: '', body: q.text, author: q.author, cite: q.cite }));
+  for (const p of kids.poems) ideas.push({ id: `kids-poem-${slug(p.title)}`, kind: 'poem', topicId: 'kids-poems', title: p.title, body: p.text, author: p.author, year: p.year });
 
   return { topics, sources, ideas };
 }

@@ -8,7 +8,7 @@ import { ProgressChart } from '@/components/brain/ProgressChart';
 import { SkillRadar } from '@/components/brain/SkillRadar';
 import { GoalRing } from '@/components/GoalRing';
 import { displayFont } from '@/lib/bookType';
-import { GAMES, dailyGame, gameById, gameText, sessionGames } from '@/lib/brain/catalog';
+import { dailyGame, gameById, gameText, gamesFor, sessionGames } from '@/lib/brain/catalog';
 import { DOMAINS, rankFor, type Skill } from '@/lib/brain/core';
 import { QUIZ, QUIZ_CATEGORIES } from '@/data/brain/quiz';
 import { localDate, useStore } from '@/lib/store';
@@ -20,7 +20,11 @@ const isRecent = (t: number) => Date.now() - t < 24 * 3600e3;
 
 /** The training hub: rank and cognitive profile, tests, the daily challenge, a weekly plan, games by domain, quizzes. */
 export default function BrainScreen() {
-  const { brain, streak, patchBrain, setBrainSound } = useStore();
+  const { brain, streak, patchBrain, setBrainSound, audience } = useStore();
+  const kid = audience === 'kid';
+  const GAMES = gamesFor(kid);
+  const categories = QUIZ_CATEGORIES.filter((c) => !!c.kid === kid);
+  const quizCount = QUIZ.filter((q) => categories.some((c) => c.id === q.category)).length;
   const t = useT();
   const lang = useUiLang();
   const [mode, setMode] = useState<'training' | 'quizzes'>('training');
@@ -28,7 +32,7 @@ export default function BrainScreen() {
   const { width } = useWindowDimensions();
   const today = localDate();
   const daily = brain.daily.date === today ? brain.daily : { game: false, quiz: false };
-  const dg = dailyGame(today);
+  const dg = dailyGame(today, kid);
   const rank = rankFor(brain.xp ?? 0);
   const scores = DOMAINS.map((d) => brain.skills[d.id]).filter((v): v is number => v !== undefined);
   const profile = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null;
@@ -39,7 +43,7 @@ export default function BrainScreen() {
   const open = (id: string, params: Record<string, string> = {}) => router.push({ pathname: '/brain/[game]', params: { game: id, ...params } });
   // Today's session: three games aimed at your weaker areas, the same all day.
   const session = brain.session?.date === today ? brain.session : null;
-  const sessionList = session?.games ?? sessionGames(brain.skills, brain.played, today);
+  const sessionList = session?.games ?? sessionGames(brain.skills, brain.played, today, kid);
   const sessionDone = session ? sessionList.filter((g) => session.done[g]).length : 0;
   const nextGame = sessionList.find((g) => !session?.done[g]);
   const startSession = () => {
@@ -137,8 +141,8 @@ export default function BrainScreen() {
       <Animated.View entering={FadeInDown.delay(60).duration(400)} style={styles.testRow}>
         <Pressable accessibilityLabel="Full IQ-style test" onPress={() => router.push({ pathname: '/brain/test', params: { mode: 'full' } })} style={[styles.testCard, styles.testMain]}>
           <Text style={styles.testKicker}>{t('ASSESSMENT')}</Text>
-          <Text style={styles.testTitle}>{t('IQ-style test')}</Text>
-          <Text style={styles.testSub}>{t('38 items · 25 min · 4 sections')}</Text>
+          <Text style={styles.testTitle}>{t(kid ? 'Kids’ IQ-style test' : 'IQ-style test')}</Text>
+          <Text style={styles.testSub}>{t('8 subtests · 30 min · age-normed')}</Text>
           {lastTest && (
             <Text style={styles.testLast}>
               Last: {lastTest.iq} ({lastTest.mode === 'full' ? 'full' : 'quick'})
@@ -148,7 +152,7 @@ export default function BrainScreen() {
         <Pressable accessibilityLabel="Quick test" onPress={() => router.push({ pathname: '/brain/test', params: { mode: 'quick' } })} style={styles.testCard}>
           <Text style={styles.testKicker}>{t('QUICK')}</Text>
           <Text style={styles.testTitle}>{t('15-min test')}</Text>
-          <Text style={styles.testSub}>{t('16 items')}</Text>
+          <Text style={styles.testSub}>{t('5 subtests')}</Text>
         </Pressable>
       </Animated.View>
 
@@ -186,7 +190,7 @@ export default function BrainScreen() {
       <View style={styles.segment}>
         {(['training', 'quizzes'] as const).map((m) => (
           <Pressable key={m} accessibilityLabel={m === 'training' ? 'Training' : 'Quizzes'} onPress={() => setMode(m)} style={[styles.segmentItem, mode === m && styles.segmentOn]}>
-            <Text style={[styles.segmentText, mode === m && styles.segmentTextOn]}>{m === 'training' ? `${t('Training')} · ${GAMES.length}` : `${t('Quizzes')} · ${QUIZ.length}`}</Text>
+            <Text style={[styles.segmentText, mode === m && styles.segmentTextOn]}>{m === 'training' ? `${t('Training')} · ${GAMES.length}` : `${t('Quizzes')} · ${quizCount}`}</Text>
           </Pressable>
         ))}
       </View>
@@ -205,7 +209,7 @@ export default function BrainScreen() {
                 </View>
                 <View style={styles.grid}>
                   {games.map((g) => {
-                    const lv = brain.levels[g.id] ?? 2;
+                    const lv = brain.levels[g.id] ?? (kid ? 1 : 2);
                     return (
                       <Pressable key={g.id} accessibilityLabel={`Play ${g.name}`} onPress={() => open(g.id)} style={styles.tileWrap}>
                         <LinearGradient colors={[`${d.color}26`, `${d.color}05`]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[styles.tile, { borderColor: `${d.color}40` }]}>
@@ -238,7 +242,7 @@ export default function BrainScreen() {
               </Pressable>
             ))}
           </View>
-          {QUIZ_CATEGORIES.map((c) => (
+          {categories.map((c) => (
             <Pressable key={c.id} accessibilityLabel={`Quiz ${c.name}`} onPress={() => router.push({ pathname: '/brain/quiz', params: { category: c.id, mode: quizMode } })} style={styles.quizRow}>
               <View style={styles.flex}>
                 <Text style={styles.tileTitle}>{c.name}</Text>

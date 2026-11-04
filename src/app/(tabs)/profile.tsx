@@ -30,7 +30,7 @@ export default function ProfileScreen() {
   } = useStore();
   const [confirmReset, setConfirmReset] = useState(false);
   const t = useT();
-  const { uiLanguage, setUiLanguage } = useStore();
+  const { uiLanguage, setUiLanguage, audience, setAudience } = useStore();
 
   const fullFinished = Object.keys(finishedReaders)
     .filter((key) => key.startsWith('classic:') && classicById[key.slice(8)])
@@ -87,6 +87,23 @@ export default function ProfileScreen() {
             ))}
           </View>
         </View>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.heading}>👤 {t('Who is using the app?')}</Text>
+        <View style={styles.segment}>
+          {(['kid', 'adult'] as const).map((a) => (
+            <Pressable
+              key={a}
+              accessibilityLabel={a === 'kid' ? 'Kid mode' : 'Adult mode'}
+              accessibilityState={{ selected: audience === a }}
+              onPress={() => setAudience(a)}
+              style={[styles.segmentItem, audience === a && styles.segmentOn]}>
+              <Text style={[styles.segmentText, audience === a && styles.segmentTextOn]}>{a === 'kid' ? `🧒 ${t('Kid')}` : `🧑 ${t('Adult')}`}</Text>
+            </Pressable>
+          ))}
+        </View>
+        <Text style={styles.muted}>{t('Changes the topics and cards, the Library shelves, the games and quizzes, and the age norms of the IQ-style test.')}</Text>
       </View>
 
       <View style={styles.card}>

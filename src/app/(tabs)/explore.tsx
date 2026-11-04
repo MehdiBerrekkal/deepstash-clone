@@ -9,6 +9,7 @@ import { KindFilter } from '@/components/KindFilter';
 import { HIGHLIGHT_COLORS } from '@/lib/bookType';
 import { classicAsSource } from '@/lib/classicSource';
 import { classics } from '@/lib/fullbook';
+import { KID_CLASSICS } from '@/lib/audience';
 import { matchesAll } from '@/lib/search';
 import { useStore } from '@/lib/store';
 import { colors, onCardScope } from '@/lib/theme';
@@ -28,7 +29,8 @@ const openHighlight = (h: Highlight) => {
 
 /** Search everything: card text, library books, full books (bundled and downloadable) and your highlights. */
 export default function ExploreScreen() {
-  const { ideas, topics, sources, sourceById, highlights } = useStore();
+  const { ideas, topics, sources, sourceById, highlights, audience } = useStore();
+  const kid = audience === 'kid';
   const t = useT();
   const [query, setQuery] = useState('');
   const [scope, setScope] = useState<Scope>(null);
@@ -50,6 +52,7 @@ export default function ExploreScreen() {
   const books = useMemo((): BookResult[] => {
     if (scope !== 'books' && (scope !== null || !q)) return [];
     const full = classics
+      .filter((c) => !kid || KID_CLASSICS.has(c.id) || c.origin === 'private')
       .filter((c) => !q || matchesAll(`${c.title} ${c.author} ${c.translator ?? ''}`, q))
       .map((c) => ({
         key: `classic:${c.id}`,
@@ -61,7 +64,7 @@ export default function ExploreScreen() {
       .filter((s) => !q || matchesAll(`${s.title} ${s.author}`, q))
       .map((s) => ({ key: `book:${s.id}`, book: s, full: false }));
     return [...full, ...summaries];
-  }, [sources, q, scope]);
+  }, [sources, q, scope, kid]);
 
   const marks = useMemo(
     () =>

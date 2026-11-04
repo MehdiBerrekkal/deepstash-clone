@@ -174,6 +174,28 @@ const FR: Record<string, string> = {
   'Quit the test': 'Quitter le test',
   NEW_RANK: 'NOUVEAU RANG',
   'Tap to continue': 'Touchez pour continuer',
+  // kid or adult
+  'Who is using the app?': 'Qui utilise l’app ?',
+  'Books, cards, games and tests adapt to your answer. You can change it any time in You.': 'Les livres, les cartes, les jeux et les tests s’adaptent à votre réponse. Vous pourrez la changer à tout moment dans Vous.',
+  'A kid': 'Un enfant',
+  'An adult': 'Un adulte',
+  '6 to 12 years old': 'De 6 à 12 ans',
+  '13 and older': '13 ans et plus',
+  'Fun facts, children’s classics, kids’ quizzes and games that start easy.': 'Des faits amusants, des classiques pour enfants, des quiz pour enfants et des jeux qui commencent en douceur.',
+  'Book ideas, great literature, poems and the full brain training.': 'Des idées de livres, la grande littérature, des poèmes et tout l’entraînement cérébral.',
+  'What do you love to learn about?': 'Qu’est-ce que tu aimes apprendre ?',
+  'What do you want to get smarter about?': 'Sur quoi voulez-vous en savoir plus ?',
+  'Pick at least {n} topics. Your feed starts with these.': 'Choisissez au moins {n} thèmes. Votre fil commence par ceux-ci.',
+  'Start reading': 'Commencer à lire',
+  'Choose {n} more': 'Encore {n} à choisir',
+  'Not a kid? Switch to adult': 'Pas un enfant ? Passer en mode adulte',
+  'Setting this up for a kid? Switch to kid': 'Pour un enfant ? Passer en mode enfant',
+  Kid: 'Enfant',
+  Adult: 'Adulte',
+  'Changes the topics and cards, the Library shelves, the games and quizzes, and the age norms of the IQ-style test.': 'Change les thèmes et les cartes, les rayons de la bibliothèque, les jeux et les quiz, et les normes d’âge du test de type QI.',
+  'Kids’ IQ-style test': 'Test de type QI pour enfants',
+  '8 subtests · 30 min · age-normed': '8 épreuves · 30 min · selon l’âge',
+  '5 subtests': '5 épreuves',
 };
 
 const fill = (s: string, vars?: Record<string, string | number>) => (vars ? s.replace(/\{(\w+)\}/g, (m, k: string) => (k in vars ? String(vars[k]) : m)) : s);

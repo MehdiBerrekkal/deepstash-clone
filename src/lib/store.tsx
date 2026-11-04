@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase';
 import type { Appearance } from '@/lib/theme';
 import { mergeUser } from '@/lib/backup';
 import type { Skill } from '@/lib/brain/core';
+import { isKidId, type Audience } from '@/lib/audience';
 import type {
   Bookmark, BookProgress, CardKind, DayLog, Highlight, Idea, ReaderPosition, ReaderProgress, ReaderSettings, Source, Stash, Streak, Topic,
 } from '@/lib/types';
@@ -59,6 +60,10 @@ type UserState = {
   lastBackup?: string;
   /** The interface language: follow the device, or English / French. */
   uiLanguage?: 'auto' | 'en' | 'fr';
+  /** Kid or adult, chosen on the first screen: decides which topics, books, games and quizzes appear. */
+  audience?: Audience;
+  /** Birth year, asked by the IQ-style test for its age norms. */
+  birthYear?: number;
 };
 
 type Store = Content &
@@ -108,6 +113,10 @@ type Store = Content &
     importUser: (data: Record<string, unknown>, mode: 'merge' | 'replace') => void;
     markBackedUp: () => void;
     setUiLanguage: (l: 'auto' | 'en' | 'fr') => void;
+    setAudience: (a: Audience) => void;
+    setBirthYear: (y: number) => void;
+    /** All topics and cards, for both kids and adults (stashes may hold either). */
+    allContent: Content;
     markBrainHowTo: (id: string) => void;
     markBrainDaily: (part: 'game' | 'quiz') => void;
     addOwnBook: (book: OwnBook) => void;
@@ -143,7 +152,21 @@ export type BrainState = {
 };
 export type BrainRun = { id: string; n: number; right: number; points: number; d: number; streak: number; hardest: number; seconds: number; history: boolean[]; saved: number };
 export type BrainSession = { date: string; games: string[]; done: Record<string, { points: number; right: number; total: number; xp: number; from: number; to: number }> };
-export type BrainTest = { date: string; mode: 'full' | 'quick'; iq: number; correct: number; total: number; seconds: number; domains: Partial<Record<Skill, { right: number; total: number }>> };
+export type BrainTest = {
+  date: string;
+  mode: 'full' | 'quick';
+  iq: number;
+  correct: number;
+  total: number;
+  seconds: number;
+  domains: Partial<Record<Skill, { right: number; total: number }>>;
+  /** Newer tests: the age the score was normed for, a 95% range, index scores and subtest scaled scores (1-19). */
+  age?: number;
+  range?: [number, number];
+  indexes?: Record<string, number>;
+  subtests?: Record<string, number>;
+  version?: number;
+};
 export type BrainResult = { id: string; skill: Skill; points: number; perf: number; xp: number; rating?: number; seconds?: number };
 
 const EMPTY_DAY: DayLog = { seconds: 0, pages: 0, words: 0, cards: 0 };
@@ -216,9 +239,9 @@ async function fetchRemoteContent(): Promise<Content | null> {
     return { ...bundled, ...s, topicId, description: bundled?.description ?? '' };
   });
   return {
-    topics: topics.data,
-    sources: remoteSources,
-    ideas: [...remoteIdeas, ...bundledContent.ideas.filter((i) => i.kind !== 'idea')],
+    topics: [...topics.data, ...bundledContent.topics.filter((t) => isKidId(t.id))],
+    sources: [...remoteSources, ...bundledContent.sources.filter((x) => isKidId(x.topicId))],
+    ideas: [...remoteIdeas, ...bundledContent.ideas.filter((i) => i.kind !== 'idea' || isKidId(i.topicId))],
   };
 }
 
@@ -250,9 +273,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(user)).catch(() => {});
   }, [user, ready]);
 
+  // Kids and adults keep their own followed topics: setting one group's leaves the other's alone.
   const setFollowedTopics = useCallback((ids: string[]) => {
-    setUser((u) => ({ ...u, followedTopicIds: ids }));
+    setUser((u) => ({ ...u, followedTopicIds: [...u.followedTopicIds.filter((id) => isKidId(id) !== (u.audience === 'kid')), ...ids] }));
   }, []);
+  const setAudience = useCallback((audience: Audience) => setUser((u) => ({ ...u, audience })), []);
+  const setBirthYear = useCallback((birthYear: number) => setUser((u) => ({ ...u, birthYear })), []);
 
   const createStash = useCallback((name: string) => {
     const stash: Stash = { id: `${Date.now()}`, name: name.trim(), ideaIds: [], createdAt: new Date().toISOString() };
@@ -522,9 +548,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const newLeft = Math.max(0, NEW_PER_DAY - (user.reviewNew.date === date ? user.reviewNew.count : 0));
     const fresh = items.filter((k) => !user.reviews[k]).slice(0, newLeft);
     const reviewQueue = [...due, ...fresh];
+    // Only the chosen group's topics, cards and idea books are listed; the indexes keep everything.
+    const kid = user.audience === 'kid';
+    const mine = (topicId: string) => isKidId(topicId) === kid;
     return {
-      ...content,
+      topics: content.topics.filter((t) => mine(t.id)),
+      sources: content.sources.filter((s) => mine(s.topicId)),
+      ideas: content.ideas.filter((i) => mine(i.topicId)),
+      allContent: content,
       ...user,
+      followedTopicIds: user.followedTopicIds.filter(mine),
+      setAudience,
+      setBirthYear,
       today,
       ready,
       ...indexes,
@@ -573,7 +608,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [
     content, user, ready, indexes, setFollowedTopics, createStash, deleteStash, toggleInStash, toggleLike, markRead, setBookPosition,
     finishBook, toggleFavoriteBook, setDailyGoal, resetProgress, setReaderSettings, setReaderPosition, toggleBookmark, removeBookmark,
-    saveClip, addHighlight, updateHighlight, removeHighlight, logReading, setMinuteGoal, markReaderFinished, gradeReview, setNotInterested, setAppearance, recordBrain, addBrainTest, setBrainSound, patchBrain, exportUser, importUser, markBackedUp, setUiLanguage, markBrainHowTo, markBrainDaily, addOwnBook, removeOwnBook, markDownloaded,
+    saveClip, addHighlight, updateHighlight, removeHighlight, logReading, setMinuteGoal, markReaderFinished, gradeReview, setNotInterested, setAppearance, recordBrain, addBrainTest, setBrainSound, patchBrain, exportUser, importUser, markBackedUp, setUiLanguage, markBrainHowTo, markBrainDaily, addOwnBook, removeOwnBook, markDownloaded, setAudience, setBirthYear,
   ]);
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

@@ -13,9 +13,13 @@ import { deleteOwnBookFiles, pickOwnBook, type OwnBook } from '@/lib/ownbooks';
 import { useStore } from '@/lib/store';
 import { colors } from '@/lib/theme';
 import { useT } from '@/lib/i18n';
+import { KID_CLASSICS } from '@/lib/audience';
 
 export default function LibraryScreen() {
-  const { sources, topics, followedTopicIds, bookProgress, sourceById, readerProgress, ownBooks, addOwnBook, removeOwnBook, favoriteBooks, downloadedBooks } = useStore();
+  const { sources, topics, followedTopicIds, bookProgress, sourceById, readerProgress, ownBooks, addOwnBook, removeOwnBook, favoriteBooks, downloadedBooks, audience } = useStore();
+  const kid = audience === 'kid';
+  // Kid mode only lists children's books (and the family's own private ones).
+  const shown = useMemo(() => (kid ? classics.filter((c) => KID_CLASSICS.has(c.id) || c.origin === 'private') : classics), [kid]);
   const t = useT();
   const navigation = useNavigation();
   const [query, setQuery] = useState('');
@@ -41,10 +45,10 @@ export default function LibraryScreen() {
 
   // Books you dropped into books/, newest first.
   // Books with a free human recording (LibriVox), bundled ones first.
-  const narrated = useMemo(() => classics.filter((c) => hasNarration(c.id) && c.origin !== 'catalog').slice(0, 30), []);
+  const narrated = useMemo(() => shown.filter((c) => hasNarration(c.id) && c.origin !== 'catalog').slice(0, 30), [shown]);
   const recentlyAdded = useMemo(
-    () => classics.filter((c) => c.origin === 'books').sort((a, b) => (b.addedAt ?? '').localeCompare(a.addedAt ?? '')),
-    [],
+    () => shown.filter((c) => c.origin === 'books').sort((a, b) => (b.addedAt ?? '').localeCompare(a.addedAt ?? '')),
+    [shown],
   );
 
   // Your private my-books/ imports, newest first.
@@ -56,14 +60,14 @@ export default function LibraryScreen() {
   // Full books on shelves by kind; on each shelf, books you've started come first.
   const classicShelves = useMemo(() => {
     const started = (c: Classic) => readerProgress[classicReaderId(c.id)]?.updatedAt ?? '';
-    const ready = classics.filter((c) => c.origin !== 'private' && c.origin !== 'catalog');
-    return SHELVES.map((s) => ({ ...s, items: ready.filter((c) => shelfOf(c) === s.id).sort((a, b) => started(b).localeCompare(started(a))) })).filter(
+    const ready = shown.filter((c) => c.origin !== 'private' && c.origin !== 'catalog');
+    return SHELVES.map((s) => ({ ...s, title: kid ? (KID_SHELF_TITLES[s.id] ?? s.title) : s.title, items: ready.filter((c) => shelfOf(c) === s.id).sort((a, b) => started(b).localeCompare(started(a))) })).filter(
       (s) => s.items.length > 0,
     );
-  }, [readerProgress]);
+  }, [readerProgress, shown, kid]);
   const toDownload = useMemo(
-    () => classics.filter((c) => c.origin === 'catalog').sort((a, b) => Number(downloadedBooks.includes(b.id)) - Number(downloadedBooks.includes(a.id))),
-    [downloadedBooks],
+    () => shown.filter((c) => c.origin === 'catalog').sort((a, b) => Number(downloadedBooks.includes(b.id)) - Number(downloadedBooks.includes(a.id))),
+    [downloadedBooks, shown],
   );
 
   const openOwn = async (book: OwnBook) => {
@@ -113,7 +117,7 @@ export default function LibraryScreen() {
 
   const q = query.trim().toLowerCase();
   const results = q ? sources.filter((s) => `${s.title} ${s.author}`.toLowerCase().includes(q)) : [];
-  const classicResults = q ? classics.filter((c) => `${c.title} ${c.author}`.toLowerCase().includes(q)) : [];
+  const classicResults = q ? shown.filter((c) => `${c.title} ${c.author}`.toLowerCase().includes(q)) : [];
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -125,6 +129,7 @@ export default function LibraryScreen() {
         style={styles.search}
       />
 
+      {!kid && (
       <Pressable accessibilityLabel="Find a free book" onPress={() => router.push('/find')} style={styles.find}>
         <Text style={styles.findIcon}>🔎</Text>
         <View style={{ flex: 1 }}>
@@ -133,6 +138,7 @@ export default function LibraryScreen() {
         </View>
         <Text style={styles.findChev}>›</Text>
       </Pressable>
+      )}
 
       {q ? (
         <>
@@ -213,6 +219,13 @@ const SHELVES: { id: NonNullable<Classic['shelf']>; title: string }[] = [
   { id: 'poetry', title: '🪶 Poetry & plays' },
   { id: 'french', title: '🇫🇷 En français' },
 ];
+/** Shelf names in kid mode. */
+const KID_SHELF_TITLES: Partial<Record<NonNullable<Classic['shelf']>, string>> = {
+  novels: '🧸 Adventures & stories for kids',
+  lives: '🧭 True adventures',
+  ideas: '🔭 Science stories',
+  french: '🇫🇷 Pour les enfants, en français',
+};
 const NOVELS = new Set(['frankenstein', 'pride-and-prejudice', 'alice-in-wonderland', 'little-brother', 'down-and-out']);
 
 function shelfOf(c: Classic): NonNullable<Classic['shelf']> {
