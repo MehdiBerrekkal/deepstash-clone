@@ -19,6 +19,10 @@ jobs:
     runs-on: ubuntu-latest
     env:
       WEB_BASE_URL: /deepstash-clone
+      # Accounts (log in, sign up, password reset). Public values, set in Settings → Secrets and variables → Actions → Variables.
+      # Leave them unset and the app builds without accounts.
+      EXPO_PUBLIC_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
     steps:
       - uses: actions/checkout@v4
 

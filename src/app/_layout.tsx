@@ -24,6 +24,8 @@ export default function RootLayout() {
       <AppearanceSync />
       <ThemedStack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="auth" options={{ headerShown: false }} />
+        <Stack.Screen name="reset-password" options={{ headerShown: false }} />
         <Stack.Screen name="welcome" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="idea/[id]" options={{ title: 'Card', presentation: 'modal' }} />
