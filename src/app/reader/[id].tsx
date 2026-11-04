@@ -22,7 +22,7 @@ import { classicAsSource } from '@/lib/classicSource';
 import { classicById, loadClassic, type FullBook } from '@/lib/fullbook';
 import { LISTEN_RATES, useListen, type Sentence, type SleepTimer } from '@/lib/listen';
 import { isNatural, naturalVoiceInfo } from '@/lib/neuralVoice';
-import { loadOwnBook } from '@/lib/ownbooks';
+import { loadOwnBook, ownSourceId } from '@/lib/ownbooks';
 import { findPage, pageStart, paginate, type Page } from '@/lib/paginate';
 import { useScheme } from '@/lib/appearance';
 import { celebrate } from '@/lib/celebrate';
@@ -428,6 +428,11 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
           <Pressable accessibilityLabel={audio.sentence ? 'Listening controls' : 'Listen to this book'} onPress={toggleListen} style={styles.iconButton}>
             <Text style={[styles.icon, { color: audio.sentence ? '#B5492F' : theme.chromeText }]}>{audio.playing ? '❚❚' : '🎧'}</Text>
           </Pressable>
+          {kind === 'own' && !!ownBooks.find((b) => b.id === id)?.ideas?.length && (
+            <Pressable accessibilityLabel="Main ideas" onPress={() => router.push({ pathname: '/book/[id]', params: { id: ownSourceId(id) } })} style={styles.iconButton}>
+              <Text style={[styles.icon, { color: theme.chromeText, fontSize: 18 }]}>💡</Text>
+            </Pressable>
+          )}
           <Pressable accessibilityLabel="Search in this book" onPress={() => setPanel('search')} style={styles.iconButton}>
             <Text style={[styles.icon, { color: theme.chromeText, fontSize: 20 }]}>⌕</Text>
           </Pressable>

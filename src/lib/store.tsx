@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { bundledContent, type Content } from '@/data/content';
 import { rankFeed, type FeedItem } from '@/lib/feed';
 import { classicById } from '@/lib/fullbook';
-import type { OwnBook } from '@/lib/ownbooks';
+import { ownSourceId, type OwnBook } from '@/lib/ownbooks';
 import { NEW_PER_DAY, schedule, type Grade, type ReviewState } from '@/lib/review';
 import { supabase } from '@/lib/supabase';
 import type { Appearance } from '@/lib/theme';
@@ -134,6 +134,8 @@ type Store = Content &
     markBrainHowTo: (id: string) => void;
     markBrainDaily: (part: 'game' | 'quiz') => void;
     addOwnBook: (book: OwnBook) => void;
+    /** Saves the main-idea cards made for one of your books. */
+    setOwnBookIdeas: (id: string, patch: Pick<OwnBook, 'ideas' | 'ideasVersion' | 'description' | 'topicId' | 'lang'>) => void;
     removeOwnBook: (id: string) => void;
     markDownloaded: (id: string) => void;
   };
@@ -580,6 +582,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addOwnBook = useCallback((book: OwnBook) => setUser((u) => ({ ...u, ownBooks: [book, ...u.ownBooks] })), []);
+  const setOwnBookIdeas = useCallback(
+    (id: string, patch: Pick<OwnBook, 'ideas' | 'ideasVersion' | 'description' | 'topicId' | 'lang'>) =>
+      setUser((u) => ({ ...u, ownBooks: u.ownBooks.map((b) => (b.id === id ? { ...b, ...patch, lang: b.lang ?? patch.lang } : b)) })),
+    [],
+  );
 
   const removeOwnBook = useCallback((id: string) => {
     setUser((u) => {
@@ -588,7 +595,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return {
         ...u,
         ownBooks: u.ownBooks.filter((b) => b.id !== id),
-        favoriteBooks: u.favoriteBooks.filter((k) => k !== `own:${id}`),
+        favoriteBooks: u.favoriteBooks.filter((k) => k !== `own:${id}` && k !== `book:${ownSourceId(id)}`),
+        // Its idea cards go too, so take them out of your stashes.
+        stashes: u.stashes.map((st) => ({ ...st, ideaIds: st.ideaIds.filter((i) => !i.startsWith(`${ownSourceId(id)}-`)) })),
         readerProgress,
         bookmarks,
       };
@@ -600,18 +609,32 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  // Your own books, with the idea cards made from them, appear like library books (always, in kid and adult mode).
+  const own = useMemo(() => {
+    const sources: Source[] = [];
+    const ideas: Idea[] = [];
+    for (const b of user.ownBooks) {
+      if (!b.ideas?.length) continue;
+      const sourceId = ownSourceId(b.id);
+      const topicId = b.topicId ?? 'philosophy';
+      sources.push({ id: sourceId, title: b.title, author: b.author === 'PDF' ? 'Your PDF' : b.author, kind: 'book', topicId, description: b.description ?? '' });
+      b.ideas.forEach((idea, n) => ideas.push({ id: `${sourceId}-${n + 1}`, kind: 'idea', topicId, sourceId, title: idea.title, body: idea.body }));
+    }
+    return { sources, ideas };
+  }, [user.ownBooks]);
+
   const indexes = useMemo(() => {
     const ideasBySource: Record<string, Idea[]> = {};
-    for (const idea of content.ideas) {
+    for (const idea of [...content.ideas, ...own.ideas]) {
       if (idea.sourceId) (ideasBySource[idea.sourceId] ??= []).push(idea);
     }
     return {
       topicById: toIndex(content.topics),
-      sourceById: toIndex(content.sources),
-      ideaById: toIndex([...content.ideas, ...user.clips]),
+      sourceById: toIndex([...content.sources, ...own.sources]),
+      ideaById: toIndex([...content.ideas, ...own.ideas, ...user.clips]),
       ideasBySource,
     };
-  }, [content, user.clips]);
+  }, [content, own, user.clips]);
 
   const value = useMemo<Store>(() => {
     const savedIds = new Set(user.stashes.flatMap((s) => s.ideaIds));
@@ -629,8 +652,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     const mine = (topicId: string) => isKidId(topicId) === kid;
     return {
       topics: content.topics.filter((t) => mine(t.id)),
-      sources: content.sources.filter((s) => mine(s.topicId)),
-      ideas: content.ideas.filter((i) => mine(i.topicId)),
+      sources: [...own.sources, ...content.sources.filter((s) => mine(s.topicId))],
+      ideas: [...content.ideas.filter((i) => mine(i.topicId)), ...own.ideas],
       allContent: content,
       ...user,
       followedTopicIds: user.followedTopicIds.filter(mine),
@@ -682,11 +705,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       markBrainHowTo,
       markBrainDaily,
       addOwnBook,
+      setOwnBookIdeas,
       removeOwnBook,
       markDownloaded,
     };
   }, [
-    content, user, ready, indexes, setFollowedTopics, createStash, deleteStash, toggleInStash, toggleLike, markRead, setBookPosition,
+    content, own, setOwnBookIdeas, user, ready, indexes, setFollowedTopics, createStash, deleteStash, toggleInStash, toggleLike, markRead, setBookPosition,
     finishBook, toggleFavoriteBook, setDailyGoal, resetProgress, setReaderSettings, setReaderPosition, toggleBookmark, removeBookmark,
     saveClip, addHighlight, updateHighlight, removeHighlight, logReading, setMinuteGoal, markReaderFinished, gradeReview, setNotInterested, setAppearance, recordBrain, addBrainTest, setBrainSound, patchBrain, exportUser, importUser, markBackedUp, setUiLanguage, markBrainHowTo, markBrainDaily, addOwnBook, removeOwnBook, markDownloaded, setAudience, setBirthYear, account, recovering, continueAsGuest,
   ]);

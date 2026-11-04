@@ -8,6 +8,8 @@ export type PdfApi = {
   open: (data: { base64?: string; bytes?: ArrayBuffer }) => Promise<number>;
   /** Renders a page (0-based) at a pixel width; ratio is the page's height / width. */
   render: (page: number, width: number) => Promise<{ uri: string; ratio: number }>;
+  /** The text of the first `max` pages, one string per page (lines end with \n, blank lines between blocks). */
+  text: (max: number) => Promise<string[]>;
 };
 
 // react-native-webview's class typings don't match React 19's; this is the same component with plain props.
@@ -25,6 +27,24 @@ const ENGINE_JS = `
       var data = m.bytes ? new Uint8Array(m.bytes) : Uint8Array.from(atob(m.base64), function (c) { return c.charCodeAt(0); });
       doc = await pdfjsLib.getDocument({ data: data }).promise;
       return doc.numPages;
+    }
+    if (m.type === 'text') {
+      var out = [];
+      for (var i = 1; i <= Math.min(doc.numPages, m.max); i++) {
+        var tc = await (await doc.getPage(i)).getTextContent();
+        var s = '', lastY = null;
+        for (var k = 0; k < tc.items.length; k++) {
+          var it = tc.items[k];
+          if (it.str === undefined) continue;
+          var y = it.transform ? it.transform[5] : null;
+          // A big jump down the page starts a new block of text.
+          if (lastY !== null && y !== null && Math.abs(lastY - y) > (it.height || 10) * 1.8 && !/\\n\\n$/.test(s)) s += '\\n\\n';
+          s += it.str + (it.hasEOL ? '\\n' : '');
+          if (y !== null) lastY = y;
+        }
+        out.push(s);
+      }
+      return out;
     }
     var page = await doc.getPage(m.page + 1);
     var base = page.getViewport({ scale: 1 });
@@ -94,7 +114,7 @@ export function PdfEngine({ onReady, onError }: Props) {
   useEffect(() => {
     if (Platform.OS !== 'web') return;
     loadWebEngine().then(
-      (handle) => onReadyRef.current({ open: (data) => handle({ type: 'open', ...data }) as Promise<number>, render: (page, width) => handle({ type: 'render', page, width }) as Promise<{ uri: string; ratio: number }> }),
+      (handle) => onReadyRef.current({ open: (data) => handle({ type: 'open', ...data }) as Promise<number>, render: (page, width) => handle({ type: 'render', page, width }) as Promise<{ uri: string; ratio: number }>, text: (max) => handle({ type: 'text', max }) as Promise<string[]> }),
       (e: Error) => onErrorRef.current?.(e.message),
     );
   }, []);
@@ -116,6 +136,7 @@ export function PdfEngine({ onReady, onError }: Props) {
         onReadyRef.current({
           open: (data) => call({ type: 'open', base64: data.base64 }) as Promise<number>,
           render: (page, width) => call({ type: 'render', page, width }) as Promise<{ uri: string; ratio: number }>,
+          text: (max) => call({ type: 'text', max }) as Promise<string[]>,
         });
       return;
     }
