@@ -8,7 +8,28 @@ const CORS = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
-const MODELS = ['gemini-flash-latest', 'gemini-2.5-flash'];
+/** Tried first; Google retires model names, so the newest Flash model on the account is looked up too. */
+const PREFERRED = ['gemini-flash-latest', 'gemini-3.8-flash'];
+let discovered: string[] | null = null;
+
+/** The account's Flash models that can write text, newest version first (cached while the function stays warm). */
+async function flashModels(key: string): Promise<string[]> {
+  if (discovered) return discovered;
+  try {
+    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200', { headers: { 'x-goog-api-key': key } });
+    const data = await res.json();
+    const names: string[] = (data?.models ?? [])
+      .filter((m: { name: string; supportedGenerationMethods?: string[] }) => m.supportedGenerationMethods?.includes('generateContent'))
+      .map((m: { name: string }) => m.name.replace(/^models\//, ''))
+      .filter((n: string) => /^gemini-[\d.]+-flash(-lite)?$/.test(n));
+    const version = (n: string) => parseFloat(n.match(/gemini-([\d.]+)/)?.[1] ?? '0');
+    // Newest first, full Flash before Flash-Lite.
+    discovered = names.sort((a, b) => version(b) - version(a) || Number(a.includes('lite')) - Number(b.includes('lite')));
+  } catch {
+    discovered = [];
+  }
+  return discovered;
+}
 const MAX_PARTS = 12;
 const MAX_PART_CHARS = 5000;
 
@@ -63,8 +84,9 @@ Deno.serve(async (req) => {
   if (!body?.title || !Array.isArray(body.parts) || body.parts.length === 0) return json({ error: 'bad_request' }, 400);
   const count = Math.min(body.parts.length, MAX_PARTS);
 
-  let lastError = '';
-  for (const model of MODELS) {
+  const errors: string[] = [];
+  const models = [...new Set([...PREFERRED, ...(await flashModels(key))])].slice(0, 4);
+  for (const model of models) {
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
@@ -86,9 +108,9 @@ Deno.serve(async (req) => {
         },
       }),
     });
-    if (res.status === 429) return json({ error: 'busy' }, 429);
     if (!res.ok) {
-      lastError = `${model}: ${res.status} ${(await res.text()).slice(0, 200)}`;
+      errors.push(`${model}: ${res.status} ${(await res.text()).slice(0, 300)}`);
+      // Out of free quota on this model: another model has its own quota, so keep going.
       continue;
     }
     const data = await res.json();
@@ -99,11 +121,12 @@ Deno.serve(async (req) => {
         .slice(0, count)
         .map((i) => ({ title: String(i.title).trim().slice(0, 90), body: String(i.body).trim().slice(0, 1200) }));
       if (ideas.length) return json({ ideas, model });
-      lastError = `${model}: empty`;
+      errors.push(`${model}: empty`);
     } catch {
-      lastError = `${model}: unreadable answer`;
+      errors.push(`${model}: unreadable answer`);
     }
   }
-  console.error(lastError);
+  console.error(errors.join(' | '));
+  if (errors.length && errors.every((e) => / 429 /.test(e))) return json({ error: 'busy' }, 429);
   return json({ error: 'failed' }, 502);
 });

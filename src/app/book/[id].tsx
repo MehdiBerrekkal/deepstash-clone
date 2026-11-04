@@ -39,7 +39,7 @@ function GetThisBook({ title, author }: { title: string; author: string }) {
 
 export default function BookScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { sourceById, ideasBySource, topicById, bookProgress, sources, readerProgress, ownBooks } = useStore();
+  const { sourceById, ideasBySource, topicById, bookProgress, sources, readerProgress, ownBooks, account } = useStore();
   const book = sourceById[id];
   // One of your own books (its ideas were made by the app from its text).
   const own = id?.startsWith('own-') ? ownBooks.find((b) => ownSourceId(b.id) === id) : undefined;
@@ -159,7 +159,9 @@ export default function BookScreen() {
             <Text style={styles.freeHint}>
               {own.ideasBy === 'ai'
                 ? 'Summarised from your book by AI (Google Gemini), in its own words. Tap one to read it, then stash the cards you want to keep.'
-                : 'Picked out of your book by the app: the passages that carry each part’s main points. Sign in to have AI write them as summaries instead. Tap one to read it, then stash the cards you want to keep.'}
+                : account
+                  ? 'For now, these are passages picked from your book. AI (Google Gemini) rewrites them as summaries in the background, usually within a minute of adding the book (a PDF: after you open it). Tap one to read it, then stash the cards you want to keep.'
+                  : 'Picked out of your book by the app: the passages that carry each part’s main points. Sign in to have AI write them as summaries instead. Tap one to read it, then stash the cards you want to keep.'}
             </Text>
           )}
           {ideas.map((idea, i) => {

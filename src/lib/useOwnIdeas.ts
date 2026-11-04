@@ -9,9 +9,6 @@ import { useStore } from '@/lib/store';
 /** Books asked of the AI this session, so a failure isn't retried in a loop. */
 const askedAi = new Set<string>();
 
-/** Lets a book be sent to the AI again (e.g. from "Rewrite ideas with AI"). */
-export const forgetAiTry = (id: string) => askedAi.delete(id);
-
 type BookRef = Pick<OwnBook, 'id' | 'title' | 'author' | 'ideasBy' | 'ideas'>;
 
 /**
@@ -39,16 +36,6 @@ export function useMakeOwnIdeas() {
       return null;
     });
     return { count: r.ideas.length, ai };
-  };
-}
-
-/** "Rewrite ideas with AI" for an EPUB: loads its text and asks again. PDFs are rewritten when they're opened. */
-export function useRewriteWithAi() {
-  const make = useMakeOwnIdeas();
-  return async (book: OwnBook): Promise<string | null> => {
-    const text = await loadSavedBook(book.id).catch(() => null);
-    if (!text) return 'This book’s text isn’t on this device. Open the file again from the Library first.';
-    return make(book, text, { manual: true }).ai;
   };
 }
 

@@ -1,31 +1,36 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, Share, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Modal, Pressable, Share, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated';
+
+import { haptic } from '@/lib/haptics';
 import { classicReaderId, type Classic } from '@/lib/fullbook';
 import { deleteOwnBookFiles, ownSourceId, type OwnBook } from '@/lib/ownbooks';
 import { useStore } from '@/lib/store';
 import { colors } from '@/lib/theme';
-import { forgetAiTry, useRewriteWithAi } from '@/lib/useOwnIdeas';
 
 export type BookActionTarget = { kind: 'own'; book: OwnBook } | { kind: 'classic'; book: Classic };
 
 /** Opens one of your own books in the right reader. */
-export function openOwnBook(book: OwnBook, ai?: boolean) {
+export function openOwnBook(book: OwnBook) {
   if (book.kind === 'epub') return router.push({ pathname: '/reader/[id]', params: { id: book.id, kind: 'own' } });
-  router.push({ pathname: '/pdfbook/[id]', params: { id: book.id, source: 'own', ...(ai ? { ai: '1' } : {}) } });
+  router.push({ pathname: '/pdfbook/[id]', params: { id: book.id, source: 'own' } });
 }
 
 /**
  * The menu a long press on a book cover opens. Every book: open, favourite, share. Books you imported also get
- * their main ideas, "Rewrite ideas with AI", rename and delete; the app's own books can't be deleted.
+ * their main ideas, rename and delete; the app's own books can't be deleted.
  */
 export function BookActions({ target, onClose }: { target: BookActionTarget; onClose: () => void }) {
-  const { isFavoriteBook, toggleFavoriteBook, removeOwnBook, renameOwnBook, account } = useStore();
-  const rewrite = useRewriteWithAi();
+  const { isFavoriteBook, toggleFavoriteBook, removeOwnBook, renameOwnBook } = useStore();
   const [mode, setMode] = useState<'menu' | 'rename' | 'delete'>('menu');
   const [name, setName] = useState(target.book.title);
-  const [aiState, setAiState] = useState<{ busy?: boolean; message?: string }>({});
+
+  // A short buzz as the menu opens.
+  useEffect(() => {
+    haptic.press();
+  }, []);
 
   const own = target.kind === 'own' ? target.book : null;
   const favKey = own ? `own:${own.id}` : classicReaderId(target.book.id);
@@ -39,24 +44,13 @@ export function BookActions({ target, onClose }: { target: BookActionTarget; onC
     fn();
   };
 
-  const runAi = async () => {
-    if (!own) return;
-    if (own.kind === 'pdf') {
-      // A PDF's text comes from the PDF engine, so the rewrite happens in the PDF reader.
-      forgetAiTry(own.id);
-      close();
-      openOwnBook(own, true);
-      return;
-    }
-    setAiState({ busy: true });
-    const err = await rewrite(own);
-    setAiState({ message: err ? `AI couldn’t write the cards: ${err}` : '✨ Done: the cards are now AI summaries.' });
-  };
-
   return (
-    <Modal visible transparent animationType="fade" onRequestClose={close}>
-      <Pressable style={styles.backdrop} onPress={close}>
-        <Pressable style={styles.sheet} onPress={() => {}}>
+    <Modal visible transparent animationType="none" onRequestClose={close}>
+      <Animated.View entering={FadeIn.duration(180)} exiting={FadeOut.duration(160)} style={StyleSheet.absoluteFill}>
+        <Pressable style={styles.backdrop} onPress={close} />
+      </Animated.View>
+      <View style={styles.bottom} pointerEvents="box-none">
+        <Animated.View entering={SlideInDown.springify().damping(18).stiffness(180)} exiting={SlideOutDown.duration(180)} style={styles.sheet}>
           <Text style={styles.title} numberOfLines={2}>
             {target.book.title}
           </Text>
@@ -102,16 +96,6 @@ export function BookActions({ target, onClose }: { target: BookActionTarget; onC
                   {!!own.ideas?.length && (
                     <Row icon="💡" label={`Main ideas (${own.ideas.length})`} onPress={then(() => router.push({ pathname: '/book/[id]', params: { id: ownSourceId(own.id) } }))} />
                   )}
-                  {account && (
-                    <Pressable accessibilityRole="button" disabled={aiState.busy} onPress={runAi} style={styles.row}>
-                      <Text style={styles.icon}>✨</Text>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.label}>{own.ideasBy === 'ai' ? 'Rewrite ideas with AI again' : 'Write the ideas with AI'}</Text>
-                        {aiState.busy ? <Text style={styles.note}>Asking Gemini… (10–20 seconds)</Text> : aiState.message ? <Text style={styles.note}>{aiState.message}</Text> : null}
-                      </View>
-                      {aiState.busy && <ActivityIndicator color={colors.accent} />}
-                    </Pressable>
-                  )}
                 </>
               ) : (
                 <Row icon="📖" label="Open" onPress={then(() => router.push({ pathname: '/classic/[id]', params: { id: target.book.id } }))} />
@@ -129,8 +113,8 @@ export function BookActions({ target, onClose }: { target: BookActionTarget; onC
               </Pressable>
             </View>
           )}
-        </Pressable>
-      </Pressable>
+        </Animated.View>
+      </View>
     </Modal>
   );
 }
@@ -145,7 +129,8 @@ function Row({ icon, label, onPress, danger }: { icon: string; label: string; on
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' },
+  bottom: { flex: 1, justifyContent: 'flex-end' },
   sheet: { backgroundColor: colors.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: 18, paddingBottom: 34, gap: 4, width: '100%', maxWidth: 560, alignSelf: 'center' },
   title: { color: colors.text, fontSize: 19, fontWeight: '800' },
   sub: { color: colors.muted, fontSize: 13, marginBottom: 8 },
