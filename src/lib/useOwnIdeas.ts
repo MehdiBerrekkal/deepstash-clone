@@ -9,6 +9,18 @@ import { useStore } from '@/lib/store';
 /** Books asked of the AI this session, so a failure isn't retried in a loop. */
 const askedAi = new Set<string>();
 
+/** Gemini's free plan is often busy for a moment: try again after 1 and 3 minutes while the app stays open. */
+const RETRY_MS = [60_000, 180_000];
+async function askWithRetries(ask: () => ReturnType<typeof aiIdeas>) {
+  let res = await ask();
+  for (const wait of RETRY_MS) {
+    if (!('error' in res) || !/busy|didn’t answer|limit/i.test(res.error)) break;
+    await new Promise((r) => setTimeout(r, wait));
+    res = await ask();
+  }
+  return res;
+}
+
 type BookRef = Pick<OwnBook, 'id' | 'title' | 'author' | 'ideasBy' | 'ideas'>;
 
 /**
@@ -26,7 +38,8 @@ export function useMakeOwnIdeas() {
     }
     if (!opts.manual && (!account || askedAi.has(book.id))) return { count: r.ideas.length, ai: Promise.resolve(account ? null : 'Sign in to have AI write the cards.') };
     askedAi.add(book.id);
-    const ai = aiIdeas({ title: book.title, author: book.author === 'PDF' ? undefined : book.author, lang: r.lang, kid, parts: r.passages }, opts).then((res) => {
+    const req = { title: book.title, author: book.author === 'PDF' ? undefined : book.author, lang: r.lang, kid, parts: r.passages };
+    const ai = askWithRetries(() => aiIdeas(req, opts)).then((res) => {
       if ('error' in res) return res.error;
       const description =
         r.lang === 'fr'

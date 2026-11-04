@@ -9,7 +9,7 @@ const CORS = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 /** Tried first; Google retires model names, so the newest Flash model on the account is looked up too. */
-const PREFERRED = ['gemini-flash-latest', 'gemini-3.8-flash'];
+const PREFERRED = ['gemini-flash-latest', 'gemini-flash-lite-latest'];
 let discovered: string[] | null = null;
 
 /** The account's Flash models that can write text, newest version first (cached while the function stays warm). */
@@ -85,9 +85,44 @@ Deno.serve(async (req) => {
   const count = Math.min(body.parts.length, MAX_PARTS);
 
   const errors: string[] = [];
-  const models = [...new Set([...PREFERRED, ...(await flashModels(key))])].slice(0, 4);
+  // Every Flash and Flash-Lite model has its own free quota, so when one is busy or used up, the next is tried.
+  const models = [...new Set([...PREFERRED, ...(await flashModels(key))])].slice(0, 8);
+  const ask = askFor(key, body);
   for (const model of models) {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+    let res = await ask(model);
+    // Google's "high demand" errors usually pass within a second or two.
+    if (res.status === 503) {
+      await new Promise((r) => setTimeout(r, 1500));
+      res = await ask(model);
+    }
+    if (!res.ok) {
+      errors.push(`${model}: ${res.status} ${(await res.text()).replace(/\s+/g, ' ').slice(0, 700)}`);
+      continue;
+    }
+    const data = await res.json();
+    const text: string = data?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text ?? '').join('') ?? '';
+    try {
+      const ideas = (JSON.parse(text).ideas as { title: string; body: string }[])
+        .filter((i) => i?.title && i?.body)
+        .slice(0, count)
+        .map((i) => ({ title: String(i.title).trim().slice(0, 90), body: String(i.body).trim().slice(0, 1200) }));
+      if (ideas.length) {
+        console.log(`ok ${model} ${ideas.length} ideas`);
+        return json({ ideas, model });
+      }
+      errors.push(`${model}: empty`);
+    } catch {
+      errors.push(`${model}: unreadable answer`);
+    }
+  }
+  console.error(errors.join(' | '));
+  if (errors.length && errors.every((e) => / (429|503) /.test(e))) return json({ error: 'busy' }, 429);
+  return json({ error: 'failed' }, 502);
+});
+
+function askFor(key: string, body: Body) {
+  return (model: string) =>
+    fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
       body: JSON.stringify({
@@ -108,25 +143,4 @@ Deno.serve(async (req) => {
         },
       }),
     });
-    if (!res.ok) {
-      errors.push(`${model}: ${res.status} ${(await res.text()).slice(0, 300)}`);
-      // Out of free quota on this model: another model has its own quota, so keep going.
-      continue;
-    }
-    const data = await res.json();
-    const text: string = data?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text ?? '').join('') ?? '';
-    try {
-      const ideas = (JSON.parse(text).ideas as { title: string; body: string }[])
-        .filter((i) => i?.title && i?.body)
-        .slice(0, count)
-        .map((i) => ({ title: String(i.title).trim().slice(0, 90), body: String(i.body).trim().slice(0, 1200) }));
-      if (ideas.length) return json({ ideas, model });
-      errors.push(`${model}: empty`);
-    } catch {
-      errors.push(`${model}: unreadable answer`);
-    }
-  }
-  console.error(errors.join(' | '));
-  if (errors.length && errors.every((e) => / 429 /.test(e))) return json({ error: 'busy' }, 429);
-  return json({ error: 'failed' }, 502);
-});
+}
