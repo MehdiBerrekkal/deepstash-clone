@@ -14,7 +14,9 @@ import { useScheme } from '@/lib/appearance';
 import { BOOK_THEMES, displayFont, displayItalic, readerThemeFor } from '@/lib/bookType';
 import { classicById } from '@/lib/fullbook';
 import { myBookPdfAssets } from '@/lib/myBooks';
-import { loadPdfData } from '@/lib/ownbooks';
+import { loadPdfData, ownSourceId, type OwnBook } from '@/lib/ownbooks';
+import { pdfPagesAsBook } from '@/lib/ownIdeas';
+import { needsIdeas, useMakeOwnIdeas } from '@/lib/useOwnIdeas';
 import { setScreenColor } from '@/lib/safeArea';
 import { useStore } from '@/lib/store';
 
@@ -22,6 +24,8 @@ const SPREAD_MIN_WIDTH = 700;
 const CHROME_HIDE_MS = 3500;
 /** Paper margin around each rendered PDF page. */
 const MARGIN = 14;
+/** Pages read for making idea cards (enough for most books, quick even on a phone). */
+const MAX_TEXT_PAGES = 400;
 
 /** A PDF read like a printed book: rendered pages on paper, the page-curl, two-page spreads, zoom and progress. */
 export default function PdfBookScreen() {
@@ -51,10 +55,43 @@ async function pdfBytes(id: string, source: 'own' | 'private', ownBooks: ReturnT
   return { base64: await new File(uri).base64() };
 }
 
+/** Your own PDF: reads its text once (after the first pages are drawn) and makes its main-idea cards. Returns a note to show. */
+function usePdfIdeas(api: PdfApi | null, count: number, ownBook: OwnBook | undefined, queueRef: { current: Promise<unknown> }) {
+  const makeIdeas = useMakeOwnIdeas();
+  const { account } = useStore();
+  const [note, setNote] = useState<string | null>(null);
+  const wants = !!ownBook && needsIdeas(ownBook, !!account);
+  useEffect(() => {
+    if (!api || !count || !wants || !ownBook) return;
+    let alive = true;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    queueRef.current = queueRef.current.then(() =>
+      api.text(MAX_TEXT_PAGES).then(
+        (texts) => {
+          if (!alive) return;
+          const n = makeIdeas(ownBook, pdfPagesAsBook(ownBook.title, texts));
+          if (ownBook.ideas?.length && !n) return;
+          setNote(n ? `💡 ${n} main ideas ready` : 'No text found in this PDF to make ideas from (it may be scanned images).');
+          timer = setTimeout(() => setNote(null), 5000);
+        },
+        () => {},
+      ),
+    );
+    return () => {
+      alive = false;
+      if (timer) clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [api, count, wants]);
+  return note;
+}
+
 function PdfBook({ id, source }: { id: string; source: 'own' | 'private' }) {
   const readerId = `pdf:${source}:${id}`;
   const { ownBooks, readerSettings, readerProgress, setReaderPosition } = useStore();
-  const title = source === 'own' ? ownBooks.find((b) => b.id === id)?.title ?? 'PDF' : classicById[id]?.title ?? 'PDF';
+  const ownBook = source === 'own' ? ownBooks.find((b) => b.id === id) : undefined;
+  const title = source === 'own' ? ownBook?.title ?? 'PDF' : classicById[id]?.title ?? 'PDF';
+
   const scheme = useScheme();
   const theme = BOOK_THEMES[readerThemeFor(readerSettings, scheme)] ?? BOOK_THEMES.light;
   const [api, setApi] = useState<PdfApi | null>(null);
@@ -92,6 +129,8 @@ function PdfBook({ id, source }: { id: string; source: 'own' | 'private' }) {
     // ownBooks only matters for the first open.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [api, id, source]);
+
+  const ideasNote = usePdfIdeas(api, count, ownBook, queue);
 
   // Render the visible pages and their neighbours, one at a time.
   useEffect(() => {
@@ -230,6 +269,11 @@ function PdfBook({ id, source }: { id: string; source: 'own' | 'private' }) {
           <Text style={[styles.title, { color: theme.chromeText, fontFamily: displayFont }]} numberOfLines={1}>
             {title}
           </Text>
+          {!!ownBook?.ideas?.length && (
+            <Pressable accessibilityLabel="Main ideas" onPress={() => router.push({ pathname: '/book/[id]', params: { id: ownSourceId(ownBook.id) } })} style={styles.iconButton}>
+              <Text style={[styles.zoom, { color: theme.chromeText }]}>💡</Text>
+            </Pressable>
+          )}
           {zoom > 1 && (
             <Pressable accessibilityLabel="Reset zoom" onPress={() => setZoom(1)} style={styles.iconButton}>
               <Text style={[styles.zoom, { color: theme.chromeText }]}>{zoom.toFixed(1)}× ⤢</Text>
@@ -239,6 +283,13 @@ function PdfBook({ id, source }: { id: string; source: 'own' | 'private' }) {
             <Text style={[styles.icon, { color: theme.chromeText }]}>＋</Text>
           </Pressable>
         </Animated.View>
+      )}
+      {ideasNote && (
+        <Pressable
+          onPress={() => ownBook?.ideas?.length && router.push({ pathname: '/book/[id]', params: { id: ownSourceId(ownBook.id) } })}
+          style={[styles.ideasNote, { top: insets.top + 64, backgroundColor: theme.chrome, borderColor: theme.rule }]}>
+          <Text style={{ color: theme.chromeText, fontWeight: '700', textAlign: 'center' }}>{ideasNote}</Text>
+        </Pressable>
       )}
       {chrome && count > 0 && (
         <Animated.View
@@ -257,6 +308,7 @@ function PdfBook({ id, source }: { id: string; source: 'own' | 'private' }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  ideasNote: { position: 'absolute', alignSelf: 'center', maxWidth: 340, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 999, borderWidth: StyleSheet.hairlineWidth },
   stage: { flex: 1, overflow: 'hidden' },
   stageSpread: { margin: 14, borderRadius: 4, shadowColor: '#000', shadowOpacity: 0.35, shadowRadius: 18, shadowOffset: { width: 0, height: 8 }, elevation: 10 },
   paper: { alignItems: 'center', paddingTop: MARGIN },

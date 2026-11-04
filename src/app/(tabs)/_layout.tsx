@@ -7,6 +7,7 @@ import { accountsEnabled } from '@/lib/auth';
 import { useStore } from '@/lib/store';
 import { usePalette } from '@/lib/appearance';
 import { useT } from '@/lib/i18n';
+import { useOwnIdeasBackfill } from '@/lib/useOwnIdeas';
 
 const icon = (glyph: string) =>
   function TabIcon({ color }: { color: ColorValue }) {
@@ -20,6 +21,8 @@ export default function TabsLayout() {
   // Real colours (not CSS variables): navigation tints icons with them.
   const colors = usePalette();
   const t = useT();
+  // Main-idea cards for your own books that don't have them yet.
+  useOwnIdeasBackfill();
 
   if (!ready) return null;
   // Accounts first (log in, create one, or carry on as this device's guest), then kid or adult, then topics.

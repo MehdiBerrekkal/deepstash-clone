@@ -6,6 +6,7 @@ import { BookCover } from '@/components/BookCover';
 import { FavoriteButton } from '@/components/FavoriteButton';
 import { Shelf } from '@/components/Shelf';
 import { classicBySourceId, classicReaderId } from '@/lib/fullbook';
+import { ownSourceId } from '@/lib/ownbooks';
 import { useStore } from '@/lib/store';
 import { colors, onCardScope, readMinutes, serif, sourceKindLabel } from '@/lib/theme';
 
@@ -38,8 +39,10 @@ function GetThisBook({ title, author }: { title: string; author: string }) {
 
 export default function BookScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { sourceById, ideasBySource, topicById, bookProgress, sources, readerProgress } = useStore();
+  const { sourceById, ideasBySource, topicById, bookProgress, sources, readerProgress, ownBooks } = useStore();
   const book = sourceById[id];
+  // One of your own books (its ideas were made by the app from its text).
+  const own = id?.startsWith('own-') ? ownBooks.find((b) => ownSourceId(b.id) === id) : undefined;
   const [getOpen, setGetOpen] = useState(false);
 
   if (!book) return <Text style={styles.muted}>Book not found.</Text>;
@@ -48,7 +51,13 @@ export default function BookScreen() {
   const topic = topicById[book.topicId];
   const progress = bookProgress[book.id];
   const minutes = readMinutes(ideas.map((i) => `${i.title} ${i.body}`));
-  const related = sources.filter((s) => s.topicId === book.topicId && s.id !== book.id);
+  const related = sources.filter((s) => s.topicId === book.topicId && s.id !== book.id && !s.id.startsWith('own-'));
+  const ownProgress = own ? readerProgress[`own:${own.id}`] : undefined;
+  const openOwn = () =>
+    own &&
+    (own.kind === 'epub'
+      ? router.push({ pathname: '/reader/[id]', params: { id: own.id, kind: 'own' } })
+      : router.push({ pathname: '/pdfbook/[id]', params: { id: own.id, source: 'own' } }));
   const fullText = classicBySourceId[book.id];
   const fullProgress = fullText ? readerProgress[classicReaderId(fullText.id)] : undefined;
 
@@ -82,7 +91,13 @@ export default function BookScreen() {
             style={styles.primary}>
             <Text style={styles.primaryText}>{primaryLabel}</Text>
           </Pressable>
-          {fullText ? (
+          {own ? (
+            <Pressable onPress={openOwn} style={styles.fullBook}>
+              <Text style={styles.fullBookText}>
+                📖 {ownProgress ? `Continue your book · ${Math.round(ownProgress.fraction * 100)}%` : 'Read your book'}
+              </Text>
+            </Pressable>
+          ) : fullText ? (
             <Pressable
               onPress={() => router.push({ pathname: '/reader/[id]', params: { id: fullText.id, kind: 'classic' } })}
               style={styles.fullBook}>
@@ -108,7 +123,7 @@ export default function BookScreen() {
           )}
           {getOpen && <GetThisBook title={book.title} author={book.author} />}
           <View style={styles.secondaryRow}>
-            <FavoriteButton favoriteKey={`book:${book.id}`} title={book.title} size="large" />
+            <FavoriteButton favoriteKey={own ? `own:${own.id}` : `book:${book.id}`} title={book.title} size="large" />
             <Pressable
               onPress={() => Share.share({ message: `${book.title} by ${book.author}\n\n${book.description}` })}
               style={styles.secondary}>
@@ -140,6 +155,13 @@ export default function BookScreen() {
           )}
 
           <Text style={styles.heading}>Key ideas</Text>
+          {own && (
+            <Text style={styles.freeHint}>
+              {own.ideasBy === 'ai'
+                ? 'Summarised from your book by AI (Google Gemini), in its own words. Tap one to read it, then stash the cards you want to keep.'
+                : 'Picked out of your book by the app: the passages that carry each part’s main points. Sign in to have AI write them as summaries instead. Tap one to read it, then stash the cards you want to keep.'}
+            </Text>
+          )}
           {ideas.map((idea, i) => {
             const done = progress?.finishedAt || (progress && i < progress.position);
             return (

@@ -27,7 +27,18 @@ export type OwnBook = {
   source?: string;
   /** Its page on that site. */
   sourceUrl?: string;
+  /** Main-idea cards the app made from the book's text (see ownIdeas.ts), shown like a library book's key ideas. */
+  ideas?: { title: string; body: string }[];
+  ideasVersion?: number;
+  /** "ai": written by Gemini in its own words; otherwise passages the app picked from the book. */
+  ideasBy?: 'ai' | 'picked';
+  /** A short blurb for the book's page, and the topic the ideas sit under. */
+  description?: string;
+  topicId?: string;
 };
+
+/** The library-book id for one of the user's books: its page is /book/own-<id> and its cards own-<id>-<n>. */
+export const ownSourceId = (id: string) => `own-${id}`;
 
 const WEB_KEY = (id: string) => `deepstash-clone/own-book/${id}`;
 const PDF_KEY = (id: string) => `deepstash-clone/own-pdf/${id}`;

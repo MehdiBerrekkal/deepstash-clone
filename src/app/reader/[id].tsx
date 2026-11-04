@@ -22,7 +22,7 @@ import { classicAsSource } from '@/lib/classicSource';
 import { classicById, loadClassic, type FullBook } from '@/lib/fullbook';
 import { LISTEN_RATES, useListen, type Sentence, type SleepTimer } from '@/lib/listen';
 import { isNatural, naturalVoiceInfo } from '@/lib/neuralVoice';
-import { loadOwnBook } from '@/lib/ownbooks';
+import { loadOwnBook, ownSourceId } from '@/lib/ownbooks';
 import { findPage, pageStart, paginate, type Page } from '@/lib/paginate';
 import { useScheme } from '@/lib/appearance';
 import { celebrate } from '@/lib/celebrate';
@@ -397,6 +397,15 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
         </View>
       </SafeAreaView>
 
+      {/* iPhone home-screen app (iOS 26+): an opaque strip under the status bar, so iOS tints its bar a solid colour
+          instead of blurring whatever sits at the top of the page (it was smearing the controls). */}
+      {Platform.OS === 'web' && insets.top > 0 && (
+        <View
+          pointerEvents="none"
+          style={[styles.statusStrip, { height: insets.top, backgroundColor: chrome ? theme.chrome : spread ? theme.desk : theme.paper }]}
+        />
+      )}
+
       {chrome && (
         <Animated.View
           entering={FadeIn.duration(180)}
@@ -419,6 +428,11 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
           <Pressable accessibilityLabel={audio.sentence ? 'Listening controls' : 'Listen to this book'} onPress={toggleListen} style={styles.iconButton}>
             <Text style={[styles.icon, { color: audio.sentence ? '#B5492F' : theme.chromeText }]}>{audio.playing ? '❚❚' : '🎧'}</Text>
           </Pressable>
+          {kind === 'own' && !!ownBooks.find((b) => b.id === id)?.ideas?.length && (
+            <Pressable accessibilityLabel="Main ideas" onPress={() => router.push({ pathname: '/book/[id]', params: { id: ownSourceId(id) } })} style={styles.iconButton}>
+              <Text style={[styles.icon, { color: theme.chromeText, fontSize: 18 }]}>💡</Text>
+            </Pressable>
+          )}
           <Pressable accessibilityLabel="Search in this book" onPress={() => setPanel('search')} style={styles.iconButton}>
             <Text style={[styles.icon, { color: theme.chromeText, fontSize: 20 }]}>⌕</Text>
           </Pressable>
@@ -1023,6 +1037,7 @@ const styles = StyleSheet.create({
   folio: { position: 'absolute', bottom: 14, fontSize: 16 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 },
   message: { fontSize: 18, textAlign: 'center', lineHeight: 26 },
+  statusStrip: { position: (Platform.OS === 'web' ? 'fixed' : 'absolute') as 'absolute', top: 0, left: 0, right: 0, zIndex: 20 },
   topBar: {
     position: 'absolute',
     top: 0,

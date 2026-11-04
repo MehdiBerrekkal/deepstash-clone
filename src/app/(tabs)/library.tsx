@@ -9,7 +9,8 @@ import { Shelf } from '@/components/Shelf';
 import { classicAsSource } from '@/lib/classicSource';
 import { classicReaderId, classics, type Classic } from '@/lib/fullbook';
 import { hasNarration } from '@/lib/narration';
-import { deleteOwnBookFiles, pickOwnBook, type OwnBook } from '@/lib/ownbooks';
+import { deleteOwnBookFiles, ownSourceId, pickOwnBook, type OwnBook } from '@/lib/ownbooks';
+import type { Source } from '@/lib/types';
 import { useStore } from '@/lib/store';
 import { colors } from '@/lib/theme';
 import { useT } from '@/lib/i18n';
@@ -151,6 +152,7 @@ export default function LibraryScreen() {
         </>
       ) : (
         <>
+          {ownBooks.length > 0 && <OwnShelf title={t('📥 Your books · main ideas')} books={ownBooks} onOpen={openOwn} />}
           {myBooks.length > 0 && <ClassicShelf title="🔒 My books" items={myBooks} />}
           {recentlyAdded.length > 0 && <ClassicShelf title={t('✨ Recently added')} items={recentlyAdded} />}
           <ClassicShelf title={t('🎙 Read aloud by a real narrator')} items={narrated} />
@@ -179,6 +181,7 @@ export default function LibraryScreen() {
                       <Text style={styles.ownMeta} numberOfLines={1}>
                         {b.kind === 'pdf' ? b.fileName : b.source ? `${b.author} · ${b.source}` : b.author}
                         {fraction != null ? ` · ${Math.round(fraction * 100)}%` : ''}
+                        {b.ideas?.length ? ` · 💡 ${b.ideas.length}` : ''}
                       </Text>
                     </View>
                   </Pressable>
@@ -207,6 +210,46 @@ export default function LibraryScreen() {
         </>
       )}
     </ScrollView>
+  );
+}
+
+/** Your own books as covers; a tap opens the book's page with its main ideas (or the book, until they're ready). */
+function OwnShelf({ title, books, onOpen }: { title: string; books: OwnBook[]; onOpen: (b: OwnBook) => void }) {
+  const { readerProgress, topics } = useStore();
+  return (
+    <View style={styles.shelf}>
+      <Text style={styles.shelfTitle}>{title}</Text>
+      <FlatList
+        horizontal
+        data={books}
+        keyExtractor={(b) => b.id}
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.shelfRow}
+        renderItem={({ item }) => {
+          const fraction = readerProgress[`own:${item.id}`]?.fraction;
+          const n = item.ideas?.length ?? 0;
+          const source: Source = {
+            id: ownSourceId(item.id),
+            title: item.title,
+            author: item.author === 'PDF' ? 'Your PDF' : item.author,
+            kind: 'book',
+            topicId: item.topicId ?? topics[0]?.id ?? '',
+            description: '',
+          };
+          return (
+            <BookCover
+              book={source}
+              width={112}
+              caption
+              fraction={fraction}
+              favoriteKey={`own:${item.id}`}
+              subtitle={n ? `💡 ${n} main ideas` : item.kind === 'pdf' ? 'Open it to make its ideas' : 'Making its ideas…'}
+              onPress={() => (n ? router.push({ pathname: '/book/[id]', params: { id: source.id } }) : onOpen(item))}
+            />
+          );
+        }}
+      />
+    </View>
   );
 }
 
