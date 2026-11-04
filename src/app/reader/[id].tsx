@@ -11,6 +11,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { BookOpening } from '@/components/BookOpening';
 import { HighlightSheet } from '@/components/HighlightSheet';
+import { WordSheet } from '@/components/WordSheet';
 import { PageFlip, type PageFlipHandle } from '@/components/PageFlip';
 import { Scrubber } from '@/components/Scrubber';
 import { VoicePicker } from '@/components/VoicePicker';
@@ -30,6 +31,7 @@ import { searchBook, type BookHit } from '@/lib/search';
 import { CHARS_PER_WORD, DEFAULT_WPM, formatDuration, readingSpeed } from '@/lib/stats';
 import { useStore } from '@/lib/store';
 import type { Highlight, ReaderFont, ReaderPosition, ReaderTheme } from '@/lib/types';
+import { WORD_TAP_ATTR, wordAtPress } from '@/lib/wordAt';
 
 const MIN_FONT = 13;
 const MAX_FONT = 30;
@@ -81,6 +83,7 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
   const [query, setQuery] = useState('');
   const [found, setFound] = useState<BookHit | null>(null);
   const [marking, setMarking] = useState<{ chapter: number; para: number } | null>(null);
+  const [looking, setLooking] = useState<{ word: string; chapter: number; para: number } | null>(null);
   const [chrome, setChrome] = useState(true);
   const flip = useRef<PageFlipHandle>(null);
   const insets = useSafeAreaInsets();
@@ -355,6 +358,7 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
       openerSink={openerSink}
       onTap={onTap}
       onLongPressParagraph={(chapter, para) => setMarking({ chapter, para })}
+      onLongPressWord={(word, chapter, para) => setLooking({ word, chapter, para })}
       spoken={listen.sentence}
       highlights={bookHighlights}
       found={found}
@@ -810,6 +814,19 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
 
       {!error && <BookOpening {...opening} theme={theme} open={!!book && pages.length > 0} />}
 
+      {looking && (
+        <WordSheet
+          key={`${looking.word}-${looking.chapter}-${looking.para}`}
+          word={looking.word}
+          language={language}
+          onHighlight={() => {
+            setMarking({ chapter: looking.chapter, para: looking.para });
+            setLooking(null);
+          }}
+          onClose={() => setLooking(null)}
+        />
+      )}
+
       {marking && book && (
         <HighlightSheet
           key={`${marking.chapter}-${marking.para}`}
@@ -840,6 +857,8 @@ type BookPageProps = {
   openerSink: number;
   onTap: (e: GestureResponderEvent) => void;
   onLongPressParagraph: (chapter: number, para: number) => void;
+  /** A long-press that landed on a word (web build): show its translation and meaning. */
+  onLongPressWord: (word: string, chapter: number, para: number) => void;
   /** The sentence being read aloud, highlighted where it falls on this page. */
   spoken?: Sentence | null;
   highlights: Highlight[];
@@ -851,7 +870,7 @@ type BookPageProps = {
 
 /** One printed page: running head, text block (or chapter opener), and folio, on toned paper. */
 function BookPage({
-  book, page, index, width, height, margin, spreadSide, theme, fontKey, fontSize, lineHeight, openerSink, onTap, onLongPressParagraph, spoken, highlights, found, hideFolio,
+  book, page, index, width, height, margin, spreadSide, theme, fontKey, fontSize, lineHeight, openerSink, onTap, onLongPressParagraph, onLongPressWord, spoken, highlights, found, hideFolio,
 }: BookPageProps) {
   const font = READER_FONTS[fontKey];
   const chapter = book.chapters[page.chapter];
@@ -911,11 +930,16 @@ function BookPage({
           return (
             <Pressable
               key={`${index}-${piece.para}-${piece.from}`}
-              accessibilityHint="Long-press to highlight, add a note or share"
+              accessibilityHint="Long-press a word to translate it, or the passage to highlight it"
               delayLongPress={450}
               onPress={onTap}
-              onLongPress={() => onLongPressParagraph(page.chapter, piece.para)}>
-              <Text style={[body, hyphenate, { marginBottom: lineHeight * 0.15 }]} android_hyphenationFrequency="full">
+              onLongPress={(e) => {
+                const word = wordAtPress(e);
+                if (word) onLongPressWord(word, page.chapter, piece.para);
+                else onLongPressParagraph(page.chapter, piece.para);
+              }}
+              {...wordTapProps}>
+              <Text selectable={false} style={[body, hyphenate, { marginBottom: lineHeight * 0.15 }]} android_hyphenationFrequency="full">
                 {opener && i === 0 ? (
                   <>
                     {/* A raised initial opens each chapter. */}
@@ -946,6 +970,9 @@ function BookPage({
     </Pressable>
   );
 }
+
+// Marks paragraphs so a web long-press can find the word under the finger (and iOS skips its own text selection).
+const wordTapProps = { dataSet: { [WORD_TAP_ATTR]: '' } } as object;
 
 type Mark = { from: number; to: number; color: string; note?: boolean; spoken?: boolean };
 
