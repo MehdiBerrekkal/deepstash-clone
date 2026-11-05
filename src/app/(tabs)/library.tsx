@@ -1,12 +1,13 @@
 import { router, useNavigation } from 'expo-router';
 import { useLayoutEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { BookActions, openOwnBook, type BookActionTarget } from '@/components/BookActions';
 import { BookCover } from '@/components/BookCover';
 import { BookGrid } from '@/components/BookGrid';
 import { FavoriteButton } from '@/components/FavoriteButton';
 import { Icon, type IconName } from '@/components/Icon';
+import { SearchField } from '@/components/SearchField';
 import { SectionHeader } from '@/components/SectionHeader';
 import { Shelf } from '@/components/Shelf';
 import { classicAsSource } from '@/lib/classicSource';
@@ -123,12 +124,12 @@ export default function LibraryScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      <TextInput
+      <SearchField
+        accessibilityLabel="Search the library"
         value={query}
         onChangeText={setQuery}
         placeholder={t('Search {n} books and authors', { n: sources.length })}
-        placeholderTextColor={colors.muted}
-        style={styles.search}
+        containerStyle={styles.search}
       />
 
       {!kid && (
@@ -168,7 +169,10 @@ export default function LibraryScreen() {
           <View style={styles.own}>
             <Text style={styles.ownTitle}>{t('Your books')}</Text>
             <Pressable disabled={opening} onPress={pick} style={styles.ownButton}>
-              {opening ? <ActivityIndicator color={colors.onAccent} /> : <Text style={styles.ownButtonText}>{t('＋ Open your own book (EPUB or PDF)')}</Text>}
+              {opening ? <ActivityIndicator color={colors.onAccent} /> : <View style={styles.ownButtonRow}>
+                  <Icon name="plus" size={18} color={colors.onAccent} strokeWidth={2.6} />
+                  <Text style={styles.ownButtonText}>{t('Open your own book (EPUB or PDF)')}</Text>
+                </View>}
             </Pressable>
             {fileError && <Text style={styles.error}>{fileError}</Text>}
             {ownBooks.map((b) => {
@@ -337,6 +341,7 @@ const styles = StyleSheet.create({
   own: { marginHorizontal: 16, padding: 16, borderRadius: 18, backgroundColor: colors.surface, gap: 10 },
   ownTitle: { color: colors.text, fontSize: 20, fontWeight: '800' },
   ownButton: { paddingVertical: 14, borderRadius: 999, alignItems: 'center', backgroundColor: colors.accent },
+  ownButtonRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   ownButtonText: { color: colors.onAccent, fontWeight: '800' },
   error: { color: colors.danger },
   ownRow: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 10, borderRadius: 12, backgroundColor: colors.surfaceRaised },
@@ -350,17 +355,7 @@ const styles = StyleSheet.create({
   headerHeartCount: { color: colors.muted, fontSize: 13, fontWeight: '700' },
   container: { flex: 1, backgroundColor: colors.background },
   content: { gap: 28, paddingBottom: 32 },
-  search: {
-    marginHorizontal: 16,
-    marginTop: 12,
-    marginBottom: -8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 14,
-    backgroundColor: colors.surface,
-    color: colors.text,
-    fontSize: 16,
-  },
+  search: { marginHorizontal: 16, marginTop: 12, marginBottom: -8 },
   count: { color: colors.muted, paddingHorizontal: 16 },
   footer: { paddingHorizontal: 16 },
   footerText: { color: colors.muted, fontSize: 12, textAlign: 'center' },

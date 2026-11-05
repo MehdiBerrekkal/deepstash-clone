@@ -10,6 +10,7 @@ import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BookOpening } from '@/components/BookOpening';
+import { Icon } from '@/components/Icon';
 import { HighlightSheet } from '@/components/HighlightSheet';
 import { ReaderTour, tourPageMark, type TourStep } from '@/components/ReaderTour';
 import { WordSheet } from '@/components/WordSheet';
@@ -366,9 +367,9 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
           ...(hasIdeas
             ? [{ id: 'ideas', target: 'Main ideas', title: 'Main ideas', body: 'The lamp opens this book’s main-idea cards. Stash the ones you want to keep.' }]
             : []),
-          { id: 'contents', target: 'Contents and bookmarks', title: 'Chapters and bookmarks', body: 'Jump to any chapter, or back to a page you bookmarked with ☆.', waits: true, demo: () => setPanel('contents') },
+          { id: 'contents', target: 'Contents and bookmarks', title: 'Chapters and bookmarks', body: 'Jump to any chapter, or back to a page you bookmarked.', waits: true, demo: () => setPanel('contents') },
           { id: 'settings', target: 'Text size, font and theme', title: 'Make it yours', body: 'Change the text size, the font and the paper colour. You can also pinch the page.', waits: true, demo: () => setPanel('settings') },
-          { id: 'back', target: 'Close book', title: 'Going back', body: 'Tap ‹, or swipe from the very left edge of the screen. Happy reading!' },
+          { id: 'back', target: 'Close book', title: 'Going back', body: 'Tap the arrow, or swipe from the very left edge of the screen. Happy reading!' },
         ];
 
   // The player sits just above the controls when they're shown, otherwise low over the home indicator
@@ -461,7 +462,7 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
             accessibilityLabel="Close book"
             onPress={() => (router.canGoBack() ? router.back() : router.replace('/library'))}
             style={styles.iconButton}>
-            <Text style={[styles.icon, { color: theme.chromeText }]}>‹</Text>
+            <Icon name="chevronLeft" size={26} color={theme.chromeText} strokeWidth={2.2} />
           </Pressable>
           <View style={styles.titleWrap}>
             <Text style={[styles.bookTitle, { color: theme.chromeText, fontFamily: displayFont }]} numberOfLines={1}>
@@ -472,31 +473,25 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
             </Text>
           </View>
           <Pressable accessibilityLabel={audio.sentence ? 'Listening controls' : 'Listen to this book'} onPress={toggleListen} style={styles.iconButton}>
-            <Text style={[styles.icon, { color: audio.sentence ? '#B5492F' : theme.chromeText }]}>{audio.playing ? '❚❚' : '🎧'}</Text>
+            <Icon name={audio.playing ? 'pauseFull' : 'headphones'} size={22} color={audio.sentence ? '#B5492F' : theme.chromeText} strokeWidth={1.9} />
           </Pressable>
           {kind === 'own' && !!ownBooks.find((b) => b.id === id)?.ideas?.length && (
             <Pressable accessibilityLabel="Main ideas" onPress={() => pushOrBack({ pathname: '/book/[id]', params: { id: ownSourceId(id) } })} style={styles.iconButton}>
-              <Text style={[styles.icon, { color: theme.chromeText, fontSize: 18 }]}>💡</Text>
+              <Icon name="bulb" size={22} color={theme.chromeText} strokeWidth={1.9} />
             </Pressable>
           )}
           <Pressable accessibilityLabel="Search in this book" onPress={() => setPanel('search')} style={styles.iconButton}>
-            <Text style={[styles.icon, { color: theme.chromeText, fontSize: 20 }]}>⌕</Text>
+            <Icon name="search" size={22} color={theme.chromeText} strokeWidth={1.9} />
           </Pressable>
           <Pressable accessibilityLabel="Contents and bookmarks" onPress={() => setPanel('contents')} style={styles.iconButton}>
-            <Text style={[styles.icon, { color: theme.chromeText }]}>☰</Text>
+            <Icon name="list" size={22} color={theme.chromeText} strokeWidth={1.9} />
           </Pressable>
           <Pressable
             accessibilityLabel={markedHere ? 'Remove bookmark' : 'Bookmark this page'}
             disabled={!page}
             onPress={() => page && toggleBookmark(readerId, markedHere ?? pageStart(page), `${chapterTitle} · ${pageLabel.toLowerCase()}`)}
             style={styles.iconButton}>
-            <Text style={[styles.icon, { color: markedHere ? '#B5492F' : theme.chromeText }]}>{markedHere ? '★' : '☆'}</Text>
-          </Pressable>
-          <Pressable
-            accessibilityLabel={themeKey === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            onPress={() => pickTheme(themeKey === 'dark' ? (readerSettings.theme === 'sepia' ? 'sepia' : 'light') : 'dark')}
-            style={styles.iconButton}>
-            <Text style={[styles.icon, { color: theme.chromeText, fontSize: 19 }]}>{themeKey === 'dark' ? '☀︎' : '☾'}</Text>
+            <Icon name={markedHere ? 'bookmarkFull' : 'bookmark'} size={22} color={markedHere ? '#B5492F' : theme.chromeText} strokeWidth={1.9} />
           </Pressable>
           <Pressable accessibilityLabel="Text size, font and theme" onPress={() => setPanel('settings')} style={styles.iconButton}>
             <Text style={[styles.aa, { color: theme.chromeText, fontFamily: displayFont }]}>Aa</Text>
@@ -563,7 +558,7 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
             { backgroundColor: theme.chrome, borderColor: theme.rule, bottom: playerBottom },
           ]}>
           <Pressable accessibilityLabel={human ? 'Back 15 seconds' : 'Previous sentence'} onPress={() => listenControl(() => audio.skip(-1))} style={styles.listenButton}>
-            <Text style={[styles.listenIcon, { color: theme.chromeText }]}>{human ? '↺' : '⏮'}</Text>
+            <Icon name={human ? 'rotateCcw' : 'skipBack'} size={21} color={theme.chromeText} strokeWidth={2} />
           </Pressable>
           <Pressable
             accessibilityLabel={audio.playing ? 'Pause' : 'Play'}
@@ -572,11 +567,11 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
             {audio.preparing ? (
               <ActivityIndicator size="small" color={theme.paper} accessibilityLabel="Preparing voice" />
             ) : (
-              <Text style={[styles.playIcon, { color: theme.paper }]}>{audio.playing ? '❚❚' : '▶'}</Text>
+              <Icon name={audio.playing ? 'pauseFull' : 'playFull'} size={20} color={theme.paper} strokeWidth={1.6} />
             )}
           </Pressable>
           <Pressable accessibilityLabel={human ? 'Forward 30 seconds' : 'Next sentence'} onPress={() => listenControl(() => audio.skip(1))} style={styles.listenButton}>
-            <Text style={[styles.listenIcon, { color: theme.chromeText }]}>{human ? '↻' : '⏭'}</Text>
+            <Icon name={human ? 'rotateCw' : 'skipForward'} size={21} color={theme.chromeText} strokeWidth={2} />
           </Pressable>
           <Pressable
             accessibilityLabel="Reading speed"
@@ -591,7 +586,7 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
               setPanel('voice');
             }} style={[styles.listenChip, { borderColor: theme.rule }]}>
             <Text style={[styles.listenChipText, { color: theme.chromeText }]} numberOfLines={1}>
-              {human ? `🎙 ${narration.reader}` : listen.natural ? '✨ Natural' : listen.naturalAvailable ? '✨ Voice' : 'Voice'}
+              {human ? narration.reader : listen.natural ? 'Natural' : 'Voice'}
             </Text>
           </Pressable>
           <Pressable
@@ -604,10 +599,10 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
             accessibilityLabel={themeKey === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             onPress={() => pickTheme(themeKey === 'dark' ? (readerSettings.theme === 'sepia' ? 'sepia' : 'light') : 'dark')}
             style={styles.listenButton}>
-            <Text style={[styles.listenIcon, { color: theme.chromeText }]}>{themeKey === 'dark' ? '☀︎' : '☾'}</Text>
+            <Icon name={themeKey === 'dark' ? 'sun' : 'moon'} size={20} color={theme.chromeText} strokeWidth={2} />
           </Pressable>
           <Pressable accessibilityLabel="Stop listening" onPress={audio.close} style={styles.listenButton}>
-            <Text style={[styles.listenIcon, { color: theme.soft }]}>✕</Text>
+            <Icon name="close" size={18} color={theme.soft} strokeWidth={2.2} />
           </Pressable>
         </Animated.View>
       )}
@@ -1063,9 +1058,9 @@ const SLEEP_OPTIONS: { label: string; minutes?: number }[] = [
 ];
 
 function sleepLabel(sleep: SleepTimer) {
-  if (!sleep) return '⏲ Sleep';
-  if (sleep.kind === 'chapter') return '⏲ Ch.';
-  return `⏲ ${Math.max(1, Math.round((sleep.until - Date.now()) / 60_000))}m`;
+  if (!sleep) return 'Sleep';
+  if (sleep.kind === 'chapter') return 'Ch.';
+  return `${Math.max(1, Math.round((sleep.until - Date.now()) / 60_000))}m`;
 }
 
 const styles = StyleSheet.create({

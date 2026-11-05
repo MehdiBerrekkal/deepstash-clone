@@ -10,7 +10,7 @@ type Props<T extends string> = {
   value: CardKind | NoInfer<T> | null;
   onChange: (kind: CardKind | NoInfer<T> | null) => void;
   /** More pills after the card kinds (e.g. Books, Highlights in search). */
-  extras?: { id: T; label: string }[];
+  extras?: { id: T; label: string; icon?: IconName }[];
 };
 
 /** Pills for All / Book ideas / Quotes / Poems / Knowledge, plus any extras. */

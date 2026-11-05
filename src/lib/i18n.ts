@@ -43,7 +43,7 @@ const FR: Record<string, string> = {
   'Recently added': 'Ajouts récents',
   'Continue reading': 'Reprendre la lecture',
   'Your books': 'Vos livres',
-  '＋ Open your own book (EPUB or PDF)': '＋ Ouvrir votre propre livre (EPUB ou PDF)',
+  'Open your own book (EPUB or PDF)': 'Ouvrir votre propre livre (EPUB ou PDF)',
   // explore
   'Search books, ideas, quotes, poems, highlights': 'Rechercher livres, idées, citations, poèmes, surlignages',
   // you
@@ -57,16 +57,16 @@ const FR: Record<string, string> = {
   'Reading calendar': 'Calendrier de lecture',
   'Day streak': 'Jours d’affilée',
   'Goal streak': 'Objectifs d’affilée',
-  '🧠 Smart review': '🧠 Révision intelligente',
-  '🔊 Voices': '🔊 Voix',
-  '✎ Highlights and notes': '✎ Surlignages et notes',
+  'Smart review': 'Révision intelligente',
+  'Voices': 'Voix',
+  'Highlights and notes': 'Surlignages et notes',
   'Your topics': 'Vos thèmes',
   'Open ›': 'Ouvrir ›',
   'Choose the English and French voices that read books, idea cards and quizzes aloud, including the natural AI voices.':
     'Choisissez les voix anglaise et française qui lisent les livres, les cartes et les quiz, y compris les voix naturelles.',
   'The app’s menus and buttons. Books and cards keep their own language.': 'Les menus et boutons de l’app. Les livres et les cartes gardent leur propre langue.',
   // backup and reminder
-  '💾 Backup & restore': '💾 Sauvegarde et restauration',
+  'Backup & restore': 'Sauvegarde et restauration',
   'never backed up': 'jamais sauvegardé',
   'backed up today': 'sauvegardé aujourd’hui',
   '{n} days ago': 'il y a {n} jours',
@@ -75,7 +75,7 @@ const FR: Record<string, string> = {
   'Merge with this device': 'Fusionner avec cet appareil',
   'Replace everything here': 'Tout remplacer ici',
   Cancel: 'Annuler',
-  '⏰ Daily reminder': '⏰ Rappel quotidien',
+  'Daily reminder': 'Rappel quotidien',
   'Pick a time, then add it to your calendar. You’ll get a gentle alert every day, even when the app is closed.':
     'Choisissez une heure, puis ajoutez-la à votre calendrier. Vous recevrez une alerte douce chaque jour, même app fermée.',
   'Add to my calendar': 'Ajouter à mon calendrier',

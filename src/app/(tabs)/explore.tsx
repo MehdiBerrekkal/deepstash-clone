@@ -1,9 +1,12 @@
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { BookCover } from '@/components/BookCover';
 import { EmptyState } from '@/components/EmptyState';
+import { Icon } from '@/components/Icon';
+import { SearchField } from '@/components/SearchField';
+import { SectionHeader } from '@/components/SectionHeader';
 import { IdeaRow } from '@/components/IdeaRow';
 import { KindFilter } from '@/components/KindFilter';
 import { HIGHLIGHT_COLORS } from '@/lib/bookType';
@@ -85,19 +88,23 @@ export default function ExploreScreen() {
     if (!q && scope === null) {
       return (
         <View style={styles.section}>
-          <Text style={styles.heading}>Topics</Text>
+          <SectionHeader flush title="Topics" icon="compass" />
           <View style={styles.topics}>
             {topics.map((topic) => (
               <Pressable
                 key={topic.id}
                 onPress={() => router.push({ pathname: '/topic/[id]', params: { id: topic.id } })}
-                style={[styles.topic, onCardScope, { backgroundColor: topic.color }]}>
-                <Text style={styles.topicEmoji}>{topic.emoji}</Text>
-                <Text style={styles.topicName}>{topic.name}</Text>
+                style={({ pressed }) => [styles.topic, onCardScope, { backgroundColor: topic.color }, pressed && styles.pressed]}>
+                <View style={styles.topicEmojiWrap}>
+                  <Text style={styles.topicEmoji}>{topic.emoji}</Text>
+                </View>
+                <Text style={styles.topicName} numberOfLines={1}>
+                  {topic.name}
+                </Text>
               </Pressable>
             ))}
           </View>
-          <Text style={styles.heading}>Everything · {total}</Text>
+          <SectionHeader flush title="Everything" icon="sparkle" subtitle={`${total} cards to browse`} />
         </View>
       );
     }
@@ -106,7 +113,7 @@ export default function ExploreScreen() {
       <View style={styles.section}>
         {books.length > 0 && (
           <>
-            <Text style={styles.heading}>Books · {books.length}</Text>
+            <SectionHeader flush title="Books" icon="books" subtitle={`${books.length} found`} />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.books}>
               {books.slice(0, 30).map((b) => (
                 <BookCover key={b.key} book={b.book} width={92} caption favoriteKey={b.key} onPress={b.onPress} badge={b.full ? 'FULL' : undefined} />
@@ -116,39 +123,41 @@ export default function ExploreScreen() {
         )}
         {marks.length > 0 && (
           <>
-            <Text style={styles.heading}>Your highlights · {marks.length}</Text>
+            <SectionHeader flush title="Your highlights" icon="pencil" subtitle={`${marks.length} found`} />
             {marks.slice(0, 3).map((h) => (
               <HighlightRow key={h.id} h={h} />
             ))}
             {marks.length > 3 && (
               <Pressable onPress={() => setScope('highlights')}>
-                <Text style={styles.more}>See all {marks.length} highlights ›</Text>
+                <Text style={styles.more}>See all {marks.length} highlights</Text>
               </Pressable>
             )}
           </>
         )}
-        <Text style={styles.heading}>Cards · {cards.length}</Text>
+        <SectionHeader flush title="Cards" icon="bulb" subtitle={`${cards.length} found`} />
       </View>
     );
   };
 
   return (
     <View style={styles.container}>
-      <TextInput
+      <SearchField
         accessibilityLabel="Search"
+        containerStyle={styles.search}
         value={query}
         onChangeText={(t) => {
           setQuery(t);
           setLimit(PAGE);
         }}
         placeholder={t('Search books, ideas, quotes, poems, highlights')}
-        placeholderTextColor={colors.muted}
-        style={styles.search}
-        clearButtonMode="while-editing"
       />
       {!!q && (
         <Pressable accessibilityLabel="Search free libraries" onPress={() => router.push({ pathname: '/find', params: { q } })} style={styles.findLink}>
-          <Text style={styles.findLinkText}>🔎 Find “{q}” in free libraries (Gutenberg, Standard Ebooks) ›</Text>
+          <Icon name="globe" size={18} color={colors.accent} strokeWidth={2} />
+          <Text style={styles.findLinkText} numberOfLines={2}>
+            Find “{q}” in free libraries (Gutenberg, Standard Ebooks)
+          </Text>
+          <Icon name="chevronRight" size={16} color={colors.accent} strokeWidth={2.4} />
         </Pressable>
       )}
       <KindFilter
@@ -158,8 +167,8 @@ export default function ExploreScreen() {
           setLimit(PAGE);
         }}
         extras={[
-          { id: 'books', label: '📚 Books' },
-          { id: 'highlights', label: '✎ Highlights' },
+          { id: 'books', label: 'Books', icon: 'books' },
+          { id: 'highlights', label: 'Highlights', icon: 'pencil' },
         ]}
       />
       <FlatList
@@ -223,7 +232,7 @@ function HighlightRow({ h }: { h: Highlight }) {
         </Text>
         {!!h.note && (
           <Text style={styles.note} numberOfLines={2}>
-            ✎ {h.note}
+            {h.note}
           </Text>
         )}
         <Text style={styles.rowSub} numberOfLines={1}>
@@ -235,30 +244,22 @@ function HighlightRow({ h }: { h: Highlight }) {
 }
 
 const styles = StyleSheet.create({
-  findLink: { paddingVertical: 10, paddingHorizontal: 14, borderRadius: 14, borderWidth: 1, borderColor: colors.accent },
-  findLinkText: { color: colors.accent, fontWeight: '800', fontSize: 13 },
+  findLink: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 16, marginTop: 10, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 14, backgroundColor: colors.surface, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
+  findLinkText: { flex: 1, color: colors.accent, fontWeight: '700', fontSize: 13 },
+  pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
   container: { flex: 1, backgroundColor: colors.background },
-  search: {
-    margin: 16,
-    marginBottom: 0,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 14,
-    backgroundColor: colors.surface,
-    color: colors.text,
-    fontSize: 16,
-  },
+  search: { margin: 16, marginBottom: 0 },
   list: { gap: 10, padding: 16, paddingTop: 4 },
   section: { gap: 12, marginBottom: 4 },
-  heading: { color: colors.text, fontSize: 18, fontWeight: '800' },
   count: { color: colors.muted, marginBottom: 4 },
   more: { color: colors.accent, fontWeight: '700' },
   books: { gap: 12 },
   topics: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  topic: { flexGrow: 1, flexBasis: '45%', flexDirection: 'row', alignItems: 'center', gap: 8, padding: 14, borderRadius: 14 },
-  topicEmoji: { fontSize: 18 },
+  topic: { flexGrow: 1, flexBasis: '45%', flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, paddingHorizontal: 12, borderRadius: 16 },
+  topicEmojiWrap: { width: 34, height: 34, borderRadius: 11, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.18)' },
+  topicEmoji: { fontSize: 17 },
   topicName: { color: colors.text, fontWeight: '700', fontSize: 15 },
-  row: { flexDirection: 'row', gap: 12, padding: 12, borderRadius: 16, backgroundColor: colors.surface, overflow: 'hidden' },
+  row: { flexDirection: 'row', gap: 12, padding: 12, borderRadius: 16, backgroundColor: colors.surface, overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
   rowText: { flex: 1, gap: 4, justifyContent: 'center' },
   rowTitle: { color: colors.text, fontWeight: '700', fontSize: 16 },
   rowSub: { color: colors.muted, fontSize: 13 },

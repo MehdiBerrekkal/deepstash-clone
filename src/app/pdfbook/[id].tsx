@@ -6,6 +6,7 @@ import { ActivityIndicator, Image, Platform, Pressable, StyleSheet, Text, View, 
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Icon } from '@/components/Icon';
 import { ZoomPane } from '@/components/ZoomPane';
 import { PageFlip, type PageFlipHandle } from '@/components/PageFlip';
 import { PdfEngine, type PdfApi } from '@/components/PdfEngine';
@@ -73,13 +74,13 @@ function usePdfIdeas(api: PdfApi | null, count: number, ownBook: OwnBook | undef
           if (!alive) return;
           const { count: n, ai } = makeIdeas(ownBook, pdfPagesAsBook(ownBook.title, texts), { manual: forceAi });
           if (ownBook.ideas?.length && !n) return;
-          setNote(n ? `💡 ${n} main ideas ready` : 'No text found in this PDF to make ideas from (it may be scanned images).');
+          setNote(n ? `${n} main ideas ready` : 'No text found in this PDF to make ideas from (it may be scanned images).');
           timer = setTimeout(() => setNote(null), 5000);
           if (n && (account || forceAi))
             ai.then((err) => {
               if (!alive) return;
               if (timer) clearTimeout(timer);
-              setNote(err ? `AI couldn’t write the cards: ${err}` : '✨ AI summaries ready');
+              setNote(err ? `AI couldn’t write the cards: ${err}` : 'AI summaries ready');
               timer = setTimeout(() => setNote(null), 6000);
             });
         },
@@ -301,14 +302,14 @@ function PdfBook({ id, source, forceAi }: { id: string; source: 'own' | 'private
           exiting={FadeOut.duration(260)}
           style={[styles.topBar, { backgroundColor: theme.chrome, paddingTop: insets.top + 4, borderBottomColor: theme.rule }]}>
           <Pressable accessibilityLabel="Close book" onPress={() => (router.canGoBack() ? router.back() : router.replace('/library'))} style={styles.iconButton}>
-            <Text style={[styles.icon, { color: theme.chromeText }]}>‹</Text>
+            <Icon name="chevronLeft" size={26} color={theme.chromeText} strokeWidth={2.2} />
           </Pressable>
           <Text style={[styles.title, { color: theme.chromeText, fontFamily: displayFont }]} numberOfLines={1}>
             {title}
           </Text>
           {!!ownBook?.ideas?.length && (
             <Pressable accessibilityLabel="Main ideas" onPress={() => pushOrBack({ pathname: '/book/[id]', params: { id: ownSourceId(ownBook.id) } })} style={styles.iconButton}>
-              <Text style={[styles.zoom, { color: theme.chromeText }]}>💡</Text>
+              <Icon name="bulb" size={22} color={theme.chromeText} strokeWidth={1.9} />
             </Pressable>
           )}
           {zoom > 1 && (
@@ -317,7 +318,7 @@ function PdfBook({ id, source, forceAi }: { id: string; source: 'own' | 'private
             </Pressable>
           )}
           <Pressable accessibilityLabel="Zoom in" onPress={() => setZoom((z) => Math.min(3, Math.round((z + 0.5) * 10) / 10))} style={styles.iconButton}>
-            <Text style={[styles.icon, { color: theme.chromeText }]}>＋</Text>
+            <Icon name="plus" size={22} color={theme.chromeText} strokeWidth={2} />
           </Pressable>
         </Animated.View>
       )}

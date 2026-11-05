@@ -40,6 +40,17 @@ const PATHS = {
   close: 'M6 6l12 12M18 6L6 18',
   more: 'M6 12h.01M12 12h.01M18 12h.01',
   chevronRight: 'M9.5 6l6 6-6 6',
+  chevronLeft: 'M14.5 6l-6 6 6 6',
+  list: 'M8.5 6.5H20M8.5 12H20M8.5 17.5H20M4 6.5h.01M4 12h.01M4 17.5h.01',
+  sun: 'M12 8a4 4 0 100 8 4 4 0 000-8zM12 2.5v2M12 19.5v2M4.6 4.6L6 6M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4L6 18M18 6l1.4-1.4',
+  moon: 'M19.5 14.5A8 8 0 019.5 4.5a8 8 0 1010 10z',
+  play: 'M7.5 5v14l11.5-7z',
+  pause: 'M7 5h3.5v14H7zM13.5 5H17v14h-3.5z',
+  skipBack: 'M18 6v12l-8.5-6zM6 6v12',
+  skipForward: 'M6 6v12l8.5-6zM18 6v12',
+  rotateCcw: 'M4 5v5h5M4.6 14.5A8 8 0 104.4 9.8',
+  rotateCw: 'M20 5v5h-5M19.4 14.5A8 8 0 1119.6 9.8',
+  timer: 'M12 6a7.5 7.5 0 100 15 7.5 7.5 0 000-15zM12 10v3.5l2.2 1.4M10 2.5h4',
   chevronDown: 'M6 9.5l6 6 6-6',
   arrowDown: 'M12 5v14M6.5 13.5L12 19l5.5-5.5',
   clock: 'M12 3a9 9 0 100 18 9 9 0 000-18zM12 7.5V12l3 2',
@@ -50,7 +61,7 @@ const PATHS = {
   podcast: 'M12 11a1.5 1.5 0 100 3 1.5 1.5 0 000-3zM12 14v6.5M8 15.5a5 5 0 118 0M5.5 18a8.5 8.5 0 1113 0',
 } as const;
 
-export type IconName = keyof typeof PATHS | 'heartFull' | 'starFull' | 'bookmarkFull';
+export type IconName = keyof typeof PATHS | 'heartFull' | 'starFull' | 'bookmarkFull' | 'playFull' | 'pauseFull';
 
 export function Icon({ name, size = 20, color, strokeWidth = 1.8 }: { name: IconName; size?: number; color: string; strokeWidth?: number }) {
   const full = name.endsWith('Full');

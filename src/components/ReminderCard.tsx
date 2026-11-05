@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { shareTextFile } from '@/lib/share';
+import { CardHeading } from '@/components/CardHeading';
 import { colors } from '@/lib/theme';
 import { useT } from '@/lib/i18n';
 
@@ -47,7 +48,7 @@ export function ReminderCard() {
   const [done, setDone] = useState(false);
   return (
     <View style={styles.card}>
-      <Text style={styles.heading}>{t('⏰ Daily reminder')}</Text>
+      <CardHeading icon="clock" title={t('Daily reminder')} />
       <Text style={styles.muted}>{t('Pick a time, then add it to your calendar. You’ll get a gentle alert every day, even when the app is closed.')}</Text>
       <View style={styles.row}>
         {TIMES.map((h) => (
