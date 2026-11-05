@@ -1,14 +1,16 @@
 import { router } from 'expo-router';
 import { useEffect, useState, type ReactNode } from 'react';
-import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeOut, ZoomIn, ZoomOut } from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
 
 import { BookCover } from '@/components/BookCover';
 import { classicAsSource } from '@/lib/classicSource';
+import { ensureFamily, inviteLink, nameFromEmail, shareWithFamily } from '@/lib/family';
 import { classicReaderId, type Classic } from '@/lib/fullbook';
 import { haptic } from '@/lib/haptics';
 import { deleteOwnBookFiles, ownSourceId, type OwnBook } from '@/lib/ownbooks';
+import { shareMessage } from '@/lib/share';
 import { shareClassic, shareOwn } from '@/lib/shareBook';
 import { useStore } from '@/lib/store';
 import { colors } from '@/lib/theme';
@@ -28,8 +30,9 @@ export function openOwnBook(book: OwnBook) {
  * imported also get their main ideas, rename and delete; the app's own books can't be deleted.
  */
 export function BookActions({ target, onClose }: { target: BookActionTarget; onClose: () => void }) {
-  const { isFavoriteBook, toggleFavoriteBook, removeOwnBook, renameOwnBook, topics } = useStore();
-  const [mode, setMode] = useState<'menu' | 'rename' | 'delete'>('menu');
+  const { isFavoriteBook, toggleFavoriteBook, removeOwnBook, renameOwnBook, topics, account } = useStore();
+  const [mode, setMode] = useState<'menu' | 'rename' | 'delete' | 'family'>('menu');
+  const [familyState, setFamilyState] = useState<{ busy: boolean; error?: string; done?: string; link?: string; copied?: boolean }>({ busy: false });
   const [name, setName] = useState(target.book.title);
 
   // A short buzz as the menu opens.
@@ -53,6 +56,38 @@ export function BookActions({ target, onClose }: { target: BookActionTarget; onC
     : classicAsSource(target.book as Classic);
   const sub = own ? (own.kind === 'pdf' ? 'Your PDF' : `Your book · ${own.author}`) : target.book.author;
 
+  // The share sheet needs a fresh tap (browsers refuse it after a long upload), so sending is its own button.
+  const sendInvite = async () => {
+    if (!own || !familyState.link) return;
+    const r = await shareMessage(
+      own.title,
+      `I shared “${own.title}” in ${familyState.done} on DeepStach. Open this link, sign in, and it downloads onto your phone in one tap:`,
+      familyState.link,
+    );
+    if (r === 'copied') setFamilyState((f) => ({ ...f, copied: true }));
+  };
+
+  // Uploads the book to your family library (made on first use), then sends the invite through WhatsApp or Messages.
+  const shareFamily = async () => {
+    if (!own) return;
+    if (!account) {
+      close();
+      router.push('/family');
+      return;
+    }
+    setMode('family');
+    setFamilyState({ busy: true });
+    try {
+      const me = nameFromEmail(account.email);
+      const family = await ensureFamily(account.id, me);
+      await shareWithFamily(own, family, me);
+      haptic.success();
+      setFamilyState({ busy: false, done: family.name, link: inviteLink(family) });
+    } catch (e) {
+      setFamilyState({ busy: false, error: (e as Error).message });
+    }
+  };
+
   return (
     <Modal visible transparent animationType="none" onRequestClose={close}>
       <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(160)} style={[StyleSheet.absoluteFill, styles.backdrop]}>
@@ -73,7 +108,35 @@ export function BookActions({ target, onClose }: { target: BookActionTarget; onC
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(60).springify().damping(17).stiffness(200)} exiting={FadeOut.duration(120)} style={styles.menu}>
-          {mode === 'rename' && own ? (
+          {mode === 'family' && own ? (
+            <View style={styles.block}>
+              <Text style={styles.blockTitle}>Share with my family</Text>
+              {familyState.busy ? (
+                <View style={styles.busyRow}>
+                  <ActivityIndicator color={colors.accent} />
+                  <Text style={styles.warn}>Uploading the book to your family library…</Text>
+                </View>
+              ) : familyState.error ? (
+                <Text style={[styles.warn, { color: colors.danger }]}>{familyState.error}</Text>
+              ) : (
+                <Text style={styles.warn}>
+                  {familyState.copied
+                    ? 'Invite link copied. Paste it in WhatsApp or Messages.'
+                    : `It’s in ${familyState.done}. Send the invite link to the people you want: once they join, they get this book and every book you share next.`}
+                </Text>
+              )}
+              {!familyState.busy && (
+                <View style={styles.buttons}>
+                  <Pressable onPress={then(() => router.push('/family'))} style={styles.secondary}>
+                    <Text style={styles.secondaryText}>Family library</Text>
+                  </Pressable>
+                  <Pressable onPress={familyState.error ? shareFamily : sendInvite} style={styles.primary}>
+                    <Text style={styles.primaryText}>{familyState.error ? 'Try again' : 'Send invite'}</Text>
+                  </Pressable>
+                </View>
+              )}
+            </View>
+          ) : mode === 'rename' && own ? (
             <View style={styles.block}>
               <Text style={styles.blockTitle}>Rename</Text>
               <TextInput
@@ -130,6 +193,7 @@ export function BookActions({ target, onClose }: { target: BookActionTarget; onC
               </Group>
               <Group>
                 <Row icon={fav ? 'heartFull' : 'heart'} label={fav ? 'Remove from favorites' : 'Add to favorites'} onPress={then(() => toggleFavoriteBook(favKey))} />
+                {own && !own.source && <Row icon="users" label="Share with my family" onPress={shareFamily} />}
                 <Row icon="share" label="Share" onPress={then(() => void (own ? shareOwn(own) : shareClassic(target.book as Classic)))} />
               </Group>
               {own && (
@@ -150,7 +214,7 @@ function Group({ children, last }: { children: ReactNode; last?: boolean }) {
   return <View style={[styles.group, last && styles.groupLast]}>{children}</View>;
 }
 
-type IconName = 'book' | 'bulb' | 'heart' | 'heartFull' | 'share' | 'pencil' | 'trash';
+type IconName = 'book' | 'bulb' | 'heart' | 'heartFull' | 'share' | 'pencil' | 'trash' | 'users';
 
 function Row({ icon, label, detail, onPress, danger }: { icon: IconName; label: string; detail?: string; onPress: () => void; danger?: boolean }) {
   const tint = danger ? colors.danger : colors.text;
@@ -172,6 +236,7 @@ const ICONS: Record<IconName, string> = {
   heartFull: 'M12 20s-7-4.4-7-10a4 4 0 017-2.6A4 4 0 0119 10c0 5.6-7 10-7 10z',
   share: 'M12 15V3M7.5 7.5L12 3l4.5 4.5M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7',
   pencil: 'M4 20l4-1 10.5-10.5a2.1 2.1 0 00-3-3L5 16l-1 4zM14 7l3 3',
+  users: 'M9 11a3.5 3.5 0 100-7 3.5 3.5 0 000 7zM2.5 20c.6-3.4 3.2-5.5 6.5-5.5s5.9 2.1 6.5 5.5M16 4.3a3.5 3.5 0 010 6.4M18 14.8c2 .7 3.2 2.5 3.5 5.2',
   trash: 'M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 002 2h6a2 2 0 002-2l1-12M9 7V4h6v3',
 };
 
@@ -204,6 +269,7 @@ const styles = StyleSheet.create({
   input: { backgroundColor: colors.surfaceRaised, color: colors.text, fontSize: 16, padding: 12, borderRadius: 10 },
   warn: { color: colors.muted, fontSize: 14, lineHeight: 20 },
   buttons: { flexDirection: 'row', gap: 8 },
+  busyRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   primary: { flex: 1, paddingVertical: 12, borderRadius: 999, alignItems: 'center', backgroundColor: colors.accent },
   deleteButton: { backgroundColor: colors.danger },
   primaryText: { color: colors.onAccent, fontWeight: '800' },

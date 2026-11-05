@@ -32,6 +32,8 @@ export type OwnBook = {
   ideasVersion?: number;
   /** "ai": written by Gemini in its own words; otherwise passages the app picked from the book. */
   ideasBy?: 'ai' | 'picked';
+  /** Got from the family library: the shared book's id there, and who shared it. */
+  family?: { bookId: string; from?: string };
   /** A short blurb for the book's page, and the topic the ideas sit under. */
   description?: string;
   topicId?: string;
@@ -163,4 +165,36 @@ export async function deleteOwnBookFiles(book: OwnBook): Promise<void> {
     const file = new File(folder(), name);
     if (file.exists) file.delete();
   }
+}
+
+/** One of your books as a file to send: the PDF itself, or an EPUB as the app keeps it (its parsed text, JSON). */
+export async function exportOwnFile(book: OwnBook): Promise<{ data: ArrayBuffer | Blob; contentType: string; ext: string }> {
+  if (book.kind === 'pdf') {
+    const d = await loadPdfData(book);
+    if (d.bytes) return { data: d.bytes, contentType: 'application/pdf', ext: 'pdf' };
+    const bin = Uint8Array.from(atob(d.base64 ?? ''), (c) => c.charCodeAt(0));
+    return { data: bin.buffer, contentType: 'application/pdf', ext: 'pdf' };
+  }
+  const full = await loadSavedBook(book.id);
+  if (!full) throw new Error("This book isn't on this device anymore. Open the file again from the Library.");
+  return { data: new Blob([JSON.stringify(full)], { type: 'application/json' }), contentType: 'application/json', ext: 'json' };
+}
+
+/** Keeps a book received from the family library on this device and returns it, ready for the Library. */
+export async function importOwnFile(meta: Omit<OwnBook, 'id' | 'addedAt' | 'fileName' | 'uri'>, data: Blob): Promise<OwnBook> {
+  const id = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+  const addedAt = new Date().toISOString();
+  if (meta.kind === 'epub') {
+    await saveBook(id, JSON.parse(await data.text()) as FullBook);
+    return { ...meta, id, addedAt, fileName: `${meta.title}.epub` };
+  }
+  const bytes = await data.arrayBuffer();
+  if (Platform.OS === 'web') {
+    await webStore.set(PDF_KEY(id), bytes);
+    return { ...meta, id, addedAt, fileName: `${meta.title}.pdf` };
+  }
+  const dest = new File(folder(), `${id}.pdf`);
+  dest.create();
+  dest.write(new Uint8Array(bytes));
+  return { ...meta, id, addedAt, fileName: `${meta.title}.pdf`, uri: dest.uri };
 }

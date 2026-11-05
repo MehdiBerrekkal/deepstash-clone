@@ -145,6 +145,17 @@ export default function LibraryScreen() {
       </Pressable>
       )}
 
+      <Pressable accessibilityLabel="Family library" onPress={() => router.push('/family')} style={styles.family}>
+        <View style={styles.familyIcon}>
+          <Icon name="users" size={20} color={colors.accent} strokeWidth={2} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.familyTitle}>Family library</Text>
+          <Text style={styles.findSub}>Books your family shares with each other</Text>
+        </View>
+        <Icon name="chevronRight" size={20} color={colors.muted} strokeWidth={2.2} />
+      </Pressable>
+
       {q ? (
         <>
           <Text style={styles.count}>
@@ -334,6 +345,9 @@ function ClassicShelf({ title, items, onLongPress, icon, subtitle }: { title: st
 const styles = StyleSheet.create({
   find: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, marginHorizontal: 16, marginTop: -12, borderRadius: 18, backgroundColor: colors.surface, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
   findIcon: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent },
+  family: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 16, marginHorizontal: 16, marginTop: -16, borderRadius: 18, backgroundColor: colors.surface },
+  familyIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surfaceRaised },
+  familyTitle: { color: colors.text, fontWeight: '800', fontSize: 15 },
   findTitle: { color: colors.text, fontWeight: '800', fontSize: 16 },
   findSub: { color: colors.muted, fontSize: 13, marginTop: 2 },
   shelf: { gap: 12 },

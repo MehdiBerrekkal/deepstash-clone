@@ -1,4 +1,4 @@
-import { router, Stack } from 'expo-router';
+import { router, Stack, usePathname } from 'expo-router';
 import { Stack as JSStack, TransitionPresets } from 'expo-router/js-stack';
 import { useFonts } from 'expo-font';
 import { useEffect } from 'react';
@@ -9,7 +9,8 @@ import { CelebrationHost } from '@/components/Celebration';
 import { AppearanceSync, usePalette } from '@/lib/appearance';
 import { bookFonts } from '@/lib/bookType';
 import { WebSafeArea } from '@/lib/safeArea';
-import { StoreProvider } from '@/lib/store';
+import { pendingJoin } from '@/lib/family';
+import { StoreProvider, useStore } from '@/lib/store';
 
 /** Every screen outside the tabs, with its header. */
 const SCREENS: { name: string; options: { title?: string; headerShown?: boolean; presentation?: 'modal' } }[] = [
@@ -34,6 +35,7 @@ const SCREENS: { name: string; options: { title?: string; headerShown?: boolean;
   { name: 'brain/test', options: { title: 'Test' } },
   { name: 'voices', options: { title: 'Voices' } },
   { name: 'find', options: { title: 'Find a free book' } },
+  { name: 'family', options: { title: 'Family library' } },
 ];
 
 export default function RootLayout() {
@@ -48,6 +50,7 @@ export default function RootLayout() {
     <WebSafeArea>
     <StoreProvider>
       <AppearanceSync />
+      <FamilyInvite />
       <ThemedStack />
       <CelebrationHost />
     </StoreProvider>
@@ -113,4 +116,22 @@ function HomeButton({ color }: { color: string }) {
       <Text style={{ color, fontSize: 24, lineHeight: 28 }}>←</Text>
     </Pressable>
   );
+}
+
+// An invite link (/family?join=…) is remembered at once, so it survives the welcome screens and signing in.
+if (Platform.OS === 'web' && typeof location !== 'undefined' && /\/family\/?$/.test(location.pathname)) {
+  const code = new URLSearchParams(location.search).get('join');
+  if (code) pendingJoin.set(code);
+}
+
+/** Once someone with a pending family invite is signed in, takes them to the family library to join. */
+function FamilyInvite() {
+  const { ready, account, audience } = useStore();
+  const pathname = usePathname();
+  useEffect(() => {
+    if (!ready || !account || !audience || pathname === '/family' || pathname === '/auth' || !pendingJoin.get()) return;
+    const t = setTimeout(() => router.push('/family'), 400);
+    return () => clearTimeout(t);
+  }, [ready, account, audience, pathname]);
+  return null;
 }
