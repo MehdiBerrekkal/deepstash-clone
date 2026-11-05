@@ -10,6 +10,7 @@ import { Icon } from '@/components/Icon';
 import { ZoomPane } from '@/components/ZoomPane';
 import { PageFlip, type PageFlipHandle } from '@/components/PageFlip';
 import { PdfEngine, type PdfApi } from '@/components/PdfEngine';
+import { PdfText, hasReadableText } from '@/components/PdfText';
 import { ReaderTour, tourPageMark } from '@/components/ReaderTour';
 import { Scrubber } from '@/components/Scrubber';
 import { useScheme } from '@/lib/appearance';
@@ -63,11 +64,11 @@ function usePdfIdeas(api: PdfApi | null, count: number, ownBook: OwnBook | undef
   const makeIdeas = useMakeOwnIdeas();
   const { account } = useStore();
   const [note, setNote] = useState<string | null>(null);
+  const mounted = useRef(true);
   const wants = !!ownBook && (forceAi || needsIdeas(ownBook, !!account));
   useEffect(() => {
     if (!api || !count || !wants || !ownBook) return;
     let alive = true;
-    let timer: ReturnType<typeof setTimeout> | undefined;
     queueRef.current = queueRef.current.then(() =>
       api.text(MAX_TEXT_PAGES).then(
         (texts) => {
@@ -75,13 +76,9 @@ function usePdfIdeas(api: PdfApi | null, count: number, ownBook: OwnBook | undef
           const { count: n, ai } = makeIdeas(ownBook, pdfPagesAsBook(ownBook.title, texts), { manual: forceAi });
           if (ownBook.ideas?.length && !n) return;
           setNote(n ? `${n} main ideas ready` : 'No text found in this PDF to make ideas from (it may be scanned images).');
-          timer = setTimeout(() => setNote(null), 5000);
           if (n && (account || forceAi))
             ai.then((err) => {
-              if (!alive) return;
-              if (timer) clearTimeout(timer);
-              setNote(err ? `AI couldn’t write the cards: ${err}` : 'AI summaries ready');
-              timer = setTimeout(() => setNote(null), 6000);
+              if (mounted.current) setNote(err ? `AI couldn’t write the cards: ${err}` : 'AI summaries ready');
             });
         },
         () => {},
@@ -89,16 +86,27 @@ function usePdfIdeas(api: PdfApi | null, count: number, ownBook: OwnBook | undef
     );
     return () => {
       alive = false;
-      if (timer) clearTimeout(timer);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [api, count, wants]);
-  return note;
+  // Each note shows for a few seconds. (Its own effect: making the ideas changes `wants`, which ends the one above.)
+  useEffect(() => {
+    if (!note) return;
+    const t = setTimeout(() => setNote(null), 5000);
+    return () => clearTimeout(t);
+  }, [note]);
+  useEffect(
+    () => () => {
+      mounted.current = false;
+    },
+    [],
+  );
+  return [note, () => setNote(null)] as const;
 }
 
 function PdfBook({ id, source, forceAi }: { id: string; source: 'own' | 'private'; forceAi: boolean }) {
   const readerId = `pdf:${source}:${id}`;
-  const { ownBooks, readerSettings, readerProgress, setReaderPosition } = useStore();
+  const { ownBooks, readerSettings, readerProgress, setReaderPosition, setReaderSettings } = useStore();
   const pushOrBack = usePushOrBack();
   const ownBook = source === 'own' ? ownBooks.find((b) => b.id === id) : undefined;
   const title = source === 'own' ? ownBook?.title ?? 'PDF' : classicById[id]?.title ?? 'PDF';
@@ -115,6 +123,9 @@ function PdfBook({ id, source, forceAi }: { id: string; source: 'own' | 'private
   const [chrome, setChrome] = useState(true);
   const [touring, setTouring] = useState(false);
   const [zoom, setZoom] = useState(1);
+  // Text view: the PDF's words reflowed to the screen, the default on phones, where a printed page is too small.
+  const [texts, setTexts] = useState<string[] | null>(null);
+  const [seek, setSeek] = useState(0);
   const flip = useRef<PageFlipHandle>(null);
   const queue = useRef<Promise<unknown>>(Promise.resolve());
   const requested = useRef(new Set<string>());
@@ -142,11 +153,30 @@ function PdfBook({ id, source, forceAi }: { id: string; source: 'own' | 'private
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [api, id, source]);
 
-  const ideasNote = usePdfIdeas(api, count, ownBook, queue, forceAi);
+  const [ideasNote, closeNote] = usePdfIdeas(api, count, ownBook, queue, forceAi);
+
+  const wantText = readerSettings.pdfText ?? (size.width > 0 && size.width < 600);
+  const readable = texts ? hasReadableText(texts) : null;
+  const textMode = wantText && readable === true;
+  useEffect(() => {
+    if (!api || !count || !wantText || texts) return;
+    let alive = true;
+    queue.current = queue.current.then(() =>
+      api.text(count).then(
+        (t) => alive && setTexts(t),
+        () => alive && setTexts([]),
+      ),
+    );
+    return () => {
+      alive = false;
+    };
+  }, [api, count, wantText, texts]);
+  const fontSize = readerSettings.fontSize ?? 19;
+  const changeFont = (n: number) => setReaderSettings({ fontSize: Math.min(30, Math.max(13, n)) });
 
   // Render the visible pages and their neighbours, one at a time.
   useEffect(() => {
-    if (!api || !count || !size.width) return;
+    if (!api || !count || !size.width || textMode) return;
     const first = spread ? leaf * 2 - 2 : current - 1;
     const last = spread ? leaf * 2 + 3 : current + 2;
     for (let i = Math.max(0, first); i <= Math.min(count - 1, last); i++) {
@@ -163,7 +193,7 @@ function PdfBook({ id, source, forceAi }: { id: string; source: 'own' | 'private
         ),
       );
     }
-  }, [api, count, current, leaf, spread, size.width, renderWidth]);
+  }, [api, count, current, leaf, spread, size.width, renderWidth, textMode]);
 
   // Controls fade away while reading.
   useEffect(() => {
@@ -246,7 +276,7 @@ function PdfBook({ id, source, forceAi }: { id: string; source: 'own' | 'private
                   target: 'page',
                   gesture: 'tap',
                   title: 'Hide the controls',
-                  body: 'Tap the page to hide these bars while you read, and tap again to bring them back. Pinch or use + to zoom.',
+                  body: 'Tap the page to hide these bars, and tap again to bring them back. The page button switches between the text fitted to your screen and the printed pages.',
                   demo: () => {
                     setChrome(false);
                     setTimeout(() => setChrome(true), 700);
@@ -273,6 +303,24 @@ function PdfBook({ id, source, forceAi }: { id: string; source: 'own' | 'private
               <ActivityIndicator color={theme.soft} />
               <Text style={[styles.message, { color: theme.soft, fontFamily: displayItalic }]}>Opening the book…</Text>
             </View>
+          ) : wantText && readable === null ? (
+            <View style={styles.center}>
+              <ActivityIndicator color={theme.soft} />
+              <Text style={[styles.message, { color: theme.soft, fontFamily: displayItalic }]}>Fitting the text to your screen…</Text>
+            </View>
+          ) : textMode ? (
+            <PdfText
+              key={seek}
+              texts={texts!}
+              theme={theme}
+              fontSize={fontSize}
+              font={readerSettings.font ?? 'literata'}
+              start={current}
+              topInset={insets.top + 64}
+              bottomInset={insets.bottom + 40}
+              onPage={(p) => p !== current && goTo(p)}
+              onTap={() => setChrome((c) => !c)}
+            />
           ) : zoom > 1 && zoomUri(current) ? (
             // Zoomed: pan and pinch this page; page turns come back at 1× (double tap, or the 1× button).
             <View style={[styles.center, { backgroundColor: theme.paper }]}>
@@ -312,19 +360,43 @@ function PdfBook({ id, source, forceAi }: { id: string; source: 'own' | 'private
               <Icon name="bulb" size={22} color={theme.chromeText} strokeWidth={1.9} />
             </Pressable>
           )}
-          {zoom > 1 && (
+          {readable !== false && (
+            <Pressable
+              accessibilityLabel={textMode ? 'Show the printed pages' : 'Show as text'}
+              onPress={() => {
+                setZoom(1);
+                setReaderSettings({ pdfText: !textMode });
+              }}
+              style={styles.iconButton}>
+              <Icon name={textMode ? 'book' : 'article'} size={22} color={theme.chromeText} strokeWidth={1.9} />
+            </Pressable>
+          )}
+          {textMode && (
+            <>
+              <Pressable accessibilityLabel="Smaller text" onPress={() => changeFont(fontSize - 1)} style={styles.iconButton}>
+                <Text style={[styles.aSmall, { color: theme.chromeText, fontFamily: displayFont }]}>A</Text>
+              </Pressable>
+              <Pressable accessibilityLabel="Bigger text" onPress={() => changeFont(fontSize + 1)} style={styles.iconButton}>
+                <Text style={[styles.aBig, { color: theme.chromeText, fontFamily: displayFont }]}>A</Text>
+              </Pressable>
+            </>
+          )}
+          {!textMode && zoom > 1 && (
             <Pressable accessibilityLabel="Reset zoom" onPress={() => setZoom(1)} style={styles.iconButton}>
               <Text style={[styles.zoom, { color: theme.chromeText }]}>{zoom.toFixed(1)}× ⤢</Text>
             </Pressable>
           )}
-          <Pressable accessibilityLabel="Zoom in" onPress={() => setZoom((z) => Math.min(3, Math.round((z + 0.5) * 10) / 10))} style={styles.iconButton}>
+          {!textMode && <Pressable accessibilityLabel="Zoom in" onPress={() => setZoom((z) => Math.min(3, Math.round((z + 0.5) * 10) / 10))} style={styles.iconButton}>
             <Icon name="plus" size={22} color={theme.chromeText} strokeWidth={2} />
-          </Pressable>
+          </Pressable>}
         </Animated.View>
       )}
       {ideasNote && (
         <Pressable
-          onPress={() => ownBook?.ideas?.length && pushOrBack({ pathname: '/book/[id]', params: { id: ownSourceId(ownBook.id) } })}
+          onPress={() => {
+            closeNote();
+            if (ownBook?.ideas?.length) pushOrBack({ pathname: '/book/[id]', params: { id: ownSourceId(ownBook.id) } });
+          }}
           style={[styles.ideasNote, { top: insets.top + 64, backgroundColor: theme.chrome, borderColor: theme.rule }]}>
           <Text style={{ color: theme.chromeText, fontWeight: '700', textAlign: 'center' }}>{ideasNote}</Text>
         </Pressable>
@@ -334,7 +406,15 @@ function PdfBook({ id, source, forceAi }: { id: string; source: 'own' | 'private
           entering={FadeIn.duration(180)}
           exiting={FadeOut.duration(260)}
           style={[styles.bottomBar, { backgroundColor: theme.chrome, paddingBottom: insets.bottom + 8, borderTopColor: theme.rule }]}>
-          <Scrubber theme={theme} count={count} current={current} onSeek={goTo} />
+          <Scrubber
+            theme={theme}
+            count={count}
+            current={current}
+            onSeek={(p) => {
+              goTo(p);
+              if (textMode) setSeek((n) => n + 1);
+            }}
+          />
           <Text style={[styles.pageLabel, { color: theme.soft }]}>
             {label} of {count} · {count > 1 ? Math.round((current / (count - 1)) * 100) : 100}%
           </Text>
@@ -358,6 +438,8 @@ const styles = StyleSheet.create({
   iconButton: { minWidth: 40, height: 40, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
   icon: { fontSize: 22, fontWeight: '500' },
   zoom: { fontSize: 14, fontWeight: '600' },
+  aSmall: { fontSize: 16 },
+  aBig: { fontSize: 24 },
   title: { flex: 1, fontSize: 18, paddingHorizontal: 4 },
   bottomBar: { position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 20, paddingTop: 10, gap: 4, borderTopWidth: StyleSheet.hairlineWidth },
   pageLabel: { fontSize: 12, textAlign: 'center' },
