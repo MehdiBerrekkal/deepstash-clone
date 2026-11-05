@@ -736,6 +736,20 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
                 Follows the app&apos;s light/dark setting (You → Appearance). Picking a paper here overrides it.
               </Text>
             )}
+            {kind === 'own' && ownBooks.find((b) => b.id === id)?.kind === 'pdf' && (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Show the printed pages"
+                onPress={() => {
+                  setPanel(null);
+                  setReaderSettings({ pdfText: false });
+                  router.replace({ pathname: '/pdfbook/[id]', params: { id, source: 'own' } });
+                }}
+                style={[styles.printed, { borderColor: theme.rule }]}>
+                <Icon name="book" size={18} color={theme.ink} strokeWidth={1.9} />
+                <Text style={{ color: theme.ink, fontSize: 15, fontWeight: '600' }}>Show the printed PDF pages</Text>
+              </Pressable>
+            )}
             <Text style={[styles.hint, { color: theme.soft }]}>
               Swipe a page to turn it, and tap anywhere to show or hide these controls. Pinch to zoom, turn
               your phone sideways for an open book, and long-press a paragraph to save it.
@@ -1131,6 +1145,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   choice: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 12, borderWidth: 1.5, gap: 2 },
   sizeButton: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 12, borderWidth: 1 },
+  printed: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12, borderRadius: 12, borderWidth: 1, marginTop: 4 },
   sizeValue: { fontSize: 16, fontWeight: '700', width: 32, textAlign: 'center' },
   hint: { fontSize: 13, lineHeight: 19 },
   full: { flex: 1 },

@@ -10,14 +10,14 @@ import { Icon } from '@/components/Icon';
 import { ZoomPane } from '@/components/ZoomPane';
 import { PageFlip, type PageFlipHandle } from '@/components/PageFlip';
 import { PdfEngine, type PdfApi } from '@/components/PdfEngine';
-import { PdfText, hasReadableText } from '@/components/PdfText';
+import { PDF_PAGES_PER_PART, PdfText, hasReadableText, pdfTextBook } from '@/components/PdfText';
 import { ReaderTour, tourPageMark } from '@/components/ReaderTour';
 import { Scrubber } from '@/components/Scrubber';
 import { useScheme } from '@/lib/appearance';
 import { BOOK_THEMES, displayFont, displayItalic, readerThemeFor } from '@/lib/bookType';
 import { classicById } from '@/lib/fullbook';
 import { myBookPdfAssets } from '@/lib/myBooks';
-import { loadPdfData, ownSourceId, type OwnBook } from '@/lib/ownbooks';
+import { loadPdfData, loadSavedBook, ownSourceId, saveBook, type OwnBook } from '@/lib/ownbooks';
 import { pdfPagesAsBook } from '@/lib/ownIdeas';
 import { needsIdeas, useMakeOwnIdeas } from '@/lib/useOwnIdeas';
 import { setScreenColor } from '@/lib/safeArea';
@@ -171,6 +171,29 @@ function PdfBook({ id, source, forceAi }: { id: string; source: 'own' | 'private
       alive = false;
     };
   }, [api, count, wantText, texts]);
+  // Your own PDFs read as text open in the book reader, with real page turns: the text is saved as a book once.
+  const asBook = source === 'own' && wantText;
+  useEffect(() => {
+    if (!asBook) return;
+    let alive = true;
+    (async () => {
+      let saved = await loadSavedBook(id).catch(() => null);
+      if (!saved) {
+        if (!texts || !hasReadableText(texts)) return;
+        saved = pdfTextBook(title, texts);
+        await saveBook(id, saved).catch(() => {});
+      }
+      if (!alive) return;
+      const fresh = !readerProgress[`own:${id}`];
+      const part = Math.min(saved.chapters.length - 1, Math.floor(current / PDF_PAGES_PER_PART));
+      router.replace({ pathname: '/reader/[id]', params: fresh && part > 0 ? { id, kind: 'own', at: `${part}.0.0` } : { id, kind: 'own' } });
+    })();
+    return () => {
+      alive = false;
+    };
+    // Only when text mode turns on or the text arrives.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [asBook, texts]);
   const fontSize = readerSettings.fontSize ?? 19;
   const changeFont = (n: number) => setReaderSettings({ fontSize: Math.min(30, Math.max(13, n)) });
 
@@ -304,6 +327,11 @@ function PdfBook({ id, source, forceAi }: { id: string; source: 'own' | 'private
               <Text style={[styles.message, { color: theme.soft, fontFamily: displayItalic }]}>Opening the book…</Text>
             </View>
           ) : wantText && readable === null ? (
+            <View style={styles.center}>
+              <ActivityIndicator color={theme.soft} />
+              <Text style={[styles.message, { color: theme.soft, fontFamily: displayItalic }]}>Fitting the text to your screen…</Text>
+            </View>
+          ) : textMode && asBook ? (
             <View style={styles.center}>
               <ActivityIndicator color={theme.soft} />
               <Text style={[styles.message, { color: theme.soft, fontFamily: displayItalic }]}>Fitting the text to your screen…</Text>

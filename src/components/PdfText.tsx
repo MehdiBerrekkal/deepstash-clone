@@ -2,7 +2,22 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View, type ListViewToken } from 'react-native';
 
 import { READER_FONTS, type BookTheme } from '@/lib/bookType';
+import type { FullBook } from '@/lib/fullbook';
 import type { ReaderFont } from '@/lib/types';
+
+/** PDF pages per part when a PDF is read as a book; the reader's contents list shows "Pages 1–10", "Pages 11–20"… */
+export const PDF_PAGES_PER_PART = 10;
+
+/** A PDF's text as a book for the page-turning reader: parts of ten printed pages, each page's paragraphs in order. */
+export function pdfTextBook(title: string, texts: string[]): FullBook {
+  const chapters: FullBook['chapters'] = [];
+  for (let a = 0; a < texts.length; a += PDF_PAGES_PER_PART) {
+    const b = Math.min(texts.length, a + PDF_PAGES_PER_PART);
+    const paragraphs = texts.slice(a, b).flatMap(pageParagraphs);
+    chapters.push({ title: b - a > 1 ? `Pages ${a + 1}–${b}` : `Page ${a + 1}`, paragraphs: paragraphs.length ? paragraphs : ['(These pages have only pictures.)'] });
+  }
+  return { title, author: '', chapters };
+}
 
 /** A PDF page's text as paragraphs: lines joined, words split across lines put back together. */
 export function pageParagraphs(text: string): string[] {
