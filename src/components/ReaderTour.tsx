@@ -7,7 +7,7 @@ import { useStore } from '@/lib/store';
 import { colors } from '@/lib/theme';
 
 /** Saved with the account, like the games' "how to play" notes, so the tour shows once. */
-export const READER_TOUR_ID = 'tour:reader';
+export const READER_TOUR_ID = 'tour:reader-2';
 
 /** Spread on the area a page-gesture step points at, so the tour can find it. */
 export const tourPageMark = Platform.OS === 'web' ? ({ dataSet: { tour: 'page' } } as object) : {};
