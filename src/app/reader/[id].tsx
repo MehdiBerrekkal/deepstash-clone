@@ -11,7 +11,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { BookOpening } from '@/components/BookOpening';
 import { HighlightSheet } from '@/components/HighlightSheet';
-import { ReaderTour } from '@/components/ReaderTour';
+import { ReaderTour, tourPageMark, type TourStep } from '@/components/ReaderTour';
 import { WordSheet } from '@/components/WordSheet';
 import { PageFlip, type PageFlipHandle } from '@/components/PageFlip';
 import { Scrubber } from '@/components/Scrubber';
@@ -88,6 +88,7 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
   const [marking, setMarking] = useState<{ chapter: number; para: number } | null>(null);
   const [looking, setLooking] = useState<{ word: string; chapter: number; para: number } | null>(null);
   const [chrome, setChrome] = useState(true);
+  const [touring, setTouring] = useState(false);
   const flip = useRef<PageFlipHandle>(null);
   const insets = useSafeAreaInsets();
   // The position survives re-pagination, so changing the text size keeps your place.
@@ -147,10 +148,10 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
 
   // Controls fade away while you read; any tap in the middle of the page brings them back.
   useEffect(() => {
-    if (!chrome || panel || !book) return;
+    if (!chrome || panel || !book || touring) return;
     const t = setTimeout(() => setChrome(false), CHROME_HIDE_MS);
     return () => clearTimeout(t);
-  }, [chrome, panel, book]);
+  }, [chrome, panel, book, touring]);
 
   // In the browser, measure the real font so pages fill to the bottom (re-paginates once the font has loaded).
   const [fontsLoaded] = useFonts(bookFonts);
@@ -329,6 +330,47 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
   const percent = pages.length > 1 ? Math.round((current / (pages.length - 1)) * 100) : 100;
   const pageLabel = spread && current + 1 < pages.length ? `Pages ${current + 1}–${current + 2}` : `Page ${current + 1}`;
 
+  // The first-time tour: each step points at a control and "Show me" gives a live example.
+  const hasIdeas = kind === 'own' && !!ownBooks.find((b) => b.id === id)?.ideas?.length;
+  const tourSteps: TourStep[] =
+    !book || !page
+      ? []
+      : [
+          { id: 'turn', target: 'page', gesture: 'swipe', title: 'Turn the page', body: 'Swipe left to go forward, right to go back, like a real book.', demo: () => flip.current?.turn(1) },
+          {
+            id: 'chrome',
+            target: 'page',
+            gesture: 'tap',
+            title: 'Hide the controls',
+            body: 'Tap the page to hide these bars while you read, and tap again to bring them back.',
+            demo: () => {
+              setChrome(false);
+              setTimeout(() => setChrome(true), 700);
+            },
+          },
+          {
+            id: 'word',
+            target: 'page',
+            gesture: 'press',
+            title: 'Translate a word',
+            body: 'Long-press any word to translate it or see what it means. From there, ✎ highlights the passage.',
+            waits: true,
+            demo: () => {
+              const piece = page.pieces.find((p) => /\p{L}{5,}/u.test(book.chapters[page.chapter].paragraphs[p.para].slice(p.from, p.to))) ?? page.pieces[0];
+              if (!piece) return;
+              const word = book.chapters[page.chapter].paragraphs[piece.para].slice(piece.from, piece.to).match(/\p{L}{5,}/u)?.[0];
+              if (word) setLooking({ word, chapter: page.chapter, para: piece.para });
+            },
+          },
+          { id: 'listen', target: audio.sentence ? 'Listening controls' : 'Listen to this book', title: 'Listen', body: 'The headphones read the book aloud, following along on the page. Pick a voice and speed while it plays.' },
+          ...(hasIdeas
+            ? [{ id: 'ideas', target: 'Main ideas', title: 'Main ideas', body: 'The lamp opens this book’s main-idea cards. Stash the ones you want to keep.' }]
+            : []),
+          { id: 'contents', target: 'Contents and bookmarks', title: 'Chapters and bookmarks', body: 'Jump to any chapter, or back to a page you bookmarked with ☆.', waits: true, demo: () => setPanel('contents') },
+          { id: 'settings', target: 'Text size, font and theme', title: 'Make it yours', body: 'Change the text size, the font and the paper colour. You can also pinch the page.', waits: true, demo: () => setPanel('settings') },
+          { id: 'back', target: 'Close book', title: 'Going back', body: 'Tap ‹, or swipe from the very left edge of the screen. Happy reading!' },
+        ];
+
   // The player sits just above the controls when they're shown, otherwise low over the home indicator
   // (the page number hides while it's there, so it never covers text).
   const playerBottom = chrome && bottomBarHeight ? bottomBarHeight + 8 : Math.max(8, insets.bottom - 18);
@@ -372,9 +414,9 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
   return (
     <View style={[styles.container, { backgroundColor: spread ? theme.desk : theme.paper }]}>
       <Stack.Screen options={{ headerShown: false }} />
-      <ReaderTour own={kind === 'own'} />
+      <ReaderTour steps={tourSteps} busy={!!panel || !!looking} onActive={setTouring} />
       <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
-        <View style={[styles.stage, spread && styles.stageSpread]} onLayout={onLayout}>
+        <View style={[styles.stage, spread && styles.stageSpread]} onLayout={onLayout} {...tourPageMark}>
           {error ? (
             <View style={styles.center}>
               <Text style={[styles.message, { color: theme.ink, fontFamily: font.regular }]}>{error}</Text>

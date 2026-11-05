@@ -9,7 +9,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ZoomPane } from '@/components/ZoomPane';
 import { PageFlip, type PageFlipHandle } from '@/components/PageFlip';
 import { PdfEngine, type PdfApi } from '@/components/PdfEngine';
-import { ReaderTour } from '@/components/ReaderTour';
+import { ReaderTour, tourPageMark } from '@/components/ReaderTour';
 import { Scrubber } from '@/components/Scrubber';
 import { useScheme } from '@/lib/appearance';
 import { BOOK_THEMES, displayFont, displayItalic, readerThemeFor } from '@/lib/bookType';
@@ -112,6 +112,7 @@ function PdfBook({ id, source, forceAi }: { id: string; source: 'own' | 'private
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [current, setCurrent] = useState(() => readerProgress[readerId]?.para ?? 0);
   const [chrome, setChrome] = useState(true);
+  const [touring, setTouring] = useState(false);
   const [zoom, setZoom] = useState(1);
   const flip = useRef<PageFlipHandle>(null);
   const queue = useRef<Promise<unknown>>(Promise.resolve());
@@ -165,10 +166,10 @@ function PdfBook({ id, source, forceAi }: { id: string; source: 'own' | 'private
 
   // Controls fade away while reading.
   useEffect(() => {
-    if (!chrome || !count) return;
+    if (!chrome || !count || touring) return;
     const t = setTimeout(() => setChrome(false), CHROME_HIDE_MS);
     return () => clearTimeout(t);
-  }, [chrome, count]);
+  }, [chrome, count, touring]);
 
   const goTo = useCallback(
     (page: number) => {
@@ -234,9 +235,34 @@ function PdfBook({ id, source, forceAi }: { id: string; source: 'own' | 'private
     <View style={[styles.container, { backgroundColor: spread ? theme.desk : theme.paper }]}>
       <Stack.Screen options={{ headerShown: false }} />
       <PdfEngine onReady={setApi} onError={setError} />
-      <ReaderTour own={source === 'own'} pdf />
+      <ReaderTour
+        steps={
+          count
+            ? [
+                { id: 'turn', target: 'page', gesture: 'swipe', title: 'Turn the page', body: 'Swipe left to go forward, right to go back, like a real book.', demo: () => flip.current?.turn(1) },
+                {
+                  id: 'chrome',
+                  target: 'page',
+                  gesture: 'tap',
+                  title: 'Hide the controls',
+                  body: 'Tap the page to hide these bars while you read, and tap again to bring them back. Pinch or use + to zoom.',
+                  demo: () => {
+                    setChrome(false);
+                    setTimeout(() => setChrome(true), 700);
+                  },
+                },
+                ...(ownBook?.ideas?.length
+                  ? [{ id: 'ideas', target: 'Main ideas', title: 'Main ideas', body: 'The lamp opens this book’s main-idea cards. Stash the ones you want to keep.' }]
+                  : []),
+                { id: 'back', target: 'Close book', title: 'Going back', body: 'Tap ‹, or swipe from the very left edge of the screen. Happy reading!' },
+              ]
+            : []
+        }
+        busy={false}
+        onActive={setTouring}
+      />
       <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
-        <View style={[styles.stage, spread && styles.stageSpread]} onLayout={onLayout}>
+        <View style={[styles.stage, spread && styles.stageSpread]} onLayout={onLayout} {...tourPageMark}>
           {error ? (
             <View style={styles.center}>
               <Text style={[styles.message, { color: theme.ink }]}>{error}</Text>

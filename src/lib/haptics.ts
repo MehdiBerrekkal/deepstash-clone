@@ -5,30 +5,56 @@ import { Platform } from 'react-native';
 // (iOS 18+) gives a tap when a switch-style checkbox is toggled, so a hidden one is toggled. Failures are ignored.
 const native = Platform.OS === 'ios' || Platform.OS === 'android';
 
-let label: HTMLLabelElement | null = null;
+/** iPhone Safari's tap: toggling a switch-style checkbox through its label (iOS 18+), like the ios-haptics library. */
+function switchTap() {
+  const label = document.createElement('label');
+  label.ariaHidden = 'true';
+  label.style.display = 'none';
+  const input = document.createElement('input');
+  input.type = 'checkbox';
+  input.setAttribute('switch', '');
+  label.appendChild(input);
+  document.head.appendChild(label);
+  label.click();
+  label.remove();
+}
+
+let pending = false;
 function webTap(ms: number) {
   if (Platform.OS !== 'web' || typeof document === 'undefined') return;
   try {
-    const nav = navigator as Navigator & { vibrate?: (p: number) => boolean };
+    const nav = navigator as Navigator & { vibrate?: (p: number) => boolean; userActivation?: { isActive: boolean } };
     if (typeof nav.vibrate === 'function' && nav.vibrate(ms)) return;
-    if (!label) {
-      label = document.createElement('label');
-      label.setAttribute('aria-hidden', 'true');
-      label.style.cssText = 'position:fixed;left:-100px;top:-100px;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none';
-      const input = document.createElement('input');
-      input.type = 'checkbox';
-      input.setAttribute('switch', '');
-      input.tabIndex = -1;
-      label.appendChild(input);
-      document.body.appendChild(label);
+    // iOS only gives the tap during a touch the person just made. A long press fires while the finger is still
+    // down, before that counts, so the tap waits for the finger to lift.
+    if (nav.userActivation && !nav.userActivation.isActive) {
+      if (pending) return;
+      pending = true;
+      const fire = () => {
+        pending = false;
+        document.removeEventListener('touchend', fire, true);
+        document.removeEventListener('pointerup', fire, true);
+        try {
+          switchTap();
+        } catch {}
+      };
+      document.addEventListener('touchend', fire, true);
+      document.addEventListener('pointerup', fire, true);
+      setTimeout(() => {
+        if (!pending) return;
+        pending = false;
+        document.removeEventListener('touchend', fire, true);
+        document.removeEventListener('pointerup', fire, true);
+      }, 4000);
+      return;
     }
-    label.click();
+    switchTap();
   } catch {}
 }
 
 export const haptic = {
   /** A page turn or a small toggle. */
-  tick: () => native && Haptics.selectionAsync().catch(() => {}),
+  tick: () => (native ? Haptics.selectionAsync().catch(() => {}) : webTap(8)),
   /** A like, a stash, a grade, a long press. */
   tap: () => (native ? Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}) : webTap(15)),
   /** A long press that opens a menu. */
