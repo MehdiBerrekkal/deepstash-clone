@@ -6,6 +6,8 @@ import { BookActions, openOwnBook, type BookActionTarget } from '@/components/Bo
 import { BookCover } from '@/components/BookCover';
 import { BookGrid } from '@/components/BookGrid';
 import { FavoriteButton } from '@/components/FavoriteButton';
+import { Icon, type IconName } from '@/components/Icon';
+import { SectionHeader } from '@/components/SectionHeader';
 import { Shelf } from '@/components/Shelf';
 import { classicAsSource } from '@/lib/classicSource';
 import { classicReaderId, classics, type Classic } from '@/lib/fullbook';
@@ -40,7 +42,7 @@ export default function LibraryScreen() {
           onPress={() => router.push('/favorites')}
           hitSlop={8}
           style={styles.headerHeart}>
-          <Text style={styles.headerHeartIcon}>{favoriteBooks.length ? '♥' : '♡'}</Text>
+          <Icon name={favoriteBooks.length ? 'heartFull' : 'heart'} size={22} color="#FF6B81" strokeWidth={2} />
           {favoriteBooks.length > 0 && <Text style={styles.headerHeartCount}>{favoriteBooks.length}</Text>}
         </Pressable>
       ),
@@ -65,7 +67,7 @@ export default function LibraryScreen() {
   const classicShelves = useMemo(() => {
     const started = (c: Classic) => readerProgress[classicReaderId(c.id)]?.updatedAt ?? '';
     const ready = shown.filter((c) => c.origin !== 'private' && c.origin !== 'catalog');
-    return SHELVES.map((s) => ({ ...s, title: kid ? (KID_SHELF_TITLES[s.id] ?? s.title) : s.title, items: ready.filter((c) => shelfOf(c) === s.id).sort((a, b) => started(b).localeCompare(started(a))) })).filter(
+    return SHELVES.map((s) => ({ ...s, ...(kid && KID_SHELF_TITLES[s.id] ? { ...KID_SHELF_TITLES[s.id], subtitle: undefined } : {}), items: ready.filter((c) => shelfOf(c) === s.id).sort((a, b) => started(b).localeCompare(started(a))) })).filter(
       (s) => s.items.length > 0,
     );
   }, [readerProgress, shown, kid]);
@@ -131,12 +133,14 @@ export default function LibraryScreen() {
 
       {!kid && (
       <Pressable accessibilityLabel="Find a free book" onPress={() => router.push('/find')} style={styles.find}>
-        <Text style={styles.findIcon}>🔎</Text>
+        <View style={styles.findIcon}>
+          <Icon name="search" size={22} color={colors.onAccent} strokeWidth={2.2} />
+        </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.findTitle}>{t('Find a free book')}</Text>
           <Text style={styles.findSub}>{t('Thousands of classics in English and French, one tap to download')}</Text>
         </View>
-        <Text style={styles.findChev}>›</Text>
+        <Icon name="chevronRight" size={20} color={colors.accent} strokeWidth={2.2} />
       </Pressable>
       )}
 
@@ -147,20 +151,20 @@ export default function LibraryScreen() {
             {classicResults.length ? ` · ${classicResults.length} free full ${classicResults.length === 1 ? 'book' : 'books'}` : ''}
           </Text>
           <BookGrid books={results} />
-          {classicResults.length > 0 && <ClassicShelf title="📚 Free full books" items={classicResults} onLongPress={classicActions} />}
+          {classicResults.length > 0 && <ClassicShelf title="Free full books" icon="books" items={classicResults} onLongPress={classicActions} />}
         </>
       ) : (
         <>
-          {ownBooks.length > 0 && <OwnShelf title={t('📥 Your books · main ideas')} books={ownBooks} onOpen={openOwn} onLongPress={ownActions} />}
-          {myBooks.length > 0 && <ClassicShelf title="🔒 My books" items={myBooks} onLongPress={classicActions} />}
-          {recentlyAdded.length > 0 && <ClassicShelf title={t('✨ Recently added')} items={recentlyAdded} onLongPress={classicActions} />}
-          <ClassicShelf title={t('🎙 Read aloud by a real narrator')} items={narrated} onLongPress={classicActions} />
-          <Shelf title={t('Continue reading')} books={shelves.inProgress} />
+          {ownBooks.length > 0 && <OwnShelf title={t('Your books')} books={ownBooks} onOpen={openOwn} onLongPress={ownActions} />}
+          {myBooks.length > 0 && <ClassicShelf title="My books" icon="lock" subtitle="Private to this app" items={myBooks} onLongPress={classicActions} />}
+          {recentlyAdded.length > 0 && <ClassicShelf title={t('Recently added')} icon="sparkle" items={recentlyAdded} onLongPress={classicActions} />}
+          <ClassicShelf title={t('Read aloud by a real narrator')} icon="mic" subtitle="Listen while the words light up" items={narrated} onLongPress={classicActions} />
+          <Shelf title={t('Continue reading')} icon="bookmark" books={shelves.inProgress} />
           {classicShelves.map((s) => (
-            <ClassicShelf key={s.id} title={s.title} items={s.items} onLongPress={classicActions} />
+            <ClassicShelf key={s.id} title={s.title} icon={s.icon} subtitle={s.subtitle} items={s.items} onLongPress={classicActions} />
           ))}
-          <ClassicShelf title="⬇ More full books · free to download" items={toDownload} onLongPress={classicActions} />
-          <Shelf title="🎁 Free from the author" books={shelves.free} />
+          <ClassicShelf title="More full books" icon="download" subtitle="Free to download, one tap" items={toDownload} onLongPress={classicActions} />
+          <Shelf title="Free from the author" icon="gift" books={shelves.free} />
           <View style={styles.own}>
             <Text style={styles.ownTitle}>{t('Your books')}</Text>
             <Pressable disabled={opening} onPress={pick} style={styles.ownButton}>
@@ -180,7 +184,7 @@ export default function LibraryScreen() {
                       <Text style={styles.ownMeta} numberOfLines={1}>
                         {b.kind === 'pdf' ? b.fileName : b.source ? `${b.author} · ${b.source}` : b.author}
                         {fraction != null ? ` · ${Math.round(fraction * 100)}%` : ''}
-                        {b.ideas?.length ? ` · 💡 ${b.ideas.length}` : ''}
+                        {b.ideas?.length ? ` · ${b.ideas.length} ideas` : ''}
                       </Text>
                     </View>
                   </Pressable>
@@ -188,7 +192,7 @@ export default function LibraryScreen() {
                     <FavoriteButton favoriteKey={`own:${b.id}`} title={b.title} />
                   </View>
                   <Pressable accessibilityLabel={`More for ${b.title}`} onPress={() => ownActions(b)} style={styles.ownRemove}>
-                    <Text style={styles.ownMore}>⋯</Text>
+                    <Icon name="more" size={22} color={colors.text} strokeWidth={3} />
                   </Pressable>
                 </View>
               );
@@ -198,9 +202,9 @@ export default function LibraryScreen() {
             </Text>
           </View>
           {shelves.byTopic.map(({ topic, books }) => (
-            <Shelf key={topic.id} title={`${topic.emoji} ${topic.name}`} books={books} topicId={topic.id} />
+            <Shelf key={topic.id} title={topic.name} tint={topic.color} books={books} topicId={topic.id} />
           ))}
-          <Shelf title="Finished" books={shelves.finished} />
+          <Shelf title="Finished" icon="checkCircle" books={shelves.finished} />
           <View style={styles.footer}>
             <Text style={styles.footerText}>
               Covers from Open Library. Every summary is written in our own words. Full classics are public domain, from Project Gutenberg.
@@ -218,7 +222,7 @@ function OwnShelf({ title, books, onOpen, onLongPress }: { title: string; books:
   const { readerProgress, topics } = useStore();
   return (
     <View style={styles.shelf}>
-      <Text style={styles.shelfTitle}>{title}</Text>
+      <SectionHeader title={title} icon="inbox" subtitle="Main ideas made from your own files" />
       <FlatList
         horizontal
         data={books}
@@ -243,7 +247,7 @@ function OwnShelf({ title, books, onOpen, onLongPress }: { title: string; books:
               caption
               fraction={fraction}
               favoriteKey={`own:${item.id}`}
-              subtitle={n ? `💡 ${n} main ideas` : item.kind === 'pdf' ? 'Open it to make its ideas' : 'Making its ideas…'}
+              subtitle={n ? `${n} main ideas` : item.kind === 'pdf' ? 'Open it to make its ideas' : 'Making its ideas…'}
               onPress={() => (n ? router.push({ pathname: '/book/[id]', params: { id: source.id } }) : onOpen(item))}
               onLongPress={() => onLongPress(item)}
             />
@@ -255,20 +259,20 @@ function OwnShelf({ title, books, onOpen, onLongPress }: { title: string; books:
 }
 
 /** Shelves for full books. Older bundled books have no shelf field, so they're placed by topic. */
-const SHELVES: { id: NonNullable<Classic['shelf']>; title: string }[] = [
-  { id: 'wisdom', title: '🏛️ Wisdom & philosophy · full books' },
-  { id: 'lives', title: '🌱 Lives & self-improvement' },
-  { id: 'novels', title: '📖 Great novels & stories' },
-  { id: 'ideas', title: '💡 Big ideas & science' },
-  { id: 'poetry', title: '🪶 Poetry & plays' },
-  { id: 'french', title: '🇫🇷 En français' },
+const SHELVES: { id: NonNullable<Classic['shelf']>; title: string; icon: IconName; subtitle?: string }[] = [
+  { id: 'wisdom', title: 'Wisdom & philosophy', icon: 'columns', subtitle: 'Full books' },
+  { id: 'lives', title: 'Lives & self-improvement', icon: 'sprout' },
+  { id: 'novels', title: 'Great novels & stories', icon: 'book' },
+  { id: 'ideas', title: 'Big ideas & science', icon: 'bulb' },
+  { id: 'poetry', title: 'Poetry & plays', icon: 'feather' },
+  { id: 'french', title: 'En français', icon: 'globe' },
 ];
 /** Shelf names in kid mode. */
-const KID_SHELF_TITLES: Partial<Record<NonNullable<Classic['shelf']>, string>> = {
-  novels: '🧸 Adventures & stories for kids',
-  lives: '🧭 True adventures',
-  ideas: '🔭 Science stories',
-  french: '🇫🇷 Pour les enfants, en français',
+const KID_SHELF_TITLES: Partial<Record<NonNullable<Classic['shelf']>, { title: string; icon: IconName }>> = {
+  novels: { title: 'Adventures & stories for kids', icon: 'teddy' },
+  lives: { title: 'True adventures', icon: 'compass' },
+  ideas: { title: 'Science stories', icon: 'telescope' },
+  french: { title: 'Pour les enfants, en français', icon: 'globe' },
 };
 const NOVELS = new Set(['frankenstein', 'pride-and-prejudice', 'alice-in-wonderland', 'little-brother', 'down-and-out']);
 
@@ -284,12 +288,12 @@ function shelfOf(c: Classic): NonNullable<Classic['shelf']> {
 const NEW_DAYS = 7;
 const isNew = (addedAt?: string) => !!addedAt && Date.now() - new Date(addedAt).getTime() < NEW_DAYS * 24 * 60 * 60 * 1000;
 
-function ClassicShelf({ title, items, onLongPress }: { title: string; items: typeof classics; onLongPress?: (c: Classic) => void }) {
+function ClassicShelf({ title, items, onLongPress, icon, subtitle }: { title: string; items: typeof classics; onLongPress?: (c: Classic) => void; icon?: IconName; subtitle?: string }) {
   const { readerProgress, downloadedBooks } = useStore();
   if (items.length === 0) return null;
   return (
     <View style={styles.shelf}>
-      <Text style={styles.shelfTitle}>{title}</Text>
+      <SectionHeader title={title} icon={icon} subtitle={subtitle} />
       <FlatList
         horizontal
         data={items}
@@ -310,7 +314,7 @@ function ClassicShelf({ title, items, onLongPress }: { title: string; items: typ
                 fraction != null
                   ? `${Math.round(fraction * 100)}% read`
                   : item.origin === 'catalog' && !downloadedBooks.includes(item.id)
-                    ? '⬇ Free download'
+                    ? 'Free download'
                     : item.author
               }
               onPress={() => router.push({ pathname: '/classic/[id]', params: { id: item.id } })}
@@ -324,13 +328,11 @@ function ClassicShelf({ title, items, onLongPress }: { title: string; items: typ
 }
 
 const styles = StyleSheet.create({
-  find: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, marginHorizontal: 16, marginTop: -12, borderRadius: 18, backgroundColor: colors.surface, borderWidth: 1.5, borderColor: colors.accent },
-  findIcon: { fontSize: 24 },
-  findTitle: { color: colors.text, fontWeight: '900', fontSize: 16 },
+  find: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, marginHorizontal: 16, marginTop: -12, borderRadius: 18, backgroundColor: colors.surface, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
+  findIcon: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent },
+  findTitle: { color: colors.text, fontWeight: '800', fontSize: 16 },
   findSub: { color: colors.muted, fontSize: 13, marginTop: 2 },
-  findChev: { color: colors.accent, fontSize: 28, fontWeight: '300' },
-  shelf: { gap: 10 },
-  shelfTitle: { color: colors.text, fontSize: 20, fontWeight: '800', paddingHorizontal: 16 },
+  shelf: { gap: 12 },
   shelfRow: { gap: 14, paddingHorizontal: 16 },
   own: { marginHorizontal: 16, padding: 16, borderRadius: 18, backgroundColor: colors.surface, gap: 10 },
   ownTitle: { color: colors.text, fontSize: 20, fontWeight: '800' },
@@ -343,10 +345,8 @@ const styles = StyleSheet.create({
   ownBook: { color: colors.text, fontWeight: '700' },
   ownMeta: { color: colors.muted, fontSize: 12 },
   ownRemove: { padding: 8 },
-  ownMore: { color: colors.text, fontSize: 20, fontWeight: '800' },
   ownHeart: { width: 36, height: 36 },
   headerHeart: { flexDirection: 'row', alignItems: 'center', gap: 4, marginRight: 16, paddingHorizontal: 4 },
-  headerHeartIcon: { color: '#FF6B81', fontSize: 20 },
   headerHeartCount: { color: colors.muted, fontSize: 13, fontWeight: '700' },
   container: { flex: 1, backgroundColor: colors.background },
   content: { gap: 28, paddingBottom: 32 },
