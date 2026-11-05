@@ -1,14 +1,17 @@
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Modal, Pressable, Share, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Modal, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from 'react-native';
+import Animated, { FadeIn, FadeInDown, FadeOut, ZoomIn, ZoomOut } from 'react-native-reanimated';
+import Svg, { Path } from 'react-native-svg';
 
-import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated';
-
-import { haptic } from '@/lib/haptics';
+import { BookCover } from '@/components/BookCover';
+import { classicAsSource } from '@/lib/classicSource';
 import { classicReaderId, type Classic } from '@/lib/fullbook';
+import { haptic } from '@/lib/haptics';
 import { deleteOwnBookFiles, ownSourceId, type OwnBook } from '@/lib/ownbooks';
 import { useStore } from '@/lib/store';
 import { colors } from '@/lib/theme';
+import type { Source } from '@/lib/types';
 
 export type BookActionTarget = { kind: 'own'; book: OwnBook } | { kind: 'classic'; book: Classic };
 
@@ -19,11 +22,12 @@ export function openOwnBook(book: OwnBook) {
 }
 
 /**
- * The menu a long press on a book cover opens. Every book: open, favourite, share. Books you imported also get
- * their main ideas, rename and delete; the app's own books can't be deleted.
+ * What a long press on a book cover opens, like an iPhone's context menu: the screen blurs, the book lifts out
+ * and grows a little, and a compact menu appears under it. Every book: open, favourite, share. Books you
+ * imported also get their main ideas, rename and delete; the app's own books can't be deleted.
  */
 export function BookActions({ target, onClose }: { target: BookActionTarget; onClose: () => void }) {
-  const { isFavoriteBook, toggleFavoriteBook, removeOwnBook, renameOwnBook } = useStore();
+  const { isFavoriteBook, toggleFavoriteBook, removeOwnBook, renameOwnBook, topics } = useStore();
   const [mode, setMode] = useState<'menu' | 'rename' | 'delete'>('menu');
   const [name, setName] = useState(target.book.title);
 
@@ -43,24 +47,44 @@ export function BookActions({ target, onClose }: { target: BookActionTarget; onC
     close();
     fn();
   };
+  const cover: Source = own
+    ? { id: ownSourceId(own.id), title: own.title, author: own.author === 'PDF' ? 'Your PDF' : own.author, kind: 'book', topicId: own.topicId ?? topics[0]?.id ?? '', description: '' }
+    : classicAsSource(target.book as Classic);
+  const sub = own ? (own.kind === 'pdf' ? 'Your PDF' : `Your book · ${own.author}`) : target.book.author;
 
   return (
     <Modal visible transparent animationType="none" onRequestClose={close}>
-      <Animated.View entering={FadeIn.duration(180)} exiting={FadeOut.duration(160)} style={StyleSheet.absoluteFill}>
-        <Pressable style={styles.backdrop} onPress={close} />
+      <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(160)} style={[StyleSheet.absoluteFill, styles.backdrop]}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={close} accessibilityLabel="Close" />
       </Animated.View>
-      <View style={styles.bottom} pointerEvents="box-none">
-        <Animated.View entering={SlideInDown.springify().damping(18).stiffness(180)} exiting={SlideOutDown.duration(180)} style={styles.sheet}>
+      <ScrollView contentContainerStyle={styles.center} keyboardShouldPersistTaps="handled" pointerEvents="box-none">
+        <Pressable style={StyleSheet.absoluteFill} onPress={close} accessible={false} />
+        <Animated.View entering={ZoomIn.springify().damping(15).stiffness(210)} exiting={ZoomOut.duration(140)} style={styles.lift}>
+          <BookCover book={cover} width={128} favoriteKey={null} onPress={own ? then(() => openOwnBook(own)) : then(() => router.push({ pathname: '/classic/[id]', params: { id: target.book.id } }))} />
+        </Animated.View>
+        <Animated.View entering={FadeIn.delay(80).duration(200)} style={styles.heading}>
           <Text style={styles.title} numberOfLines={2}>
             {target.book.title}
           </Text>
           <Text style={styles.sub} numberOfLines={1}>
-            {own ? (own.kind === 'pdf' ? `Your PDF · ${own.fileName}` : `Your book · ${own.author}`) : target.book.author}
+            {sub}
           </Text>
+        </Animated.View>
 
+        <Animated.View entering={FadeInDown.delay(60).springify().damping(17).stiffness(200)} exiting={FadeOut.duration(120)} style={styles.menu}>
           {mode === 'rename' && own ? (
             <View style={styles.block}>
-              <TextInput value={name} onChangeText={setName} autoFocus style={styles.input} placeholder="Book title" placeholderTextColor={colors.muted} onSubmitEditing={() => (renameOwnBook(own.id, name), close())} />
+              <Text style={styles.blockTitle}>Rename</Text>
+              <TextInput
+                value={name}
+                onChangeText={setName}
+                autoFocus
+                selectTextOnFocus
+                style={styles.input}
+                placeholder="Book title"
+                placeholderTextColor={colors.muted}
+                onSubmitEditing={() => (renameOwnBook(own.id, name), close())}
+              />
               <View style={styles.buttons}>
                 <Pressable onPress={() => setMode('menu')} style={styles.secondary}>
                   <Text style={styles.secondaryText}>Cancel</Text>
@@ -72,7 +96,8 @@ export function BookActions({ target, onClose }: { target: BookActionTarget; onC
             </View>
           ) : mode === 'delete' && own ? (
             <View style={styles.block}>
-              <Text style={styles.warn}>Delete this book from this device? Its main-idea cards leave your stashes, and its reading progress and bookmarks are removed. Your highlights stay.</Text>
+              <Text style={styles.blockTitle}>Delete this book?</Text>
+              <Text style={styles.warn}>It leaves this device with its main-idea cards, reading progress and bookmarks. Your highlights stay.</Text>
               <View style={styles.buttons}>
                 <Pressable onPress={() => setMode('menu')} style={styles.secondary}>
                   <Text style={styles.secondaryText}>Cancel</Text>
@@ -84,69 +109,104 @@ export function BookActions({ target, onClose }: { target: BookActionTarget; onC
                     deleteOwnBookFiles(own).catch(() => {});
                   })}
                   style={[styles.primary, styles.deleteButton]}>
-                  <Text style={styles.primaryText}>Delete</Text>
+                  <Text style={styles.deleteText}>Delete</Text>
                 </Pressable>
               </View>
             </View>
           ) : (
-            <View>
-              {own ? (
-                <>
-                  <Row icon="📖" label="Read the book" onPress={then(() => openOwnBook(own))} />
-                  {!!own.ideas?.length && (
-                    <Row icon="💡" label={`Main ideas (${own.ideas.length})`} onPress={then(() => router.push({ pathname: '/book/[id]', params: { id: ownSourceId(own.id) } }))} />
-                  )}
-                </>
-              ) : (
-                <Row icon="📖" label="Open" onPress={then(() => router.push({ pathname: '/classic/[id]', params: { id: target.book.id } }))} />
-              )}
-              <Row icon={fav ? '♥' : '♡'} label={fav ? 'Remove from favorites' : 'Add to favorites'} onPress={then(() => toggleFavoriteBook(favKey))} />
-              <Row icon="↗" label="Share" onPress={then(() => Share.share({ message: `${target.book.title} by ${target.book.author}` }))} />
+            <>
+              <Group>
+                {own ? (
+                  <>
+                    <Row icon="book" label="Read the book" onPress={then(() => openOwnBook(own))} />
+                    {!!own.ideas?.length && (
+                      <Row icon="bulb" label="Main ideas" detail={String(own.ideas.length)} onPress={then(() => router.push({ pathname: '/book/[id]', params: { id: ownSourceId(own.id) } }))} />
+                    )}
+                  </>
+                ) : (
+                  <Row icon="book" label="Open" onPress={then(() => router.push({ pathname: '/classic/[id]', params: { id: target.book.id } }))} />
+                )}
+              </Group>
+              <Group>
+                <Row icon={fav ? 'heartFull' : 'heart'} label={fav ? 'Remove from favorites' : 'Add to favorites'} onPress={then(() => toggleFavoriteBook(favKey))} />
+                <Row icon="share" label="Share" onPress={then(() => Share.share({ message: `${target.book.title} by ${target.book.author}` }))} />
+              </Group>
               {own && (
-                <>
-                  <Row icon="✏️" label="Rename" onPress={() => setMode('rename')} />
-                  <Row icon="🗑" label="Delete from this device" danger onPress={() => setMode('delete')} />
-                </>
+                <Group last>
+                  <Row icon="pencil" label="Rename" onPress={() => setMode('rename')} />
+                  <Row icon="trash" label="Delete from this device" danger onPress={() => setMode('delete')} />
+                </Group>
               )}
-              <Pressable onPress={close} style={styles.cancel}>
-                <Text style={styles.secondaryText}>Close</Text>
-              </Pressable>
-            </View>
+            </>
           )}
         </Animated.View>
-      </View>
+      </ScrollView>
     </Modal>
   );
 }
 
-function Row({ icon, label, onPress, danger }: { icon: string; label: string; onPress: () => void; danger?: boolean }) {
+function Group({ children, last }: { children: ReactNode; last?: boolean }) {
+  return <View style={[styles.group, last && styles.groupLast]}>{children}</View>;
+}
+
+type IconName = 'book' | 'bulb' | 'heart' | 'heartFull' | 'share' | 'pencil' | 'trash';
+
+function Row({ icon, label, detail, onPress, danger }: { icon: IconName; label: string; detail?: string; onPress: () => void; danger?: boolean }) {
+  const tint = danger ? colors.danger : colors.text;
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={styles.row}>
-      <Text style={styles.icon}>{icon}</Text>
-      <Text style={[styles.label, danger && styles.danger]}>{label}</Text>
+    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}>
+      <Text style={[styles.label, { color: tint }]} numberOfLines={1}>
+        {label}
+      </Text>
+      {detail ? <Text style={styles.detail}>{detail}</Text> : null}
+      <MenuIcon name={icon} color={tint} />
     </Pressable>
   );
 }
 
+const ICONS: Record<IconName, string> = {
+  book: 'M4 5.5C4 4.7 4.7 4 5.5 4H10c1.1 0 2 .9 2 2v13c0-.8-.7-1.5-1.5-1.5H4zM20 5.5c0-.8-.7-1.5-1.5-1.5H14c-1.1 0-2 .9-2 2v13c0-.8.7-1.5 1.5-1.5H20z',
+  bulb: 'M9 18h6M10 21h4M12 3a6 6 0 00-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0012 3z',
+  heart: 'M12 20s-7-4.4-7-10a4 4 0 017-2.6A4 4 0 0119 10c0 5.6-7 10-7 10z',
+  heartFull: 'M12 20s-7-4.4-7-10a4 4 0 017-2.6A4 4 0 0119 10c0 5.6-7 10-7 10z',
+  share: 'M12 15V3M7.5 7.5L12 3l4.5 4.5M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7',
+  pencil: 'M4 20l4-1 10.5-10.5a2.1 2.1 0 00-3-3L5 16l-1 4zM14 7l3 3',
+  trash: 'M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 002 2h6a2 2 0 002-2l1-12M9 7V4h6v3',
+};
+
+function MenuIcon({ name, color }: { name: IconName; color: string }) {
+  return (
+    <Svg width={20} height={20} viewBox="0 0 24 24" fill={name === 'heartFull' ? color : 'none'} stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <Path d={ICONS[name]} />
+    </Svg>
+  );
+}
+
+const blur = Platform.OS === 'web' ? ({ backdropFilter: 'blur(18px) saturate(140%)', WebkitBackdropFilter: 'blur(18px) saturate(140%)' } as object) : {};
+
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' },
-  bottom: { flex: 1, justifyContent: 'flex-end' },
-  sheet: { backgroundColor: colors.surface, borderTopLeftRadius: 22, borderTopRightRadius: 22, padding: 18, paddingBottom: 34, gap: 4, width: '100%', maxWidth: 560, alignSelf: 'center' },
-  title: { color: colors.text, fontSize: 19, fontWeight: '800' },
-  sub: { color: colors.muted, fontSize: 13, marginBottom: 8 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 13, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
-  icon: { fontSize: 18, width: 26, textAlign: 'center', color: colors.text },
-  label: { color: colors.text, fontSize: 16, fontWeight: '600' },
-  note: { color: colors.muted, fontSize: 13, marginTop: 3 },
-  danger: { color: colors.danger },
-  block: { gap: 14, marginTop: 6 },
-  input: { backgroundColor: colors.surfaceRaised, color: colors.text, fontSize: 16, padding: 14, borderRadius: 12 },
-  warn: { color: colors.text, fontSize: 15, lineHeight: 21 },
-  buttons: { flexDirection: 'row', gap: 10 },
-  primary: { flex: 1, paddingVertical: 14, borderRadius: 999, alignItems: 'center', backgroundColor: colors.accent },
+  backdrop: { backgroundColor: 'rgba(8,9,12,0.55)', ...blur },
+  center: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 14 },
+  lift: { shadowColor: '#000', shadowOpacity: 0.5, shadowRadius: 24, shadowOffset: { width: 0, height: 14 }, borderRadius: 10 },
+  heading: { alignItems: 'center', maxWidth: 300, gap: 2 },
+  title: { color: '#F4F1EA', fontSize: 17, fontWeight: '800', textAlign: 'center' },
+  sub: { color: 'rgba(244,241,234,0.7)', fontSize: 13 },
+  menu: { width: 270, borderRadius: 16, backgroundColor: colors.surface, overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
+  group: { borderBottomWidth: 7, borderBottomColor: colors.background },
+  groupLast: { borderBottomWidth: 0 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 13, paddingHorizontal: 16, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
+  rowPressed: { backgroundColor: colors.surfaceRaised },
+  label: { flex: 1, fontSize: 16, fontWeight: '500' },
+  detail: { color: colors.muted, fontSize: 15 },
+  block: { gap: 12, padding: 16 },
+  blockTitle: { color: colors.text, fontSize: 16, fontWeight: '800' },
+  input: { backgroundColor: colors.surfaceRaised, color: colors.text, fontSize: 16, padding: 12, borderRadius: 10 },
+  warn: { color: colors.muted, fontSize: 14, lineHeight: 20 },
+  buttons: { flexDirection: 'row', gap: 8 },
+  primary: { flex: 1, paddingVertical: 12, borderRadius: 999, alignItems: 'center', backgroundColor: colors.accent },
   deleteButton: { backgroundColor: colors.danger },
   primaryText: { color: colors.onAccent, fontWeight: '800' },
-  secondary: { flex: 1, paddingVertical: 14, borderRadius: 999, alignItems: 'center', backgroundColor: colors.surfaceRaised },
+  deleteText: { color: '#fff', fontWeight: '800' },
+  secondary: { flex: 1, paddingVertical: 12, borderRadius: 999, alignItems: 'center', backgroundColor: colors.surfaceRaised },
   secondaryText: { color: colors.text, fontWeight: '700' },
-  cancel: { paddingVertical: 14, alignItems: 'center', marginTop: 6 },
 });
