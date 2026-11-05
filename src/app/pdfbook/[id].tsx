@@ -9,6 +9,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ZoomPane } from '@/components/ZoomPane';
 import { PageFlip, type PageFlipHandle } from '@/components/PageFlip';
 import { PdfEngine, type PdfApi } from '@/components/PdfEngine';
+import { ReaderTour } from '@/components/ReaderTour';
 import { Scrubber } from '@/components/Scrubber';
 import { useScheme } from '@/lib/appearance';
 import { BOOK_THEMES, displayFont, displayItalic, readerThemeFor } from '@/lib/bookType';
@@ -233,6 +234,7 @@ function PdfBook({ id, source, forceAi }: { id: string; source: 'own' | 'private
     <View style={[styles.container, { backgroundColor: spread ? theme.desk : theme.paper }]}>
       <Stack.Screen options={{ headerShown: false }} />
       <PdfEngine onReady={setApi} onError={setError} />
+      <ReaderTour own={source === 'own'} pdf />
       <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
         <View style={[styles.stage, spread && styles.stageSpread]} onLayout={onLayout}>
           {error ? (

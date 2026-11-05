@@ -11,6 +11,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { BookOpening } from '@/components/BookOpening';
 import { HighlightSheet } from '@/components/HighlightSheet';
+import { ReaderTour } from '@/components/ReaderTour';
 import { WordSheet } from '@/components/WordSheet';
 import { PageFlip, type PageFlipHandle } from '@/components/PageFlip';
 import { Scrubber } from '@/components/Scrubber';
@@ -371,6 +372,7 @@ function Reader({ id, kind, start }: { id: string; kind?: 'classic' | 'own'; sta
   return (
     <View style={[styles.container, { backgroundColor: spread ? theme.desk : theme.paper }]}>
       <Stack.Screen options={{ headerShown: false }} />
+      <ReaderTour own={kind === 'own'} />
       <SafeAreaView style={styles.container} edges={['top', 'bottom', 'left', 'right']}>
         <View style={[styles.stage, spread && styles.stageSpread]} onLayout={onLayout}>
           {error ? (
