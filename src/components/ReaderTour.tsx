@@ -41,7 +41,7 @@ function findTarget(target: string): Rect | null {
  * the gesture on the page), and "Next" gives a live example (the page turns, the panel opens…) before moving on.
  * Skip or close it at any time; it doesn't come back.
  */
-export function ReaderTour({ steps, busy, onActive }: { steps: TourStep[]; busy: boolean; onActive?: (on: boolean) => void }) {
+export function ReaderTour({ steps, busy, onActive, tourId = READER_TOUR_ID }: { steps: TourStep[]; busy: boolean; onActive?: (on: boolean) => void; tourId?: string }) {
   const { brain, markBrainHowTo, ready } = useStore();
   const [closed, setClosed] = useState(false);
   const [i, setI] = useState(0);
@@ -49,7 +49,7 @@ export function ReaderTour({ steps, busy, onActive }: { steps: TourStep[]; busy:
   const [playing, setPlaying] = useState(false);
   const [rect, setRect] = useState<Rect | null>(null);
   const { width: W, height: H } = useWindowDimensions();
-  const active = ready && !closed && !brain.seen?.includes(READER_TOUR_ID) && steps.length > 0;
+  const active = ready && !closed && !brain.seen?.includes(tourId) && steps.length > 0;
   const step = steps[Math.min(i, steps.length - 1)];
 
   useEffect(() => onActive?.(active), [active, onActive]);
@@ -79,14 +79,14 @@ export function ReaderTour({ steps, busy, onActive }: { steps: TourStep[]; busy:
 
   // Ran past the end (e.g. a step disappeared): the tour is done.
   useEffect(() => {
-    if (active && i >= steps.length) markBrainHowTo(READER_TOUR_ID);
-  }, [active, i, steps.length, markBrainHowTo]);
+    if (active && i >= steps.length) markBrainHowTo(tourId);
+  }, [active, i, steps.length, markBrainHowTo, tourId]);
 
   if (!active || !step || i >= steps.length || waiting || playing) return null;
 
   const finish = () => {
     setClosed(true);
-    markBrainHowTo(READER_TOUR_ID);
+    markBrainHowTo(tourId);
   };
   const last = i + 1 === steps.length;
   const next = () => {

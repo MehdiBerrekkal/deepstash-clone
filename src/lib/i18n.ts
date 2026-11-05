@@ -43,6 +43,8 @@ const FR: Record<string, string> = {
   'Recently added': 'Ajouts récents',
   'Continue reading': 'Reprendre la lecture',
   'Your books': 'Vos livres',
+  'All books': 'Tous les livres',
+  'My books': 'Mes livres',
   'Open your own book (EPUB or PDF)': 'Ouvrir votre propre livre (EPUB ou PDF)',
   // explore
   'Search books, ideas, quotes, poems, highlights': 'Rechercher livres, idées, citations, poèmes, surlignages',

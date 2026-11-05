@@ -1,12 +1,12 @@
-import { router, useNavigation } from 'expo-router';
+import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { useLayoutEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { BookActions, openOwnBook, type BookActionTarget } from '@/components/BookActions';
 import { BookCover } from '@/components/BookCover';
 import { BookGrid } from '@/components/BookGrid';
-import { FavoriteButton } from '@/components/FavoriteButton';
 import { Icon, type IconName } from '@/components/Icon';
+import { MyBooks } from '@/components/MyBooks';
 import { SearchField } from '@/components/SearchField';
 import { SectionHeader } from '@/components/SectionHeader';
 import { Shelf } from '@/components/Shelf';
@@ -31,6 +31,9 @@ export default function LibraryScreen() {
   const navigation = useNavigation();
   const [query, setQuery] = useState('');
   const [opening, setOpening] = useState(false);
+  // Library has two places: every book, and the books you added yourself.
+  const params = useLocalSearchParams<{ view?: string }>();
+  const [view, setView] = useState<'all' | 'mine'>(params.view === 'mine' ? 'mine' : 'all');
   const [fileError, setFileError] = useState<string | null>(null);
 
   // Heart next to the "Library" title opens Favorites.
@@ -91,6 +94,7 @@ export default function LibraryScreen() {
       const book = await pickOwnBook();
       if (book) {
         addOwnBook(book);
+        setView('mine');
         await openOwn(book);
       }
     } catch (e) {
@@ -124,6 +128,28 @@ export default function LibraryScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <View style={styles.segment}>
+        {(['all', 'mine'] as const).map((v) => (
+          <Pressable
+            key={v}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: view === v }}
+            accessibilityLabel={v === 'all' ? 'All books' : 'My books'}
+            onPress={() => setView(v)}
+            style={[styles.segmentItem, view === v && styles.segmentOn]}>
+            <Icon name={v === 'all' ? 'books' : 'inbox'} size={16} color={view === v ? colors.background : colors.muted} strokeWidth={2.2} />
+            <Text style={[styles.segmentText, view === v && styles.segmentTextOn]}>
+              {v === 'all' ? t('All books') : t('My books')}
+              {v === 'mine' && ownBooks.length ? ` · ${ownBooks.length}` : ''}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
+      {view === 'mine' ? (
+        <MyBooks books={ownBooks} opening={opening} error={fileError} onAdd={pick} onOpen={(b) => (b.ideas?.length ? router.push({ pathname: '/book/[id]', params: { id: ownSourceId(b.id) } }) : openOwn(b))} onLongPress={ownActions} />
+      ) : (
+      <>
       <SearchField
         accessibilityLabel="Search the library"
         value={query}
@@ -145,17 +171,6 @@ export default function LibraryScreen() {
       </Pressable>
       )}
 
-      <Pressable accessibilityLabel="Family library" onPress={() => router.push('/family')} style={styles.family}>
-        <View style={styles.familyIcon}>
-          <Icon name="users" size={20} color={colors.accent} strokeWidth={2} />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.familyTitle}>Family library</Text>
-          <Text style={styles.findSub}>Books your family shares with each other</Text>
-        </View>
-        <Icon name="chevronRight" size={20} color={colors.muted} strokeWidth={2.2} />
-      </Pressable>
-
       {q ? (
         <>
           <Text style={styles.count}>
@@ -167,8 +182,7 @@ export default function LibraryScreen() {
         </>
       ) : (
         <>
-          {ownBooks.length > 0 && <OwnShelf title={t('Your books')} books={ownBooks} onOpen={openOwn} onLongPress={ownActions} />}
-          {myBooks.length > 0 && <ClassicShelf title="My books" icon="lock" subtitle="Private to this app" items={myBooks} onLongPress={classicActions} />}
+          {myBooks.length > 0 && <ClassicShelf title="Private books" icon="lock" subtitle="Only in this app" items={myBooks} onLongPress={classicActions} />}
           {recentlyAdded.length > 0 && <ClassicShelf title={t('Recently added')} icon="sparkle" items={recentlyAdded} onLongPress={classicActions} />}
           <ClassicShelf title={t('Read aloud by a real narrator')} icon="mic" subtitle="Listen while the words light up" items={narrated} onLongPress={classicActions} />
           <Shelf title={t('Continue reading')} icon="bookmark" books={shelves.inProgress} />
@@ -177,45 +191,6 @@ export default function LibraryScreen() {
           ))}
           <ClassicShelf title="More full books" icon="download" subtitle="Free to download, one tap" items={toDownload} onLongPress={classicActions} />
           <Shelf title="Free from the author" icon="gift" books={shelves.free} />
-          <View style={styles.own}>
-            <Text style={styles.ownTitle}>{t('Your books')}</Text>
-            <Pressable disabled={opening} onPress={pick} style={styles.ownButton}>
-              {opening ? <ActivityIndicator color={colors.onAccent} /> : <View style={styles.ownButtonRow}>
-                  <Icon name="plus" size={18} color={colors.onAccent} strokeWidth={2.6} />
-                  <Text style={styles.ownButtonText}>{t('Open your own book (EPUB or PDF)')}</Text>
-                </View>}
-            </Pressable>
-            {fileError && <Text style={styles.error}>{fileError}</Text>}
-            {ownBooks.map((b) => {
-              const fraction = readerProgress[`own:${b.id}`]?.fraction;
-              return (
-                <View key={b.id} style={styles.ownRow}>
-                  <Pressable onPress={() => openOwn(b)} onLongPress={() => ownActions(b)} delayLongPress={450} {...({ dataSet: { longpress: '1' } } as object)} style={styles.ownInfo}>
-                    <Text style={styles.ownBadge}>{b.kind === 'pdf' ? 'PDF' : b.source ? (b.lang === 'fr' ? 'FR' : 'FREE') : 'EPUB'}</Text>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.ownBook} numberOfLines={1}>
-                        {b.title}
-                      </Text>
-                      <Text style={styles.ownMeta} numberOfLines={1}>
-                        {b.kind === 'pdf' ? b.fileName : b.source ? `${b.author} · ${b.source}` : b.author}
-                        {fraction != null ? ` · ${Math.round(fraction * 100)}%` : ''}
-                        {b.ideas?.length ? ` · ${b.ideas.length} ideas` : ''}
-                      </Text>
-                    </View>
-                  </Pressable>
-                  <View style={styles.ownHeart}>
-                    <FavoriteButton favoriteKey={`own:${b.id}`} title={b.title} />
-                  </View>
-                  <Pressable accessibilityLabel={`More for ${b.title}`} onPress={() => ownActions(b)} style={styles.ownRemove}>
-                    <Icon name="more" size={22} color={colors.text} strokeWidth={3} />
-                  </Pressable>
-                </View>
-              );
-            })}
-            <Text style={styles.footerText}>
-              DRM-free files only. They stay on this device and are never uploaded. Long-press a book for more.
-            </Text>
-          </View>
           {shelves.byTopic.map(({ topic, books }) => (
             <Shelf key={topic.id} title={topic.name} tint={topic.color} books={books} topicId={topic.id} />
           ))}
@@ -227,49 +202,10 @@ export default function LibraryScreen() {
           </View>
         </>
       )}
+      </>
+      )}
       {actions && <BookActions target={actions} onClose={() => setActions(null)} />}
     </ScrollView>
-  );
-}
-
-/** Your own books as covers; a tap opens the book's page with its main ideas (or the book, until they're ready). */
-function OwnShelf({ title, books, onOpen, onLongPress }: { title: string; books: OwnBook[]; onOpen: (b: OwnBook) => void; onLongPress: (b: OwnBook) => void }) {
-  const { readerProgress, topics } = useStore();
-  return (
-    <View style={styles.shelf}>
-      <SectionHeader title={title} icon="inbox" subtitle="Main ideas made from your own files" />
-      <FlatList
-        horizontal
-        data={books}
-        keyExtractor={(b) => b.id}
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.shelfRow}
-        renderItem={({ item }) => {
-          const fraction = readerProgress[`own:${item.id}`]?.fraction;
-          const n = item.ideas?.length ?? 0;
-          const source: Source = {
-            id: ownSourceId(item.id),
-            title: item.title,
-            author: item.author === 'PDF' ? 'Your PDF' : item.author,
-            kind: 'book',
-            topicId: item.topicId ?? topics[0]?.id ?? '',
-            description: '',
-          };
-          return (
-            <BookCover
-              book={source}
-              width={112}
-              caption
-              fraction={fraction}
-              favoriteKey={`own:${item.id}`}
-              subtitle={n ? `${n} main ideas` : item.kind === 'pdf' ? 'Open it to make its ideas' : 'Making its ideas…'}
-              onPress={() => (n ? router.push({ pathname: '/book/[id]', params: { id: source.id } }) : onOpen(item))}
-              onLongPress={() => onLongPress(item)}
-            />
-          );
-        }}
-      />
-    </View>
   );
 }
 
@@ -345,26 +281,15 @@ function ClassicShelf({ title, items, onLongPress, icon, subtitle }: { title: st
 const styles = StyleSheet.create({
   find: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 16, marginHorizontal: 16, marginTop: -12, borderRadius: 18, backgroundColor: colors.surface, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
   findIcon: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent },
-  family: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: 16, marginHorizontal: 16, marginTop: -16, borderRadius: 18, backgroundColor: colors.surface },
-  familyIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surfaceRaised },
-  familyTitle: { color: colors.text, fontWeight: '800', fontSize: 15 },
+  segment: { flexDirection: 'row', marginHorizontal: 16, marginTop: 8, marginBottom: -12, padding: 4, borderRadius: 14, backgroundColor: colors.surface },
+  segmentItem: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 9, borderRadius: 10 },
+  segmentOn: { backgroundColor: colors.text },
+  segmentText: { color: colors.muted, fontWeight: '700', fontSize: 14 },
+  segmentTextOn: { color: colors.background },
   findTitle: { color: colors.text, fontWeight: '800', fontSize: 16 },
   findSub: { color: colors.muted, fontSize: 13, marginTop: 2 },
   shelf: { gap: 12 },
   shelfRow: { gap: 14, paddingHorizontal: 16 },
-  own: { marginHorizontal: 16, padding: 16, borderRadius: 18, backgroundColor: colors.surface, gap: 10 },
-  ownTitle: { color: colors.text, fontSize: 20, fontWeight: '800' },
-  ownButton: { paddingVertical: 14, borderRadius: 999, alignItems: 'center', backgroundColor: colors.accent },
-  ownButtonRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  ownButtonText: { color: colors.onAccent, fontWeight: '800' },
-  error: { color: colors.danger },
-  ownRow: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 10, borderRadius: 12, backgroundColor: colors.surfaceRaised },
-  ownInfo: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
-  ownBadge: { color: colors.onAccent, backgroundColor: colors.accent, fontSize: 10, fontWeight: '800', paddingHorizontal: 6, paddingVertical: 3, borderRadius: 4, overflow: 'hidden' },
-  ownBook: { color: colors.text, fontWeight: '700' },
-  ownMeta: { color: colors.muted, fontSize: 12 },
-  ownRemove: { padding: 8 },
-  ownHeart: { width: 36, height: 36 },
   headerHeart: { flexDirection: 'row', alignItems: 'center', gap: 4, marginRight: 16, paddingHorizontal: 4 },
   headerHeartCount: { color: colors.muted, fontSize: 13, fontWeight: '700' },
   container: { flex: 1, backgroundColor: colors.background },
