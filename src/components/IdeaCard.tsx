@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, Share, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 import { CardBody, POEM_PREVIEW_LINES } from '@/components/CardBody';
 import { Icon } from '@/components/Icon';
@@ -9,6 +9,7 @@ import { detectLang, voiceForLanguage } from '@/lib/lang';
 import { cardAudioUrl } from '@/lib/cardAudio';
 import { speakOnce } from '@/lib/listen';
 import { isNatural, playClip, unlockAudio } from '@/lib/neuralVoice';
+import { APP_URL, shareMessage } from '@/lib/share';
 import { useStore } from '@/lib/store';
 import { cardKindById, colors, onCard, onCardScope, sourceKindIcon, sourceKindLabel } from '@/lib/theme';
 import type { Idea } from '@/lib/types';
@@ -55,7 +56,7 @@ export function IdeaCard({ idea, height, counter, hideSource = false, scrollable
   const cut = !scrollable && (idea.kind === 'idea' || idea.kind === 'fact') && idea.body.length / charsPerLine > bodyLines;
 
   const open = () => router.push({ pathname: '/idea/[id]', params: { id: idea.id } });
-  const share = () => Share.share({ message: shareText(idea, source?.title, source?.author) });
+  const share = () => void shareMessage(idea.title || 'An idea', `${shareText(idea, source?.title, source?.author)}\n\nMore like this on DeepStach:`, idea.id.startsWith('own-') ? `${APP_URL}/` : `${APP_URL}/idea/${encodeURIComponent(idea.id)}`);
   const [speaking, setSpeaking] = useState<null | (() => void)>(null);
   const listen = () => {
     if (speaking) return speaking();

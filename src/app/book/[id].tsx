@@ -1,6 +1,6 @@
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Linking, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -12,6 +12,7 @@ import { classicBySourceId, classicReaderId } from '@/lib/fullbook';
 import { ownSourceId } from '@/lib/ownbooks';
 import { useAiOnOpen } from '@/lib/useOwnIdeas';
 import { usePushOrBack } from '@/lib/nav';
+import { shareOwn, shareSource } from '@/lib/shareBook';
 import { useStore } from '@/lib/store';
 import { colors, readMinutes, serif, sourceKindIcon, sourceKindLabel } from '@/lib/theme';
 
@@ -144,7 +145,7 @@ export default function BookScreen() {
           <View style={styles.secondaryRow}>
             <FavoriteButton favoriteKey={own ? `own:${own.id}` : `book:${book.id}`} title={book.title} size="large" />
             <Pressable
-              onPress={() => Share.share({ message: `${book.title} by ${book.author}\n\n${book.description}` })}
+              onPress={() => void (own ? shareOwn(own) : shareSource(book, ideas.length))}
               style={styles.secondary}>
               <Icon name="share" size={17} color={colors.text} strokeWidth={2} />
               <Text style={styles.secondaryText}>Share</Text>

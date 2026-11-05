@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect, useState, type ReactNode } from 'react';
-import { Modal, Platform, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeOut, ZoomIn, ZoomOut } from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
 
@@ -9,6 +9,7 @@ import { classicAsSource } from '@/lib/classicSource';
 import { classicReaderId, type Classic } from '@/lib/fullbook';
 import { haptic } from '@/lib/haptics';
 import { deleteOwnBookFiles, ownSourceId, type OwnBook } from '@/lib/ownbooks';
+import { shareClassic, shareOwn } from '@/lib/shareBook';
 import { useStore } from '@/lib/store';
 import { colors } from '@/lib/theme';
 import type { Source } from '@/lib/types';
@@ -129,7 +130,7 @@ export function BookActions({ target, onClose }: { target: BookActionTarget; onC
               </Group>
               <Group>
                 <Row icon={fav ? 'heartFull' : 'heart'} label={fav ? 'Remove from favorites' : 'Add to favorites'} onPress={then(() => toggleFavoriteBook(favKey))} />
-                <Row icon="share" label="Share" onPress={then(() => Share.share({ message: `${target.book.title} by ${target.book.author}` }))} />
+                <Row icon="share" label="Share" onPress={then(() => void (own ? shareOwn(own) : shareClassic(target.book as Classic)))} />
               </Group>
               {own && (
                 <Group last>
