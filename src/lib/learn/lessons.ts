@@ -36,7 +36,7 @@ const pickOthers = <T,>(pool: T[], not: T, n: number) => {
 };
 
 /** A noun without its article (Spanish, French, Italian, Portuguese, German, Dutch): "la mesa" → "mesa", "l’école" → "école". */
-const ARTICLE = /^(el|la|los|las|un|una|le|les|des|du|une|il|lo|gli|os|as|um|uma|der|die|das|ein|eine|de|het|een)\s+|^(l[’'])/i;
+const ARTICLE = /^(the|an|el|la|los|las|un|una|le|les|des|du|une|il|lo|gli|os|as|um|uma|der|die|das|ein|eine|de|het|een)\s+|^(l[’'])/i;
 const bare = (w: string) => w.replace(ARTICLE, '');
 
 /** "Un café con leche" with "café" → "Un ___ con leche" (whole word, any case). */
