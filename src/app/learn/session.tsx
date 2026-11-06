@@ -63,7 +63,9 @@ function Runner({ course, full, unitId, lessonId }: { course: Course; full: Full
   const { learn, recordLearn } = useStore();
   const lang = useUiLang();
   const sections = useMemo(() => buildPlan(course, full), [course, full]);
-  const pu = unitId ? sections.flatMap((s) => s.units).find((u) => u.id === unitId) : undefined;
+  // A Basics unit and a topic can share an id ("es-family"): the lesson id tells them apart.
+  const allUnits = sections.flatMap((s) => s.units);
+  const pu = unitId ? (allUnits.find((u) => u.id === unitId && u.lessons.some((l) => l.id === lessonId)) ?? allUnits.find((u) => u.id === unitId)) : undefined;
   const lesson = pu ? (pu.lessons.find((l) => l.id === lessonId) ?? pu.lessons[0]) : undefined;
   const doneKey = pu && lesson ? lessonKey(course, pu, lesson) : undefined;
   const [steps, setSteps] = useState<FullStep[]>(() => {
@@ -598,7 +600,7 @@ function Finish({ course, sections, unit, lesson, xp, right, total, lang }: { co
   const done = (k: string) => learn?.units[k]?.stars ?? 0;
   // The next lesson along the path, if its level is open.
   const flat = flatLessons(sections);
-  const at = unit && lesson ? flat.findIndex((x) => x.unit.id === unit.id && x.lesson.id === lesson.id) : -1;
+  const at = unit && lesson ? flat.findIndex((x) => x.unit === unit && x.lesson.id === lesson.id) : -1;
   const nxt = at >= 0 ? flat[at + 1] : undefined;
   const nextOpen = !!nxt && sectionOpen(course, sections, nxt.si, done);
   const failedCheck = unit?.type === 'checkpoint' && stars < 2;

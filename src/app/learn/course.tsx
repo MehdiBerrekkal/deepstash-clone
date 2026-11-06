@@ -19,7 +19,7 @@ export default function CourseMapScreen() {
   const fr = lang === 'fr';
   const path = useCoursePath(course);
   const [openUnit, setOpenUnit] = useState<string | null>(null);
-  const shown = openUnit ?? path.next?.unit.id ?? null;
+  const shown = openUnit ?? (path.next ? `${path.next.unit.section}:${path.next.unit.id}` : null);
   const start = (u: PlanUnit, lessonId: string) => router.push({ pathname: '/learn/session', params: { course: course.id, unit: u.id, lesson: lessonId } });
 
   return (
@@ -60,14 +60,14 @@ export default function CourseMapScreen() {
               const keys = u.lessons.map((l) => lessonKey(course, u, l));
               const n = keys.filter((k) => path.done(k) > 0).length;
               const complete = n === keys.length;
-              const isNext = path.next?.unit.id === u.id;
-              const expanded = shown === u.id && unlocked;
+              const isNext = path.next?.unit === u;
+              const expanded = shown === `${u.section}:${u.id}` && unlocked;
               return (
                 <Animated.View key={u.id} entering={FadeInDown.delay(Math.min(ui, 12) * 25).duration(260)}>
                   <Pressable
                     accessibilityLabel={`Unit ${u.title.en}`}
                     disabled={!unlocked}
-                    onPress={() => (u.lessons.length === 1 ? start(u, u.lessons[0].id) : setOpenUnit(expanded ? '' : u.id))}
+                    onPress={() => (u.lessons.length === 1 ? start(u, u.lessons[0].id) : setOpenUnit(expanded ? '' : `${u.section}:${u.id}`))}
                     style={[styles.unit, !unlocked && { opacity: 0.45 }, isNext && { borderColor: course.color }, u.type === 'checkpoint' && styles.check]}>
                     <View style={[styles.unitIcon, { backgroundColor: complete ? course.color : colors.surfaceRaised }]}>
                       <Text style={styles.unitIconText}>{u.icon}</Text>

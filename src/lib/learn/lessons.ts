@@ -1,7 +1,7 @@
 import type { Course, LItem } from '@/data/learn/courses';
 import type { Dialogue, FullCourse, Grammar, Story } from '@/data/learn/full';
 import { buildReview, buildSession, type Step } from '@/lib/learn/session';
-import { wordItem, wordKey, type Lesson, type PlanUnit, type Section } from '@/lib/learn/plan';
+import { wordChunks, wordItem, wordKey, type Lesson, type PlanUnit, type Section } from '@/lib/learn/plan';
 
 /** The extra activities of full courses. */
 export type FullStep =
@@ -132,13 +132,16 @@ export function buildLesson(course: Course, full: FullCourse | null, sections: S
   if (unit.topic) {
     const topic = unit.topic;
     const items = topic.words.map((w) => wordItem(w, wordKey(course, topic, w)));
-    const half = Math.ceil(items.length / 2);
+    const chunks = wordChunks(items.length);
+    const size = Math.ceil(items.length / chunks);
+    const k = Math.max(0, (Number(lesson.id.slice(1)) || 1) - 1);
+    const chunk = items.slice(k * size, (k + 1) * size);
     const pool = levelWords.length >= 8 ? levelWords : items;
     switch (lesson.kind) {
       case 'words1':
-        return wordSteps(course, items.slice(0, half), pool, 'memory');
+        return wordSteps(course, chunk, pool, 'memory');
       case 'words2':
-        return wordSteps(course, items.slice(half), pool, 'speed');
+        return wordSteps(course, chunk, pool, 'speed');
       case 'context': {
         const scene = sceneStep(items, topic);
         return [...(scene ? [scene] : []), ...vary(shuffle(contextSteps(items, pool)))];

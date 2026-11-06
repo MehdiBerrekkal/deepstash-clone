@@ -32,6 +32,10 @@ const LEVELS: { id: Level; en: string; fr: string }[] = [
   { id: 'B1', en: 'B1 · Intermediate', fr: 'B1 · Intermédiaire' },
 ];
 
+/** New-word lessons of about 7 words each: a 12-word topic has 2, a 30-word topic has 5. */
+export const wordChunks = (n: number) => Math.max(1, Math.ceil(n / 7));
+const wordLessons = (n: number) => Array.from({ length: wordChunks(n) }, (_, k) => L(`w${k + 1}`, k % 2 ? 'words2' : 'words1', `New words ${k + 1}`, `Nouveaux mots ${k + 1}`));
+
 export function wordItem(w: Word, key?: string): LItem {
   return { key, text: w.text, roman: '', en: w.en, fr: w.fr, emoji: w.emoji, ex: w.ex, exEn: w.exEn, exFr: w.exFr };
 }
@@ -56,8 +60,7 @@ export function buildPlan(course: Course, full: FullCourse | null): Section[] {
         id: t.id, section: lv.id, icon: t.icon, title: { en: t.en, fr: t.fr }, type: 'topic', topic: t,
         can: { en: `Talk about: ${t.en.toLowerCase()}`, fr: `Parler de : ${t.fr.toLowerCase()}` },
         lessons: [
-          L('w1', 'words1', 'New words 1', 'Nouveaux mots 1'),
-          L('w2', 'words2', 'New words 2', 'Nouveaux mots 2'),
+          ...wordLessons(t.words.length),
           L('ctx', 'context', 'In context', 'En contexte'),
           L('speak', 'speak', 'Speak and write', 'Parler et écrire'),
           L('rev', 'review', 'Review', 'Révision'),
