@@ -206,7 +206,12 @@ export const TURKISH: Course = {
 // ---------- Russian, Arabic, Hindi: their alphabets first ----------
 
 const letters = (pairs: [string, string, string?][]): LItem[] => pairs.map(([text, roman, say]) => ({ text, roman, en: roman, fr: roman, ...(say ? { say } : {}) }));
-const alphabet = (id: string, n: number, icon: string, en: string, fr: string, items: LItem[]) => unit(`${id}-abc-${n}`, 'script', icon, en, fr, `Recognise these ${items.length} letters`, `Reconnaître ces ${items.length} lettres`, items);
+const SCRIPTS: Record<string, Unit['script']> = { ru: 'cyrillic', ar: 'arabic', hi: 'devanagari' };
+/** An alphabet unit: recognise the letters, and write them with a finger. */
+const alphabet = (id: string, n: number, icon: string, en: string, fr: string, items: LItem[]): Unit => ({
+  ...unit(`${id}-abc-${n}`, 'script', icon, en, fr, `Read and write these ${items.length} letters`, `Lire et écrire ces ${items.length} lettres`, items),
+  script: SCRIPTS[id],
+});
 
 export const RUSSIAN: Course = {
   id: 'ru', name: { en: 'Russian', fr: 'Russe' }, native: 'Русский', flag: '🇷🇺', voice: 'ru-RU', color: '#7FE3D6',

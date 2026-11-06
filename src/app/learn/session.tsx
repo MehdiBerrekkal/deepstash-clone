@@ -6,7 +6,8 @@ import Animated, { FadeIn, FadeInDown, ZoomIn } from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
 
 import { HANGUL_STROKES } from '@/data/learn/hangul-strokes';
-import { courseById, type Course, type LItem } from '@/data/learn/courses';
+import { ARABIC_STROKES, CYRILLIC_STROKES, DEVANAGARI_STROKES } from '@/data/learn/script-strokes';
+import { courseById, type Course, type LItem, type Unit } from '@/data/learn/courses';
 import { Pic, hasPic, prefetchPics } from '@/components/learn/Pic';
 import { StrokePad } from '@/components/learn/StrokePad';
 import { usePalette } from '@/lib/appearance';
@@ -214,7 +215,7 @@ function StepView({ step, course, lang, meaning, locked, onGrade, onNext }: Step
 }
 
 /** Which stroke data a course's script item uses. */
-function scriptOf(course: Course, item: LItem): 'kana' | 'hanzi' | 'hangul' | null {
+function scriptOf(course: Course, item: LItem): Unit['script'] | null {
   const u = course.units.find((x) => x.items.includes(item));
   return u?.script ?? null;
 }
@@ -224,7 +225,8 @@ function useGlyph(course: Course, item: LItem) {
   useEffect(() => {
     let alive = true;
     if (!script) return;
-    const load = script === 'hangul' ? loadGlyph(item.text, 'own', HANGUL_STROKES) : loadGlyph(item.text, script);
+    const own = script === 'hangul' ? HANGUL_STROKES : script === 'cyrillic' ? CYRILLIC_STROKES : script === 'arabic' ? ARABIC_STROKES : script === 'devanagari' ? DEVANAGARI_STROKES : null;
+    const load = own ? loadGlyph(item.text, 'own', own) : loadGlyph(item.text, script as 'kana' | 'hanzi');
     load.then((g) => alive && setGlyph(g));
     return () => {
       alive = false;

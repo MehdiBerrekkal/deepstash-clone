@@ -39,7 +39,7 @@ export type Unit = {
   can: { en: string; fr: string };
   icon: string;
   /** For script units: where the stroke data comes from. */
-  script?: 'kana' | 'hanzi' | 'hangul';
+  script?: 'kana' | 'hanzi' | 'hangul' | 'cyrillic' | 'arabic' | 'devanagari';
   items: LItem[];
 };
 export type Course = {

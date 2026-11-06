@@ -23,8 +23,20 @@ const SOURCES = [
     url: '',
   },
   {
+    name: 'Cyrillic, Arabic and Devanagari strokes',
+    use: 'Stroke paths for the Russian capitals, the 28 Arabic letters and 36 Hindi letters, checked against the printed letter forms.',
+    licence: 'Written for this app.',
+    url: '',
+  },
+  {
+    name: 'Fluent Emoji 3D (Microsoft), packaged by LobeHub',
+    use: 'The 3D pictures of words, scenes and characters, loaded when needed and kept for offline use.',
+    licence: 'Copyright © Microsoft Corporation. MIT License.',
+    url: 'https://github.com/microsoft/fluentui-emoji',
+  },
+  {
     name: 'Lessons and vocabulary',
-    use: 'Words, phrases, translations and romanization in every course.',
+    use: 'Words, phrases, example sentences, grammar notes, role-plays, stories and characters in every course.',
     licence: 'Written for this app.',
     url: '',
   },
