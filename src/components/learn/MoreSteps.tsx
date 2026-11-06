@@ -332,7 +332,8 @@ function StoryStep({ step, course, fr, onNext }: { step: Extract<FullStep, { typ
   const [showTr, setShowTr] = useState<number | null>(null);
   const s = step.story;
   const tap = (word: string, i: number) => {
-    const key = word.toLowerCase().replace(/[^\p{L}]/gu, '');
+    // Letters and their combining marks (Hindi vowel signs, Arabic short vowels) make up the word.
+    const key = word.toLowerCase().replace(/[^\p{L}\p{M}]/gu, '');
     const g = s.glossary[key];
     say(word, course.voice, 0.85);
     setGloss(g ? `${word} → ${fr ? g[1] : g[0]}` : null);
@@ -348,7 +349,7 @@ function StoryStep({ step, course, fr, onNext }: { step: Extract<FullStep, { typ
               /\s+/.test(w) ? (
                 w
               ) : (
-                <Text key={k} accessibilityLabel={`Word ${w}`} onPress={() => tap(w, i)} style={s.glossary[w.toLowerCase().replace(/[^\p{L}]/gu, '')] ? [styles.glossWord, { textDecorationColor: course.color }] : undefined}>
+                <Text key={k} accessibilityLabel={`Word ${w}`} onPress={() => tap(w, i)} style={s.glossary[w.toLowerCase().replace(/[^\p{L}\p{M}]/gu, '')] ? [styles.glossWord, { textDecorationColor: course.color }] : undefined}>
                   {w}
                 </Text>
               ),
