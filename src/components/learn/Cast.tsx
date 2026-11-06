@@ -99,6 +99,14 @@ const CASTS: Record<string, Cast> = {
     doctor: { name: 'Dr Haddad', emoji: '👨🏾‍⚕️', en: 'the family doctor', fr: 'le médecin de famille' },
     brother: { name: 'Omar', emoji: '🧑🏾', en: 'Layla’s brother, a student always in a rush', fr: 'le frère de Layla, étudiant toujours pressé' },
   },
+  tr: {
+    friend: { name: 'Elif', emoji: '👩🏼', en: 'your friend in Istanbul, a photographer', fr: 'votre amie à Istanbul, photographe' },
+    barista: { name: 'Mehmet', emoji: '🧔🏼', en: 'runs a café by the Bosphorus, never stops pouring tea', fr: 'tient un café au bord du Bosphore, sert du thé sans arrêt' },
+    neighbour: { name: 'Ayşe Teyze', emoji: '👵🏼', en: 'Elif’s neighbour, the building’s grandmother', fr: 'la voisine d’Elif, la grand-mère de l’immeuble' },
+    receptionist: { name: 'Zeynep', emoji: '👩🏼‍💼', en: 'hotel receptionist, kind and efficient', fr: 'réceptionniste d’hôtel, gentille et efficace' },
+    doctor: { name: 'Dr Yılmaz', emoji: '👨🏼‍⚕️', en: 'the neighbourhood doctor', fr: 'le médecin du quartier' },
+    brother: { name: 'Can', emoji: '🧑🏼', en: 'Elif’s brother, a student who misses ferries', fr: 'le frère d’Elif, étudiant qui rate les ferries' },
+  },
 };
 /** Who you meet in each scene (by the last part of the dialogue or story id). */
 const ROLES: Record<string, (keyof Cast)[]> = {
