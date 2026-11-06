@@ -64,6 +64,8 @@ type UserState = {
   lastBackup?: string;
   /** The interface language: follow the device, or English / French. */
   uiLanguage?: 'auto' | 'en' | 'fr';
+  /** Language learning: the course in use, XP, unit results and spaced review of letters and words. */
+  learn?: LearnState;
   /** Kid or adult, chosen on the first screen: decides which topics, books, games and quizzes appear. */
   audience?: Audience;
   /** Birth year, asked by the IQ-style test for its age norms. */
@@ -121,6 +123,9 @@ type Store = Content &
     importUser: (data: Record<string, unknown>, mode: 'merge' | 'replace') => void;
     markBackedUp: () => void;
     setUiLanguage: (l: 'auto' | 'en' | 'fr') => void;
+    setLearnCourse: (id: string) => void;
+    /** Saves a finished lesson: XP, the unit's stars, and how each item went (for spaced review). */
+    recordLearn: (r: LearnResult) => void;
     setAudience: (a: Audience) => void;
     /** The signed-in account, or null for the device's guest. */
     account: Account | null;
@@ -168,6 +173,19 @@ export type BrainState = {
 };
 export type BrainRun = { id: string; n: number; right: number; points: number; d: number; streak: number; hardest: number; seconds: number; history: boolean[]; saved: number };
 export type BrainSession = { date: string; games: string[]; done: Record<string, { points: number; right: number; total: number; xp: number; from: number; to: number }> };
+export type LearnState = {
+  course?: string;
+  xp: number;
+  /** Unit id ("ja:hira-1" style keys are course-prefixed by the unit id itself) → best stars and times played. */
+  units: Record<string, { stars: number; times: number }>;
+  /** Item key → spaced-review box and when it's next due. */
+  items: Record<string, { level: number; due: string }>;
+  /** XP per day, for the weekly chart. */
+  days: Record<string, number>;
+};
+export type LearnResult = { unit?: string; stars: number; xp: number; seconds: number; items: Record<string, boolean> };
+const EMPTY_LEARN: LearnState = { xp: 0, units: {}, items: {}, days: {} };
+
 export type BrainTest = {
   date: string;
   mode: 'full' | 'quick';
@@ -568,6 +586,34 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
   const markBackedUp = useCallback(() => setUser((u) => ({ ...u, lastBackup: new Date().toISOString() })), []);
   const setUiLanguage = useCallback((l: 'auto' | 'en' | 'fr') => setUser((u) => ({ ...u, uiLanguage: l })), []);
+  const setLearnCourse = useCallback((id: string) => setUser((u) => ({ ...u, learn: { ...EMPTY_LEARN, ...u.learn, course: id } })), []);
+  const recordLearn = useCallback((r: LearnResult) => {
+    setUser((u) => {
+      const l = { ...EMPTY_LEARN, ...u.learn };
+      const date = localDate();
+      const day = u.readingLog[date] ?? EMPTY_DAY;
+      const items = { ...l.items };
+      for (const [key, ok] of Object.entries(r.items)) {
+        // Leitner-style boxes: right moves an item up (seen again later), wrong sends it back to the start.
+        const level = ok ? Math.min(6, (items[key]?.level ?? 0) + 1) : 0;
+        const due = new Date(Date.now() + [0.2, 1, 3, 7, 16, 35, 90][level] * 86400e3).toISOString();
+        items[key] = { level, due };
+      }
+      const old = r.unit ? l.units[r.unit] : undefined;
+      return {
+        ...u,
+        streak: bumpStreak(u.streak),
+        readingLog: { ...u.readingLog, [date]: { ...day, seconds: day.seconds + Math.min(r.seconds, 900) } },
+        learn: {
+          ...l,
+          xp: l.xp + r.xp,
+          items,
+          units: r.unit ? { ...l.units, [r.unit]: { stars: Math.max(old?.stars ?? 0, r.stars), times: (old?.times ?? 0) + 1 } } : l.units,
+          days: { ...l.days, [date]: (l.days[date] ?? 0) + r.xp },
+        },
+      };
+    });
+  }, []);
 
   const markBrainHowTo = useCallback((id: string) => {
     setUser((u) => ({ ...u, brain: { ...u.brain, seen: [...new Set([...(u.brain?.seen ?? []), id])] } }));
@@ -702,6 +748,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       importUser,
       markBackedUp,
       setUiLanguage,
+      setLearnCourse,
+      recordLearn,
       markBrainHowTo,
       markBrainDaily,
       addOwnBook,
@@ -712,7 +760,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [
     content, own, setOwnBookIdeas, user, ready, indexes, setFollowedTopics, createStash, deleteStash, toggleInStash, toggleLike, markRead, setBookPosition,
     finishBook, toggleFavoriteBook, setDailyGoal, resetProgress, setReaderSettings, setReaderPosition, toggleBookmark, removeBookmark,
-    saveClip, addHighlight, updateHighlight, removeHighlight, logReading, setMinuteGoal, markReaderFinished, gradeReview, setNotInterested, setAppearance, recordBrain, addBrainTest, setBrainSound, patchBrain, exportUser, importUser, markBackedUp, setUiLanguage, markBrainHowTo, markBrainDaily, addOwnBook, removeOwnBook, markDownloaded, setAudience, setBirthYear, account, recovering, continueAsGuest,
+    saveClip, addHighlight, updateHighlight, removeHighlight, logReading, setMinuteGoal, markReaderFinished, gradeReview, setNotInterested, setAppearance, recordBrain, addBrainTest, setBrainSound, patchBrain, exportUser, importUser, markBackedUp, setUiLanguage, setLearnCourse, recordLearn, markBrainHowTo, markBrainDaily, addOwnBook, removeOwnBook, markDownloaded, setAudience, setBirthYear, account, recovering, continueAsGuest,
   ]);
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

@@ -43,11 +43,12 @@ export default function TabsLayout() {
         tabBarStyle: { backgroundColor: colors.background, borderTopColor: colors.border, height: 58 + insets.bottom, paddingTop: 4 },
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.muted,
-        tabBarLabelStyle: { fontSize: 11, lineHeight: 14 },
+        tabBarLabelStyle: { fontSize: 10, lineHeight: 13 },
       }}>
       <Tabs.Screen name="index" options={{ title: t('For you'), tabBarIcon: icon('◉') }} />
       <Tabs.Screen name="library" options={{ title: t('Library'), tabBarIcon: icon('📚') }} />
       <Tabs.Screen name="explore" options={{ title: t('Explore'), tabBarIcon: icon('⌕') }} />
+      <Tabs.Screen name="learn" options={{ title: t('Learn'), tabBarIcon: icon('🌍') }} />
       <Tabs.Screen name="brain" options={{ title: t('Brain'), tabBarIcon: icon('🧠') }} />
       <Tabs.Screen name="stashes" options={{ title: t('Stashes'), tabBarIcon: icon('★') }} />
       <Tabs.Screen name="profile" options={{ title: t('You'), tabBarIcon: icon('◐') }} />

@@ -44,6 +44,8 @@ export default function RootLayout() {
         <Stack.Screen name="brain/test" options={{ title: 'Test' }} />
         <Stack.Screen name="voices" options={{ title: 'Voices' }} />
         <Stack.Screen name="find" options={{ title: 'Find a free book' }} />
+        <Stack.Screen name="learn/session" options={{ title: 'Lesson' }} />
+        <Stack.Screen name="learn/credits" options={{ title: 'Credits' }} />
       </ThemedStack>
       <CelebrationHost />
     </StoreProvider>

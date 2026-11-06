@@ -23,6 +23,7 @@ const FR: Record<string, string> = {
   Library: 'Bibliothèque',
   Explore: 'Explorer',
   Brain: 'Cerveau',
+  Learn: 'Langues',
   Stashes: 'Réserves',
   You: 'Vous',
   '{n} min to go': 'encore {n} min',
