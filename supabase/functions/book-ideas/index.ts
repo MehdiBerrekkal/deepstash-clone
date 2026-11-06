@@ -8,7 +8,28 @@ const CORS = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
-const MODELS = ['gemini-flash-latest', 'gemini-2.5-flash'];
+/** Tried first; Google retires model names, so the newest Flash model on the account is looked up too. */
+const PREFERRED = ['gemini-flash-latest', 'gemini-flash-lite-latest'];
+let discovered: string[] | null = null;
+
+/** The account's Flash models that can write text, newest version first (cached while the function stays warm). */
+async function flashModels(key: string): Promise<string[]> {
+  if (discovered) return discovered;
+  try {
+    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models?pageSize=200', { headers: { 'x-goog-api-key': key } });
+    const data = await res.json();
+    const names: string[] = (data?.models ?? [])
+      .filter((m: { name: string; supportedGenerationMethods?: string[] }) => m.supportedGenerationMethods?.includes('generateContent'))
+      .map((m: { name: string }) => m.name.replace(/^models\//, ''))
+      .filter((n: string) => /^gemini-[\d.]+-flash(-lite)?$/.test(n));
+    const version = (n: string) => parseFloat(n.match(/gemini-([\d.]+)/)?.[1] ?? '0');
+    // Newest first, full Flash before Flash-Lite.
+    discovered = names.sort((a, b) => version(b) - version(a) || Number(a.includes('lite')) - Number(b.includes('lite')));
+  } catch {
+    discovered = [];
+  }
+  return discovered;
+}
 const MAX_PARTS = 12;
 const MAX_PART_CHARS = 5000;
 
@@ -63,15 +84,65 @@ Deno.serve(async (req) => {
   if (!body?.title || !Array.isArray(body.parts) || body.parts.length === 0) return json({ error: 'bad_request' }, 400);
   const count = Math.min(body.parts.length, MAX_PARTS);
 
-  let lastError = '';
-  for (const model of MODELS) {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+  const errors: string[] = [];
+  // Every Flash and Flash-Lite model has its own free quota, so when one is busy or used up, the next is tried.
+  const models = [...new Set([...PREFERRED, ...(await flashModels(key))])].slice(0, 8);
+  const ask = askFor(key, body);
+  // The function is stopped after 150 s, so each model gets at most 50 s and nothing new starts after 100 s.
+  const started = Date.now();
+  for (const model of models) {
+    const left = 140_000 - (Date.now() - started);
+    if (left < 40_000) {
+      errors.push(`${model}: 503 skipped, out of time`);
+      break;
+    }
+    const timeout = Math.min(50_000, left - 10_000);
+    let res = await ask(model, timeout, !/lite/.test(model));
+    // Flash-Lite answers fast without that setting and refuses it with a bare 400; any other model that
+    // refuses it is asked again without it.
+    if (res.status === 400) res = await ask(model, timeout, false);
+    // Google's "high demand" errors usually pass within a second or two.
+    if (res.status === 503 && Date.now() - started < 80_000) {
+      await new Promise((r) => setTimeout(r, 1500));
+      res = await ask(model, timeout, !/lite/.test(model));
+    }
+    if (!res.ok) {
+      errors.push(`${model}: ${res.status} ${(await res.text()).replace(/\s+/g, ' ').slice(0, 700)}`);
+      continue;
+    }
+    const data = await res.json();
+    const text: string = data?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text ?? '').join('') ?? '';
+    try {
+      const ideas = (JSON.parse(text).ideas as { title: string; body: string }[])
+        .filter((i) => i?.title && i?.body)
+        .slice(0, count)
+        .map((i) => ({ title: String(i.title).trim().slice(0, 90), body: String(i.body).trim().slice(0, 1200) }));
+      if (ideas.length) {
+        console.log(`ok ${model} ${ideas.length} ideas`);
+        return json({ ideas, model });
+      }
+      errors.push(`${model}: empty`);
+    } catch {
+      errors.push(`${model}: unreadable answer`);
+    }
+  }
+  console.error(errors.join(' | '));
+  if (errors.length && errors.every((e) => / (429|503|504) /.test(e))) return json({ error: 'busy' }, 429);
+  return json({ error: 'failed' }, 502);
+});
+
+function askFor(key: string, body: Body) {
+  return (model: string, timeoutMs: number, noThinking: boolean): Promise<Response> =>
+    fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
       method: 'POST',
+      signal: AbortSignal.timeout(timeoutMs),
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: prompt(body) }] }],
         generationConfig: {
           temperature: 0.6,
+          // Thinking makes long books take minutes; these cards don't need it.
+          ...(noThinking ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
           responseMimeType: 'application/json',
           responseSchema: {
             type: 'OBJECT',
@@ -85,25 +156,5 @@ Deno.serve(async (req) => {
           },
         },
       }),
-    });
-    if (res.status === 429) return json({ error: 'busy' }, 429);
-    if (!res.ok) {
-      lastError = `${model}: ${res.status} ${(await res.text()).slice(0, 200)}`;
-      continue;
-    }
-    const data = await res.json();
-    const text: string = data?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text ?? '').join('') ?? '';
-    try {
-      const ideas = (JSON.parse(text).ideas as { title: string; body: string }[])
-        .filter((i) => i?.title && i?.body)
-        .slice(0, count)
-        .map((i) => ({ title: String(i.title).trim().slice(0, 90), body: String(i.body).trim().slice(0, 1200) }));
-      if (ideas.length) return json({ ideas, model });
-      lastError = `${model}: empty`;
-    } catch {
-      lastError = `${model}: unreadable answer`;
-    }
-  }
-  console.error(lastError);
-  return json({ error: 'failed' }, 502);
-});
+    }).catch((e) => new Response(String(e?.name === 'TimeoutError' ? 'took too long' : e), { status: 504 }));
+}

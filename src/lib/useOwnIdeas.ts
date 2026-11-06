@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { aiIdeas } from '@/lib/bookAi';
 import type { FullBook } from '@/lib/fullbook';
@@ -8,32 +8,54 @@ import { useStore } from '@/lib/store';
 
 /** Books asked of the AI this session, so a failure isn't retried in a loop. */
 const askedAi = new Set<string>();
+/** AI requests still running, by book. */
+const aiRunning = new Map<string, Promise<string | null>>();
+
+/** Gemini's free plan is often busy for a moment: try again after 1 and 3 minutes while the app stays open. */
+const RETRY_MS = [60_000, 180_000];
+async function askWithRetries(ask: () => ReturnType<typeof aiIdeas>) {
+  let res = await ask();
+  for (const wait of RETRY_MS) {
+    if (!('error' in res) || !/busy|didn’t answer|limit/i.test(res.error)) break;
+    await new Promise((r) => setTimeout(r, wait));
+    res = await ask();
+  }
+  return res;
+}
+
+type BookRef = Pick<OwnBook, 'id' | 'title' | 'author' | 'ideasBy' | 'ideas'>;
 
 /**
  * Makes and saves the idea cards for one book: first the passages the app picks itself (instant, offline), then,
  * for signed-in accounts, cards written by AI in its own words, which replace them when they arrive.
- * Returns how many cards it made straight away.
+ * Returns how many cards it made straight away, and a promise of the AI step (an error message, or null when it worked).
  */
 export function useMakeOwnIdeas() {
   const { setOwnBookIdeas, audience, account } = useStore();
-  return (book: Pick<OwnBook, 'id' | 'title' | 'author' | 'ideasBy' | 'ideas'>, text: FullBook): number => {
+  return (book: BookRef, text: FullBook, opts: { manual?: boolean } = {}): { count: number; ai: Promise<string | null> } => {
     const kid = audience === 'kid';
     const r = makeOwnIdeas(text, { kid });
     if (book.ideasBy !== 'ai' || !book.ideas?.length) {
       setOwnBookIdeas(book.id, { ideas: r.ideas, ideasVersion: OWN_IDEAS_VERSION, ideasBy: 'picked', description: r.description, topicId: r.topicId, lang: r.lang });
     }
-    if (account && !askedAi.has(book.id) && r.passages.length) {
-      askedAi.add(book.id);
-      aiIdeas({ title: book.title, author: book.author === 'PDF' ? undefined : book.author, lang: r.lang, kid, parts: r.passages }).then((ideas) => {
-        if (!ideas) return;
-        const description =
-          r.lang === 'fr'
-            ? `${ideas.length} idées principales de votre livre, résumées par l'IA (Google Gemini) dans ses propres mots.`
-            : `${ideas.length} main ideas from your book, summarised in its own words by AI (Google Gemini).`;
-        setOwnBookIdeas(book.id, { ideas, ideasVersion: OWN_IDEAS_VERSION, ideasBy: 'ai', description, topicId: r.topicId, lang: r.lang });
-      });
-    }
-    return r.ideas.length;
+    if (!opts.manual && (!account || askedAi.has(book.id))) return { count: r.ideas.length, ai: Promise.resolve(account ? null : 'Sign in to have AI write the cards.') };
+    askedAi.add(book.id);
+    // One AI request per book at a time: a second one would only use up the free quota twice.
+    const running = aiRunning.get(book.id);
+    if (running) return { count: r.ideas.length, ai: running };
+    const req = { title: book.title, author: book.author === 'PDF' ? undefined : book.author, lang: r.lang, kid, parts: r.passages };
+    const ai = askWithRetries(() => aiIdeas(req, opts)).then((res) => {
+      if ('error' in res) return res.error;
+      const description =
+        r.lang === 'fr'
+          ? `${res.ideas.length} idées principales de votre livre, résumées par l'IA (Google Gemini) dans ses propres mots.`
+          : `${res.ideas.length} main ideas from your book, summarised in its own words by AI (Google Gemini).`;
+      setOwnBookIdeas(book.id, { ideas: res.ideas, ideasVersion: OWN_IDEAS_VERSION, ideasBy: 'ai', description, topicId: r.topicId, lang: r.lang });
+      return null;
+    });
+    aiRunning.set(book.id, ai);
+    ai.finally(() => aiRunning.delete(book.id));
+    return { count: r.ideas.length, ai };
   };
 }
 
@@ -68,4 +90,40 @@ export function useOwnIdeasBackfill() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ownBooks, ready, account]);
+}
+
+/** What happened to each book's AI request this session, for the book page. */
+const aiStatus = new Map<string, string>();
+const inFlight = new Set<string>();
+
+/**
+ * On one of your book's pages: if its cards are still picked passages, asks the AI now (once per visit) and returns
+ * a line saying what's happening, or null.
+ */
+export function useAiOnOpen(book: OwnBook | undefined): string | null {
+  const { account } = useStore();
+  const make = useMakeOwnIdeas();
+  const [, force] = useState(0);
+  const id = book?.id;
+  const wants = !!book && !!account && book.ideasBy !== 'ai' && book.kind === 'epub';
+  useEffect(() => {
+    if (!wants || !book || inFlight.has(book.id)) return;
+    let alive = true;
+    inFlight.add(book.id);
+    aiStatus.set(book.id, '✨ AI (Gemini) is writing the summaries… (usually under a minute, longer if Google is busy)');
+    (async () => {
+      await Promise.resolve();
+      if (alive) force((n) => n + 1);
+      const text = await loadSavedBook(book.id).catch(() => null);
+      const err = text ? await make(book, text, { manual: true }).ai : 'this book’s text isn’t on this device. Long-press it, delete it, and add the file again here.';
+      inFlight.delete(book.id);
+      aiStatus.set(book.id, err ? `AI couldn’t write the summaries yet: ${err}` : '✨ Done: these are now AI summaries.');
+      if (alive) force((n) => n + 1);
+    })();
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, wants]);
+  return id ? (aiStatus.get(id) ?? null) : null;
 }

@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { BackupCard } from '@/components/BackupCard';
+import { CardHeading } from '@/components/CardHeading';
+import { Icon } from '@/components/Icon';
 import { GoalRing } from '@/components/GoalRing';
 import { ReminderCard } from '@/components/ReminderCard';
 import { Shelf } from '@/components/Shelf';
@@ -17,9 +19,9 @@ import { useT } from '@/lib/i18n';
 
 const GOALS = [5, 10, 20, 30];
 const APPEARANCES: { id: Appearance; label: string }[] = [
-  { id: 'auto', label: '◐ Automatic' },
-  { id: 'light', label: '☀︎ Light' },
-  { id: 'dark', label: '☾ Dark' },
+  { id: 'auto', label: 'Automatic' },
+  { id: 'light', label: 'Light' },
+  { id: 'dark', label: 'Dark' },
 ];
 const WEEKS = 18;
 const DAY_LETTERS = ['M', '', 'W', '', 'F', '', 'S'];
@@ -53,8 +55,8 @@ export default function ProfileScreen() {
   const goalStreak = readingStreak(readingLog, minuteGoal * 60);
 
   const stats = [
-    { label: 'Day streak', value: `🔥 ${streak.count}` },
-    { label: 'Goal streak', value: `🎯 ${goalStreak}` },
+    { label: 'Day streak', value: streak.count },
+    { label: 'Goal streak', value: goalStreak },
     { label: 'This week', value: formatDuration(weekMinutes) },
     { label: 'All time', value: formatDuration(totalMinutes) },
     { label: 'Words read', value: compactNumber(words) },
@@ -70,7 +72,7 @@ export default function ProfileScreen() {
       <View style={[styles.card, styles.today]}>
         <GoalRing progress={todayMinutes / minuteGoal} size={112} stroke={11} label={String(todayMinutes)} sublabel={`of ${minuteGoal} min`} />
         <View style={styles.todayText}>
-          <Text style={styles.heading}>{t("Today's reading")}</Text>
+          <CardHeading icon="book" title={t("Today's reading")} />
           <Text style={styles.muted}>
             {todayMinutes >= minuteGoal
               ? 'Goal reached. Nice work!'
@@ -93,7 +95,7 @@ export default function ProfileScreen() {
 
       {accountsEnabled && (
         <View style={styles.card}>
-          <Text style={styles.heading}>🔐 {t('Account')}</Text>
+          <CardHeading icon="lock" title={t('Account')} />
           {account ? (
             <>
               <Text style={styles.muted}>{t('Logged in as {email}. Your settings and progress are saved to this account.', { email: account.email })}</Text>
@@ -122,7 +124,7 @@ export default function ProfileScreen() {
       )}
 
       <View style={styles.card}>
-        <Text style={styles.heading}>👤 {t('Who is using the app?')}</Text>
+        <CardHeading icon="sprout" title={t('Who is using the app?')} />
         <View style={styles.segment}>
           {(['kid', 'adult'] as const).map((a) => (
             <Pressable
@@ -131,7 +133,7 @@ export default function ProfileScreen() {
               accessibilityState={{ selected: audience === a }}
               onPress={() => setAudience(a)}
               style={[styles.segmentItem, audience === a && styles.segmentOn]}>
-              <Text style={[styles.segmentText, audience === a && styles.segmentTextOn]}>{a === 'kid' ? `🧒 ${t('Kid')}` : `🧑 ${t('Adult')}`}</Text>
+              <Text style={[styles.segmentText, audience === a && styles.segmentTextOn]}>{a === 'kid' ? t('Kid') : t('Adult')}</Text>
             </Pressable>
           ))}
         </View>
@@ -139,7 +141,7 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.heading}>{t('Appearance')}</Text>
+        <CardHeading icon="sparkle" title={t('Appearance')} />
         <View style={styles.segment}>
           {APPEARANCES.map((a) => (
             <Pressable
@@ -156,7 +158,7 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.heading}>🌐 {t('Language')}</Text>
+        <CardHeading icon="globe" title={t('Language')} />
         <View style={styles.segment}>
           {(['auto', 'en', 'fr'] as const).map((l) => (
             <Pressable
@@ -174,7 +176,7 @@ export default function ProfileScreen() {
 
       <View style={styles.card}>
         <View style={styles.rowBetween}>
-          <Text style={styles.heading}>{t('Reading calendar')}</Text>
+          <CardHeading icon="clock" title={t('Reading calendar')} />
           <Text style={styles.muted}>last {WEEKS} weeks</Text>
         </View>
         <View style={styles.heatmap}>
@@ -213,11 +215,17 @@ export default function ProfileScreen() {
         ))}
       </View>
 
+      <Pressable accessibilityLabel="Stashes" onPress={() => router.push('/stashes')} style={styles.card}>
+        <CardHeading icon="bookmark" title={t('Stashes')} link="Open" />
+        <Text style={styles.muted}>
+          {stashed
+            ? `${stashed} ${stashed === 1 ? 'idea' : 'ideas'} saved in ${stashes.length} ${stashes.length === 1 ? 'stash' : 'stashes'}.`
+            : 'Tap Stash on any card to save it here, in collections you name.'}
+        </Text>
+      </Pressable>
+
       <Pressable accessibilityLabel="Review" onPress={() => router.push('/review')} style={styles.card}>
-        <View style={styles.rowBetween}>
-          <Text style={styles.heading}>{t('🧠 Smart review')}</Text>
-          <Text style={styles.link}>{reviewQueue.length ? `${reviewQueue.length} due ›` : 'Open ›'}</Text>
-        </View>
+        <CardHeading icon="brain" title={t('Smart review')} link={reviewQueue.length ? `${reviewQueue.length} due` : 'Open'} />
         <Text style={styles.muted}>
           {Object.keys(reviews).length
             ? `${Object.keys(reviews).length} ideas and highlights in rotation. Each comes back just before you'd forget it.`
@@ -229,18 +237,12 @@ export default function ProfileScreen() {
       <ReminderCard />
 
       <Pressable accessibilityLabel="Voices" onPress={() => router.push('/voices')} style={styles.card}>
-        <View style={styles.rowBetween}>
-          <Text style={styles.heading}>{t('🔊 Voices')}</Text>
-          <Text style={styles.link}>Open ›</Text>
-        </View>
+        <CardHeading icon="speaker" title={t('Voices')} link="Open" />
         <Text style={styles.muted}>{t('Choose the English and French voices that read books, idea cards and quizzes aloud, including the natural AI voices.')}</Text>
       </Pressable>
 
       <Pressable accessibilityLabel="All highlights" onPress={() => router.push('/highlights')} style={styles.card}>
-        <View style={styles.rowBetween}>
-          <Text style={styles.heading}>{t('✎ Highlights and notes')}</Text>
-          <Text style={styles.link}>Open ›</Text>
-        </View>
+        <CardHeading icon="pencil" title={t('Highlights and notes')} link="Open" />
         <Text style={styles.muted}>
           {highlights.length
             ? `${highlights.length} ${highlights.length === 1 ? 'highlight' : 'highlights'} in ${new Set(highlights.map((h) => h.readerId)).size} ${new Set(highlights.map((h) => h.readerId)).size === 1 ? 'book' : 'books'}, ready to search and export.`
@@ -256,8 +258,9 @@ export default function ProfileScreen() {
       <View style={styles.section}>
         <View style={styles.rowBetween}>
           <Text style={styles.heading}>{t('Your topics')}</Text>
-          <Pressable onPress={() => router.push('/onboarding')}>
-            <Text style={styles.link}>Edit ›</Text>
+          <Pressable onPress={() => router.push('/onboarding')} hitSlop={8} style={styles.linkRow}>
+            <Text style={styles.link}>Edit</Text>
+            <Icon name="chevronRight" size={16} color={colors.accent} strokeWidth={2.4} />
           </Pressable>
         </View>
         <View style={styles.chips}>
@@ -317,6 +320,7 @@ const styles = StyleSheet.create({
   content: { padding: 16, gap: 20, paddingBottom: 40 },
   card: { padding: 20, borderRadius: 20, backgroundColor: colors.surface, gap: 10 },
   heading: { color: colors.text, fontSize: 18, fontWeight: '800' },
+  linkRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   today: { flexDirection: 'row', alignItems: 'center', gap: 18 },
   segment: { flexDirection: 'row', gap: 6, padding: 4, borderRadius: 14, backgroundColor: colors.surfaceRaised },
   segmentItem: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 10 },
@@ -332,8 +336,8 @@ const styles = StyleSheet.create({
   legendCell: { width: 12 },
   legend: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-end' },
   muted: { color: colors.muted },
-  goals: { flexDirection: 'row', gap: 8, marginTop: 4 },
-  goal: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 999, backgroundColor: colors.surfaceRaised },
+  goals: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4 },
+  goal: { paddingVertical: 8, paddingHorizontal: 13, borderRadius: 999, backgroundColor: colors.surfaceRaised },
   goalOn: { backgroundColor: colors.accent },
   goalText: { color: colors.text, fontWeight: '700' },
   goalTextOn: { color: colors.onAccent },

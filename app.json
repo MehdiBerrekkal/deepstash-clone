@@ -28,7 +28,7 @@
       "backgroundColor": "#0F1115"
     },
     "plugins": [
-      "expo-router",
+      ["expo-router", { "asyncRoutes": { "web": false, "default": "development" } }],
       "expo-asset",
       "expo-font",
       "expo-sharing"

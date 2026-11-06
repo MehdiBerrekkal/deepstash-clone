@@ -129,7 +129,7 @@ function otherThan(i: number) {
   return n >= i ? n + 1 : n;
 }
 
-const SYMBOLS = ['⊕', '△', '◇', '○', '□', '✕', '≡', '∞', '☰'];
+const SYMBOLS = ['⊕', '△', '◇', '○', '□', '✕', '≡', '∞', '★'];
 
 /**
  * Symbol coding: one fixed key for the whole task (symbol → digit), a few practice items, then as many as you can in

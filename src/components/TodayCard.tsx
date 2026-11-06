@@ -5,6 +5,7 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { GoalRing } from '@/components/GoalRing';
+import { Icon } from '@/components/Icon';
 import { displayFont, displayItalic } from '@/lib/bookType';
 import { classicAsSource } from '@/lib/classicSource';
 import { classicById } from '@/lib/fullbook';
@@ -12,7 +13,7 @@ import { voiceForLanguage } from '@/lib/lang';
 import { prewarmNatural } from '@/lib/neuralVoice';
 import { DEFAULT_WPM, formatDuration, minutesOf, readingSpeed } from '@/lib/stats';
 import { localDate, useStore } from '@/lib/store';
-import { colors, onCardScope } from '@/lib/theme';
+import { colors, onCard, onCardScope } from '@/lib/theme';
 
 export type ContinueBook = { title: string; author: string; cover?: string; fraction: number; words: number; language: string; open: () => void };
 
@@ -109,7 +110,8 @@ export function TodayCard({ height, book }: { height: number; book: ContinueBook
                   {Math.round(book.fraction * 100)}% read{left ? ` · about ${left} left` : ''}
                 </Text>
                 <View style={styles.button}>
-                  <Text style={styles.buttonText}>Open book ›</Text>
+                  <Icon name="book" size={16} color={colors.onAccent} strokeWidth={2.2} />
+                  <Text style={styles.buttonText}>Continue</Text>
                 </View>
               </View>
             </Pressable>
@@ -122,28 +124,38 @@ export function TodayCard({ height, book }: { height: number; book: ContinueBook
             <Text style={styles.tileTitle} numberOfLines={1}>
               {minutes >= minuteGoal ? 'Goal met' : `${minuteGoal - minutes} min to go`}
             </Text>
-            <Text style={styles.tileSub}>🔥 {streak.count}-day streak</Text>
+            <View style={styles.subRow}>
+              <Icon name="flame" size={13} color="#FF8A4C" strokeWidth={2.2} />
+              <Text style={styles.tileSub}>{streak.count}-day streak</Text>
+            </View>
           </Pressable>
           {reviewQueue.length > 0 ? (
             <Pressable accessibilityLabel="Start today's review" onPress={() => router.push('/review')} style={styles.tile}>
-              <Text style={styles.tileIcon}>🧠</Text>
+              <View style={[styles.tileIcon, { backgroundColor: 'rgba(124,140,255,0.18)' }]}>
+                <Icon name="brain" size={28} color="#9AA6FF" strokeWidth={1.8} />
+              </View>
               <Text style={styles.tileTitle} numberOfLines={1}>
                 {reviewQueue.length} to review
               </Text>
-              <Text style={styles.tileSub}>Start review ›</Text>
+              <Text style={styles.tileSub}>Start review</Text>
             </Pressable>
           ) : (
             <Pressable accessibilityLabel="Daily brain challenge" onPress={() => router.push('/brain')} style={[styles.tile, brainDone && { opacity: 0.6 }]}>
-              <Text style={styles.tileIcon}>{brainDone ? '✅' : '⚡'}</Text>
+              <View style={[styles.tileIcon, { backgroundColor: brainDone ? 'rgba(61,220,151,0.16)' : 'rgba(242,184,75,0.16)' }]}>
+                <Icon name={brainDone ? 'check' : 'bolt'} size={28} color={brainDone ? '#3DDC97' : '#F2B84B'} strokeWidth={2} />
+              </View>
               <Text style={styles.tileTitle} numberOfLines={1}>
                 {brainDone ? 'Challenge done' : 'Daily challenge'}
               </Text>
-              <Text style={styles.tileSub}>{brainDone ? 'Nice work' : 'Brain games ›'}</Text>
+              <Text style={styles.tileSub}>{brainDone ? 'Nice work' : 'Brain games'}</Text>
             </Pressable>
           )}
         </Animated.View>
 
-        <Text style={styles.hint}>Swipe up for your ideas ↓</Text>
+        <View style={styles.hintRow}>
+          <Text style={styles.hint}>Swipe up for your ideas</Text>
+          <Icon name="arrowDown" size={14} color={onCard.muted} strokeWidth={2.2} />
+        </View>
       </LinearGradient>
     </View>
   );
@@ -172,11 +184,13 @@ const styles = StyleSheet.create({
   track: { height: 5, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.12)', overflow: 'hidden', marginTop: 4 },
   fill: { height: 5, backgroundColor: colors.accent },
   meta: { color: colors.muted, fontSize: 12 },
-  button: { alignSelf: 'flex-start', marginTop: 6, paddingVertical: 9, paddingHorizontal: 16, borderRadius: 999, backgroundColor: colors.accent },
+  button: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', marginTop: 6, paddingVertical: 10, paddingHorizontal: 16, borderRadius: 999, backgroundColor: colors.accent },
   buttonText: { color: colors.onAccent, fontWeight: '800' },
   row: { flexDirection: 'row', gap: 10 },
-  tile: { flex: 1, alignItems: 'center', gap: 6, padding: 14, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.06)' },
-  tileIcon: { fontSize: 34, height: 56, lineHeight: 56, textAlign: 'center' },
+  tile: { flex: 1, alignItems: 'center', gap: 6, padding: 14, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.06)', borderWidth: StyleSheet.hairlineWidth, borderColor: 'rgba(255,255,255,0.08)' },
+  tileIcon: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
+  subRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  hintRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
   tileTitle: { color: colors.text, fontWeight: '800', fontSize: 14 },
   tileSub: { color: colors.muted, fontSize: 12 },
   hint: { color: colors.muted, textAlign: 'center', fontSize: 13 },

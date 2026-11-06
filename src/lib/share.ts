@@ -5,6 +5,42 @@ import { Platform, Share } from 'react-native';
 
 import type { Highlight } from '@/lib/types';
 
+/** The web app's address: links in shared messages open the app on this page. */
+export const APP_URL = 'https://mehdiberrekkal.github.io/deepstash-clone';
+
+/**
+ * Sends a message through the phone's share sheet (WhatsApp, Messages…). The link sits at the end of the text, so
+ * every app shows it, and becomes a preview where the app supports it. Without a share sheet it's copied instead.
+ * Returns 'copied' when it went to the clipboard.
+ */
+export async function shareMessage(title: string, text: string, url: string): Promise<'shared' | 'copied' | 'cancelled'> {
+  const message = `${text}\n\n${url}`;
+  if (Platform.OS === 'web') {
+    const nav = globalThis.navigator;
+    if (nav?.share) {
+      try {
+        await nav.share({ title, text: message });
+        return 'shared';
+      } catch (e) {
+        if ((e as Error).name === 'AbortError') return 'cancelled';
+      }
+    }
+    await copyText(message);
+    return 'copied';
+  }
+  const r = await Share.share({ title, message });
+  return r.action === Share.dismissedAction ? 'cancelled' : 'shared';
+}
+
+/** A short blurb, cut at a sentence end near `max` characters. */
+export function blurb(text: string | undefined, max = 220): string {
+  const t = (text ?? '').replace(/\s+/g, ' ').trim();
+  if (t.length <= max) return t;
+  const cut = t.slice(0, max);
+  const end = cut.lastIndexOf('. ');
+  return end > max * 0.5 ? cut.slice(0, end + 1) : `${cut.slice(0, cut.lastIndexOf(' '))}…`;
+}
+
 export const copyText = (text: string) => Clipboard.setStringAsync(text).catch(() => false);
 
 /** Saves a file in the browser by clicking a temporary download link. */

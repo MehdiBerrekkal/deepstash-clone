@@ -26,7 +26,9 @@ export function friendlyError(e: unknown): string {
   if (/email not confirmed/i.test(m)) return 'Please confirm your email first: open the link we sent you.';
   if (/already registered|already been registered/i.test(m)) return 'An account with this email already exists. Log in instead.';
   if (/password should be at least/i.test(m)) return 'The password needs at least 8 characters.';
+  if (/email rate limit/i.test(m)) return 'Too many confirmation emails were sent in the last hour, so this one could not go out. Try again in an hour.';
   if (/rate limit|too many/i.test(m)) return 'Too many tries. Wait a minute and try again.';
+  if (/email address .* is invalid/i.test(m)) return 'This email address can’t receive mail. Check it and try again.';
   if (/network|fetch/i.test(m)) return 'No connection. Check your internet and try again.';
   return m;
 }

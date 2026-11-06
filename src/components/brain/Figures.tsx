@@ -24,22 +24,32 @@ function Shape({ kind, r, fill, stroke, turn }: { kind: Outer; r: number; fill: 
   );
 }
 
-/** One abstract figure, drawn in a 100×100 box: lines behind, outer shape, inner shape, then dots. */
+/**
+ * One abstract figure, drawn in a 100×100 box: outer shape, inner shape, then lines and dots on top. Lines and dots
+ * get a paper-coloured halo and the inner shape a contrasting fill, so nothing disappears into a solid shape (two
+ * options must never look the same).
+ */
 export function FigureSvg({ f, size, ink }: { f: Figure; size: number; ink: Ink }) {
   const fillOf = (v: number) => (v === 0 ? 'none' : v === 1 ? ink.soft : ink.ink);
   const r = [24, 32, 40][f.size];
   const angles = [0, 45, 90, 135].filter((_, i) => f.lines & (1 << i));
   const dots = [[-34, -34], [34, -34], [34, 34], [-34, 34]].slice(0, f.dots);
+  // An inner shape with the same shading as the outer one would vanish: use the opposite shade instead.
+  const innerFill = f.innerFill !== 0 && f.innerFill === f.fill ? (f.fill === 2 ? 1 : 2) : f.innerFill;
+  const innerStroke = f.fill === 2 && innerFill !== 2 ? ink.paper : ink.ink;
   return (
     <Svg width={size} height={size} viewBox="0 0 100 100">
       <G transform="translate(50 50)">
-        {angles.map((a) => (
-          <Line key={a} x1={-46} y1={0} x2={46} y2={0} stroke={ink.ink} strokeWidth={2.2} transform={`rotate(${-a})`} />
-        ))}
         <Shape kind={f.outer} r={r} fill={fillOf(f.fill)} stroke={ink.ink} turn={f.turn} />
-        {f.inner !== 'none' && <Shape kind={f.inner} r={11} fill={fillOf(f.innerFill)} stroke={ink.ink} turn={0} />}
+        {f.inner !== 'none' && <Shape kind={f.inner} r={11} fill={fillOf(innerFill)} stroke={innerStroke} turn={0} />}
+        {angles.map((a) => (
+          <G key={a} transform={`rotate(${-a})`}>
+            <Line x1={-46} y1={0} x2={46} y2={0} stroke={ink.paper} strokeWidth={6} strokeLinecap="round" />
+            <Line x1={-46} y1={0} x2={46} y2={0} stroke={ink.ink} strokeWidth={2.4} strokeLinecap="round" />
+          </G>
+        ))}
         {dots.map(([x, y], i) => (
-          <Circle key={i} cx={x} cy={y} r={4.2} fill={ink.ink} />
+          <Circle key={i} cx={x} cy={y} r={4.6} fill={ink.ink} stroke={ink.paper} strokeWidth={2} />
         ))}
       </G>
     </Svg>

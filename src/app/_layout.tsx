@@ -1,14 +1,45 @@
-import { Stack } from 'expo-router';
+import { router, Stack, usePathname } from 'expo-router';
+import { Stack as JSStack, TransitionPresets } from 'expo-router/js-stack';
 import { useFonts } from 'expo-font';
-import { useEffect, type ReactNode } from 'react';
-import { Platform } from 'react-native';
+import { useEffect } from 'react';
+import { Platform, Pressable, Text } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { CelebrationHost } from '@/components/Celebration';
 import { AppearanceSync, usePalette } from '@/lib/appearance';
 import { bookFonts } from '@/lib/bookType';
 import { WebSafeArea } from '@/lib/safeArea';
-import { StoreProvider } from '@/lib/store';
+import { pendingJoin } from '@/lib/family';
+import { StoreProvider, useStore } from '@/lib/store';
+
+/** Every screen outside the tabs, with its header. */
+const SCREENS: { name: string; options: { title?: string; headerShown?: boolean; presentation?: 'modal' } }[] = [
+  { name: '(tabs)', options: { headerShown: false } },
+  { name: 'auth', options: { headerShown: false } },
+  { name: 'reset-password', options: { headerShown: false } },
+  { name: 'welcome', options: { headerShown: false } },
+  { name: 'onboarding', options: { headerShown: false } },
+  { name: 'idea/[id]', options: { title: 'Card', presentation: 'modal' } },
+  { name: 'stashes', options: { title: 'Stashes' } },
+  { name: 'stash/[id]', options: { title: 'Stash' } },
+  { name: 'book/[id]', options: { title: '' } },
+  { name: 'read/[id]', options: { title: 'Reading' } },
+  { name: 'topic/[id]', options: { title: 'Topic' } },
+  { name: 'classic/[id]', options: { title: '' } },
+  { name: 'reader/[id]', options: { headerShown: false } },
+  { name: 'pdfbook/[id]', options: { headerShown: false } },
+  { name: 'favorites', options: { title: 'Favorites' } },
+  { name: 'highlights', options: { title: 'Highlights' } },
+  { name: 'review', options: { title: 'Review' } },
+  { name: 'brain/[game]', options: { title: 'Brain' } },
+  { name: 'brain/quiz', options: { title: 'Quiz' } },
+  { name: 'brain/test', options: { title: 'Test' } },
+  { name: 'voices', options: { title: 'Voices' } },
+  { name: 'find', options: { title: 'Find a free book' } },
+  { name: 'family', options: { title: 'Family library' } },
+  { name: 'learn/session', options: { title: 'Lesson' } },
+  { name: 'learn/credits', options: { title: 'Credits' } },
+];
 
 export default function RootLayout() {
   // Book fonts for the reader; text falls back to system fonts until they finish loading.
@@ -22,31 +53,8 @@ export default function RootLayout() {
     <WebSafeArea>
     <StoreProvider>
       <AppearanceSync />
-      <ThemedStack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="auth" options={{ headerShown: false }} />
-        <Stack.Screen name="reset-password" options={{ headerShown: false }} />
-        <Stack.Screen name="welcome" options={{ headerShown: false }} />
-        <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-        <Stack.Screen name="idea/[id]" options={{ title: 'Card', presentation: 'modal' }} />
-        <Stack.Screen name="stash/[id]" options={{ title: 'Stash' }} />
-        <Stack.Screen name="book/[id]" options={{ title: '' }} />
-        <Stack.Screen name="read/[id]" options={{ title: 'Reading' }} />
-        <Stack.Screen name="topic/[id]" options={{ title: 'Topic' }} />
-        <Stack.Screen name="classic/[id]" options={{ title: '' }} />
-        <Stack.Screen name="reader/[id]" options={{ headerShown: false }} />
-        <Stack.Screen name="pdfbook/[id]" options={{ headerShown: false }} />
-        <Stack.Screen name="favorites" options={{ title: 'Favorites' }} />
-        <Stack.Screen name="highlights" options={{ title: 'Highlights' }} />
-        <Stack.Screen name="review" options={{ title: 'Review' }} />
-        <Stack.Screen name="brain/[game]" options={{ title: 'Brain' }} />
-        <Stack.Screen name="brain/quiz" options={{ title: 'Quiz' }} />
-        <Stack.Screen name="brain/test" options={{ title: 'Test' }} />
-        <Stack.Screen name="voices" options={{ title: 'Voices' }} />
-        <Stack.Screen name="find" options={{ title: 'Find a free book' }} />
-        <Stack.Screen name="learn/session" options={{ title: 'Lesson' }} />
-        <Stack.Screen name="learn/credits" options={{ title: 'Credits' }} />
-      </ThemedStack>
+      <FamilyInvite />
+      <ThemedStack />
       <CelebrationHost />
     </StoreProvider>
     </WebSafeArea>
@@ -54,9 +62,42 @@ export default function RootLayout() {
   );
 }
 
-/** The app's stack, coloured for the current light/dark scheme. */
-function ThemedStack({ children }: { children: ReactNode }) {
+/**
+ * The app's stack, coloured for the current light/dark scheme. On the web (the iPhone home-screen app) it is the
+ * JavaScript stack, so screens slide in from the right, slide back out, and can be swiped away from the left edge
+ * like a native iOS app. Cards open as a sheet from the bottom.
+ */
+function ThemedStack() {
   const palette = usePalette();
+  if (Platform.OS === 'web') {
+    return (
+      <JSStack
+        screenOptions={({ route, navigation }) => ({
+          // Opened straight from a link or after the app reloaded: nothing to go back to, so ← goes home.
+          ...(!navigation.canGoBack() && route.name !== '(tabs)'
+            ? { headerLeft: () => <HomeButton color={palette.text} /> }
+            : {}),
+          ...(route.name === 'idea/[id]' ? TransitionPresets.ModalSlideFromBottomIOS : TransitionPresets.SlideFromRightIOS),
+          gestureEnabled: true,
+          // Its keyboard handling calls an API react-native-web doesn't have.
+          keyboardHandlingEnabled: false,
+          // Readers turn pages by swiping, so only a swipe that starts right at the edge goes back there.
+          gestureResponseDistance: route.name === 'reader/[id]' || route.name === 'pdfbook/[id]' ? 16 : 40,
+          headerStyle: { backgroundColor: palette.background, borderBottomWidth: 0, shadowOpacity: 0, elevation: 0 },
+          headerTintColor: palette.text,
+          headerTitleStyle: { fontWeight: '700' },
+          headerBackButtonDisplayMode: 'minimal',
+          cardStyle: { backgroundColor: palette.background },
+          cardOverlayEnabled: true,
+          // The screen underneath stays drawn, so it shows while you swipe back and keeps its scroll position.
+          detachPreviousScreen: false,
+        })}>
+        {SCREENS.map((s) => (
+          <JSStack.Screen key={s.name} name={s.name} options={s.options} />
+        ))}
+      </JSStack>
+    );
+  }
   return (
     <Stack
       screenOptions={{
@@ -64,7 +105,36 @@ function ThemedStack({ children }: { children: ReactNode }) {
         headerTintColor: palette.text,
         contentStyle: { backgroundColor: palette.background },
       }}>
-      {children}
+      {SCREENS.map((s) => (
+        <Stack.Screen key={s.name} name={s.name} options={s.options} />
+      ))}
     </Stack>
   );
+}
+
+/** The header's ← on a screen with nothing behind it: goes to the home screen. */
+function HomeButton({ color }: { color: string }) {
+  return (
+    <Pressable accessibilityRole="button" accessibilityLabel="Home" onPress={() => router.replace('/')} hitSlop={10} style={{ paddingHorizontal: 16, paddingVertical: 6 }}>
+      <Text style={{ color, fontSize: 24, lineHeight: 28 }}>←</Text>
+    </Pressable>
+  );
+}
+
+// An invite link (/family?join=…) is remembered at once, so it survives the welcome screens and signing in.
+if (Platform.OS === 'web' && typeof location !== 'undefined' && /\/family\/?$/.test(location.pathname)) {
+  const code = new URLSearchParams(location.search).get('join');
+  if (code) pendingJoin.set(code);
+}
+
+/** Once someone with a pending family invite is signed in, takes them to the family library to join. */
+function FamilyInvite() {
+  const { ready, account, audience } = useStore();
+  const pathname = usePathname();
+  useEffect(() => {
+    if (!ready || !account || !audience || pathname === '/family' || pathname === '/auth' || !pendingJoin.get()) return;
+    const t = setTimeout(() => router.push('/family'), 400);
+    return () => clearTimeout(t);
+  }, [ready, account, audience, pathname]);
+  return null;
 }

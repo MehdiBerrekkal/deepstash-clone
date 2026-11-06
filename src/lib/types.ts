@@ -87,6 +87,8 @@ export type ReaderSettings = {
   voiceFr?: string;
   /** Set when the natural voice was too slow on this device, so it isn't picked automatically. */
   naturalOff?: boolean;
+  /** PDFs: show the text reflowed to the screen (true) or the printed pages (false). Unset: text on phones. */
+  pdfText?: boolean;
 };
 
 /** Where the full-book reader is in a book; see paginate.ts. */

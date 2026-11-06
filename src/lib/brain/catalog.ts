@@ -7,7 +7,7 @@ import { makeCubeNet, makeFolding, makeRotation2D } from '@/lib/brain/spatial';
 
 // ---------- speed items ----------
 
-const GLYPHS = ['⊕', '△', '◇', '○', '□', '✕', '≡', '∞', '⊗', '☰', '◐', '⌘'];
+const GLYPHS = ['⊕', '△', '◇', '○', '□', '✕', '≡', '∞', '◆', '★', '◐', '⌘'];
 export type CodePrompt = { key: { glyph: string; digit: number }[]; glyph: string };
 
 /** Symbol coding: a key pairs symbols with digits; give the digit for the symbol shown. */
