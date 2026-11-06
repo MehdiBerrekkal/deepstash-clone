@@ -21,7 +21,7 @@ function merge(base: FullCourse, packs: Topic[][]): FullCourse {
 
 /** Full A1 → B1 content, loaded only when a course is opened (each language is its own download). */
 const LOADERS: Record<string, () => Promise<FullCourse>> = {
-  fr: () => import('@/data/learn/fr-full').then((m) => m.FRENCH_FULL),
+  fr: () => Promise.all([import('@/data/learn/fr-full'), import('@/data/learn/fr-more1')]).then(([base, m1]) => merge(base.FRENCH_FULL, [m1.TOPICS])),
   ja: () => import('@/data/learn/ja-full').then((m) => m.JAPANESE_FULL),
   ko: () => import('@/data/learn/ko-full').then((m) => m.KOREAN_FULL),
   de: () => import('@/data/learn/de-full').then((m) => m.GERMAN_FULL),
