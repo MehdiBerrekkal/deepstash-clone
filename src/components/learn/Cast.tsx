@@ -68,12 +68,12 @@ const CASTS: Record<string, Cast> = {
     brother: { name: 'Luca', emoji: '🧑🏻', en: 'Giulia’s brother, always late, always cheerful', fr: 'le frère de Giulia, toujours en retard, toujours gai' },
   },
   pt: {
-    friend: { name: 'Ana', emoji: '👩🏽', en: 'your friend in Salvador, a dance teacher', fr: 'votre amie à Salvador, professeure de danse' },
-    barista: { name: 'Rafael', emoji: '🧔🏽', en: 'runs the café by the beach, never stops smiling', fr: 'tient le café de la plage, toujours souriant' },
-    neighbour: { name: 'Dona Cida', emoji: '👵🏽', en: 'Ana’s neighbour, the heart of the building', fr: 'la voisine d’Ana, le cœur de l’immeuble' },
-    receptionist: { name: 'Beatriz', emoji: '👩🏽‍💼', en: 'hotel receptionist, quick and friendly', fr: 'réceptionniste d’hôtel, vive et sympathique' },
-    doctor: { name: 'Dra. Souza', emoji: '👩🏽‍⚕️', en: 'the family doctor', fr: 'la médecin de famille' },
-    brother: { name: 'Pedro', emoji: '🧑🏽', en: 'Ana’s brother, a surfer who loses track of time', fr: 'le frère d’Ana, surfeur qui oublie l’heure' },
+    friend: { name: 'Ana', emoji: '👩🏾', en: 'your friend in Salvador, a dance teacher', fr: 'votre amie à Salvador, professeure de danse' },
+    barista: { name: 'Rafael', emoji: '🧔🏾', en: 'runs the café by the beach, never stops smiling', fr: 'tient le café de la plage, toujours souriant' },
+    neighbour: { name: 'Dona Cida', emoji: '👵🏾', en: 'Ana’s neighbour, the heart of the building', fr: 'la voisine d’Ana, le cœur de l’immeuble' },
+    receptionist: { name: 'Beatriz', emoji: '👩🏾‍💼', en: 'hotel receptionist, quick and friendly', fr: 'réceptionniste d’hôtel, vive et sympathique' },
+    doctor: { name: 'Dra. Souza', emoji: '👩🏾‍⚕️', en: 'the family doctor', fr: 'la médecin de famille' },
+    brother: { name: 'Pedro', emoji: '🧑🏾', en: 'Ana’s brother, a surfer who loses track of time', fr: 'le frère d’Ana, surfeur qui oublie l’heure' },
   },
   en: {
     friend: { name: 'Emma', emoji: '👩🏼', en: 'your friend in Bristol, a podcast producer', fr: 'votre amie à Bristol, productrice de podcasts' },
@@ -90,6 +90,14 @@ const CASTS: Record<string, Cast> = {
     receptionist: { name: 'Olga', emoji: '👩🏼‍💼', en: 'hotel receptionist, calm and precise', fr: 'réceptionniste d’hôtel, calme et précise' },
     doctor: { name: 'Dr Volkov', emoji: '👨🏼‍⚕️', en: 'the district doctor', fr: 'le médecin du quartier' },
     brother: { name: 'Dima', emoji: '🧑🏼', en: 'Masha’s brother, a student who oversleeps', fr: 'le frère de Macha, étudiant qui dort trop' },
+  },
+  ar: {
+    friend: { name: 'Layla', emoji: '👩🏾', en: 'your friend in Amman, an architect', fr: 'votre amie à Amman, architecte' },
+    barista: { name: 'Karim', emoji: '🧔🏾', en: 'runs a café in the old town, makes the best mint tea', fr: 'tient un café dans la vieille ville, fait le meilleur thé à la menthe' },
+    neighbour: { name: 'Abu Samir', emoji: '👴🏾', en: 'Layla’s neighbour, generous with advice and figs', fr: 'le voisin de Layla, généreux en conseils et en figues' },
+    receptionist: { name: 'Nour', emoji: '👩🏾‍💼', en: 'hotel receptionist, warm and quick', fr: 'réceptionniste d’hôtel, chaleureuse et rapide' },
+    doctor: { name: 'Dr Haddad', emoji: '👨🏾‍⚕️', en: 'the family doctor', fr: 'le médecin de famille' },
+    brother: { name: 'Omar', emoji: '🧑🏾', en: 'Layla’s brother, a student always in a rush', fr: 'le frère de Layla, étudiant toujours pressé' },
   },
 };
 /** Who you meet in each scene (by the last part of the dialogue or story id). */
