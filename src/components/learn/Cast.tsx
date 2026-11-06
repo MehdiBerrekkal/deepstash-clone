@@ -83,6 +83,14 @@ const CASTS: Record<string, Cast> = {
     doctor: { name: 'Dr Hughes', emoji: '👨🏻‍⚕️', en: 'the local GP', fr: 'le médecin généraliste du quartier' },
     brother: { name: 'Jack', emoji: '🧑🏼', en: 'Emma’s brother, a cyclist who is always late', fr: 'le frère d’Emma, cycliste toujours en retard' },
   },
+  ru: {
+    friend: { name: 'Masha', emoji: '👩🏼', en: 'your friend in St Petersburg, a museum guide', fr: 'votre amie à Saint-Pétersbourg, guide de musée' },
+    barista: { name: 'Sasha', emoji: '🧔🏼', en: 'runs a café near the canal, bakes pirozhki', fr: 'tient un café près du canal, fait des pirojki' },
+    neighbour: { name: 'Anna Petrovna', emoji: '👵🏼', en: 'Masha’s neighbour, has a dacha and an opinion', fr: 'la voisine de Macha, a une datcha et un avis sur tout' },
+    receptionist: { name: 'Olga', emoji: '👩🏼‍💼', en: 'hotel receptionist, calm and precise', fr: 'réceptionniste d’hôtel, calme et précise' },
+    doctor: { name: 'Dr Volkov', emoji: '👨🏼‍⚕️', en: 'the district doctor', fr: 'le médecin du quartier' },
+    brother: { name: 'Dima', emoji: '🧑🏼', en: 'Masha’s brother, a student who oversleeps', fr: 'le frère de Macha, étudiant qui dort trop' },
+  },
 };
 /** Who you meet in each scene (by the last part of the dialogue or story id). */
 const ROLES: Record<string, (keyof Cast)[]> = {
