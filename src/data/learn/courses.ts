@@ -1,3 +1,5 @@
+import { MORE_COURSES } from '@/data/learn/courses2';
+
 /**
  * Language courses, written for this app. Each course is a path of short units; each unit is a set of items
  * (letters, characters, words or phrases) that the session engine turns into varied mini-games.
@@ -18,6 +20,8 @@ export type LItem = {
   /** Hangul syllable blocks: the consonant and vowel. Mandarin tone units: the tone (1-4). */
   parts?: string[];
   tone?: number;
+  /** Spelling games: plausible wrong spellings (otherwise they're made by moving accents). */
+  wrong?: string[];
 };
 
 export type UnitKind = 'script' | 'words' | 'phrases' | 'blocks' | 'tones' | 'accents';
@@ -40,6 +44,8 @@ export type Course = {
   /** Voice language for speech. */
   voice: string;
   color: string;
+  /** Written right to left (Arabic). */
+  rtl?: boolean;
   units: Unit[];
 };
 
@@ -287,5 +293,5 @@ export const SPANISH: Course = {
   ],
 };
 
-export const COURSES: Course[] = [JAPANESE, KOREAN, MANDARIN, SPANISH];
+export const COURSES: Course[] = [JAPANESE, KOREAN, MANDARIN, SPANISH, ...MORE_COURSES];
 export const courseById = Object.fromEntries(COURSES.map((c) => [c.id, c])) as Record<string, Course>;

@@ -392,7 +392,7 @@ function BuildStep({ item, tiles, course, lang, meaning, locked, onGrade }: { it
         {meaning(item)}
       </Text>
       <SoundButton text={item.say ?? item.text} course={course} />
-      <View style={styles.answerRow}>
+      <View style={[styles.answerRow, course.rtl && { flexDirection: 'row-reverse' }]}>
         {chosen.length ? (
           chosen.map((k, n) => (
             <Pressable key={`${k}-${n}`} accessibilityLabel={`Remove ${tiles[k]}`} disabled={locked} onPress={() => setChosen((c) => c.filter((_, m) => m !== n))} style={[styles.tile, { borderColor: course.color }]}>

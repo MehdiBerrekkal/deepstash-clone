@@ -8,18 +8,7 @@ import { useUiLang } from '@/lib/i18n';
 import { localDate, useStore } from '@/lib/store';
 import { colors, serif } from '@/lib/theme';
 
-const SOON = [
-  { flag: '🇫🇷', en: 'French', fr: 'Français' },
-  { flag: '🇬🇧', en: 'English', fr: 'Anglais' },
-  { flag: '🇩🇪', en: 'German', fr: 'Allemand' },
-  { flag: '🇮🇹', en: 'Italian', fr: 'Italien' },
-  { flag: '🇵🇹', en: 'Portuguese', fr: 'Portugais' },
-  { flag: '🇸🇦', en: 'Arabic', fr: 'Arabe' },
-  { flag: '🇷🇺', en: 'Russian', fr: 'Russe' },
-  { flag: '🇹🇷', en: 'Turkish', fr: 'Turc' },
-  { flag: '🇮🇳', en: 'Hindi', fr: 'Hindi' },
-  { flag: '🇳🇱', en: 'Dutch', fr: 'Néerlandais' },
-];
+const SOON: { flag: string; en: string; fr: string }[] = [];
 const isDue = (iso: string) => new Date(iso).getTime() <= Date.now();
 const daysAgo = (n: number) => new Date(Date.now() - n * 86400e3);
 

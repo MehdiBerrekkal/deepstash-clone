@@ -24,7 +24,7 @@ const options = (pool: LItem[], item: LItem, n = 4) => shuffle([item, ...others(
 
 /** Misspellings of a word: accents moved or dropped, ñ and double letters lost, so only one option is right. */
 function misspell(word: string): string[] {
-  const plain = word.normalize('NFD').replace(/[́̃̈]/g, '').normalize('NFC');
+  const plain = word.normalize('NFD').replace(/[̀-ͯ]/g, '').normalize('NFC').replace(/ı/g, 'i');
   const out = new Set<string>();
   if (plain !== word) out.add(plain);
   const vowels = [...plain].map((c, i) => ({ c, i })).filter(({ c }) => 'aeiou'.includes(c));
@@ -52,7 +52,9 @@ export function buildSession(course: Course, unit: Unit, done: boolean): Step[] 
     if (unit.kind === 'script') {
       for (const it of g) {
         if (!done) steps.push({ type: 'learn', item: it });
-        steps.push({ type: 'write', item: it, mode: done ? 'hint' : 'trace' });
+        // Writing practice where stroke data exists; other alphabets are learned by sight and sound.
+        if (unit.script) steps.push({ type: 'write', item: it, mode: done ? 'hint' : 'trace' });
+        else steps.push({ type: 'pick', item: it, ask: 'listen', options: options(items, it) });
       }
       for (const it of g) steps.push({ type: 'pick', item: it, ask: Math.random() < 0.5 ? 'sound' : 'listen', options: options(items.length >= 4 ? items : pool, it) });
     } else if (unit.kind === 'blocks') {
@@ -73,7 +75,7 @@ export function buildSession(course: Course, unit: Unit, done: boolean): Step[] 
     } else if (unit.kind === 'accents') {
       for (const it of g) {
         if (!done) steps.push({ type: 'learn', item: it });
-        steps.push({ type: 'spell', item: it, options: shuffle([it.text, ...misspell(it.text)]) });
+        steps.push({ type: 'spell', item: it, options: shuffle([it.text, ...(it.wrong ?? misspell(it.text))]) });
         steps.push({ type: 'pick', item: it, ask: 'listen', options: options(items, it) });
       }
     } else {
@@ -93,7 +95,7 @@ export function buildSession(course: Course, unit: Unit, done: boolean): Step[] 
   // A timed matching round to finish.
   if (items.length >= 4 && unit.kind !== 'tones') steps.push({ type: 'match', items: shuffle(items).slice(0, Math.min(5, items.length)) });
   // Practised characters get written once more from memory.
-  if (unit.kind === 'script' && done) for (const it of shuffle(items).slice(0, 2)) steps.push({ type: 'write', item: it, mode: 'free' });
+  if (unit.kind === 'script' && unit.script && done) for (const it of shuffle(items).slice(0, 2)) steps.push({ type: 'write', item: it, mode: 'free' });
   return steps;
 }
 
@@ -103,7 +105,8 @@ export function buildReview(course: Course, keys: string[]): Step[] {
   const chosen = keys.map((k) => all.find(({ u, it }) => `${course.id}:${u.id}:${it.text}` === k)).filter(Boolean).slice(0, 12) as { u: Unit; it: LItem }[];
   return chosen.flatMap(({ u, it }) => {
     const pool = u.items.length >= 4 ? u.items : course.units.flatMap((x) => x.items);
-    if (u.kind === 'script') return [{ type: 'write', item: it, mode: 'hint' } as Step, { type: 'pick', item: it, ask: 'sound', options: options(pool, it) } as Step];
+    if (u.kind === 'script' && u.script) return [{ type: 'write', item: it, mode: 'hint' } as Step, { type: 'pick', item: it, ask: 'sound', options: options(pool, it) } as Step];
+    if (u.kind === 'script') return [{ type: 'pick', item: it, ask: 'sound', options: options(pool, it) } as Step];
     if (u.kind === 'tones') return [{ type: 'tone', item: it } as Step];
     return [{ type: 'pick', item: it, ask: Math.random() < 0.5 ? 'meaning' : 'listen', options: options(pool, it) } as Step];
   });
