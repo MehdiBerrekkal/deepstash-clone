@@ -17,13 +17,13 @@ import { useT } from '@/lib/i18n';
 export default function FeedScreen() {
   const [kind, setKind] = useState<CardKind | null>(null);
   const feed = useFeed(kind);
-  const { streak, markRead, readingLog, minuteGoal, reviewQueue, setNotInterested, stashes } = useStore();
+  const { streak, markRead, readingLog, minuteGoal, reviewQueue, setNotInterested, stashes, learn } = useStore();
   const stashedCount = new Set(stashes.flatMap((s) => s.ideaIds)).size;
   const t = useT();
   const [undo, setUndo] = useState<string | null>(null);
   const continueBook = useContinueReading();
-  // The first page is "Today" (your book, goal and review) when there's something to show and no filter is on.
-  const showToday = !kind && (!!continueBook || reviewQueue.length > 0);
+  // The first page is "Today" (your book, goal, review and language lesson) when there's something to show and no filter is on.
+  const showToday = !kind && (!!continueBook || reviewQueue.length > 0 || !!learn?.course);
   const data: (FeedItem | 'today')[] = showToday ? ['today', ...feed] : feed;
   useEffect(() => {
     if (!undo) return;
