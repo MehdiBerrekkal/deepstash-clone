@@ -23,7 +23,7 @@ function merge(base: FullCourse, packs: Topic[][]): FullCourse {
 const LOADERS: Record<string, () => Promise<FullCourse>> = {
   fr: () => Promise.all([import('@/data/learn/fr-full'), import('@/data/learn/fr-more1')]).then(([base, m1]) => merge(base.FRENCH_FULL, [m1.TOPICS])),
   ja: () => Promise.all([import('@/data/learn/ja-full'), import('@/data/learn/ja-more1')]).then(([base, m1]) => merge(base.JAPANESE_FULL, [m1.TOPICS])),
-  ko: () => import('@/data/learn/ko-full').then((m) => m.KOREAN_FULL),
+  ko: () => Promise.all([import('@/data/learn/ko-full'), import('@/data/learn/ko-more1')]).then(([base, m1]) => merge(base.KOREAN_FULL, [m1.TOPICS])),
   de: () => Promise.all([import('@/data/learn/de-full'), import('@/data/learn/de-more1')]).then(([base, m1]) => merge(base.GERMAN_FULL, [m1.TOPICS])),
   zh: () => import('@/data/learn/zh-full').then((m) => m.CHINESE_FULL),
   it: () => import('@/data/learn/it-full').then((m) => m.ITALIAN_FULL),
