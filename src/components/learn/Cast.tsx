@@ -35,6 +35,14 @@ const CASTS: Record<string, Cast> = {
     doctor: { name: 'Dr Tanaka', emoji: '👨🏻‍⚕️', en: 'the neighbourhood doctor', fr: 'le médecin du quartier' },
     brother: { name: 'Ren', emoji: '🧑🏻', en: 'Yui’s younger brother, a student who oversleeps', fr: 'le petit frère de Yui, étudiant qui dort trop' },
   },
+  ko: {
+    friend: { name: 'Jimin', emoji: '👩🏻', en: 'your friend in Seoul, a webtoon artist', fr: 'votre amie à Séoul, dessinatrice de webtoons' },
+    barista: { name: 'Minsu', emoji: '🧑🏻‍🍳', en: 'runs a café in Mangwon, roasts his own beans', fr: 'tient un café à Mangwon, torréfie lui-même' },
+    neighbour: { name: 'Grandpa Park', emoji: '👴🏻', en: 'Jimin’s neighbour, knows every alley', fr: 'le voisin de Jimin, connaît chaque ruelle' },
+    receptionist: { name: 'Sua', emoji: '👩🏻‍💼', en: 'hotel receptionist, quick and cheerful', fr: 'réceptionniste d’hôtel, vive et joyeuse' },
+    doctor: { name: 'Dr Kim', emoji: '👩🏻‍⚕️', en: 'the neighbourhood doctor', fr: 'la médecin du quartier' },
+    brother: { name: 'Junho', emoji: '🧑🏻', en: 'Jimin’s younger brother, always in a rush', fr: 'le petit frère de Jimin, toujours pressé' },
+  },
 };
 /** Who you meet in each scene (by the last part of the dialogue or story id). */
 const ROLES: Record<string, (keyof Cast)[]> = {
