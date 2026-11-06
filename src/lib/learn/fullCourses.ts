@@ -35,8 +35,8 @@ const LOADERS: Record<string, () => Promise<FullCourse>> = {
   hi: () => import('@/data/learn/hi-full').then((m) => m.HINDI_FULL),
   nl: () => import('@/data/learn/nl-full').then((m) => m.DUTCH_FULL),
   es: () =>
-    Promise.all([import('@/data/learn/es-full'), import('@/data/learn/es-a1-more'), import('@/data/learn/es-a2-more'), import('@/data/learn/es-b1-more'), import('@/data/learn/es-more2'), import('@/data/learn/es-more3'), import('@/data/learn/es-more4')]).then(([base, a1, a2, b1, m2, m3, m4]) =>
-      merge(base.SPANISH_FULL, [a1.TOPICS, a2.TOPICS, b1.TOPICS, m2.TOPICS, m3.TOPICS, m4.TOPICS]),
+    Promise.all([import('@/data/learn/es-full'), import('@/data/learn/es-a1-more'), import('@/data/learn/es-a2-more'), import('@/data/learn/es-b1-more'), import('@/data/learn/es-more2'), import('@/data/learn/es-more3'), import('@/data/learn/es-more4'), import('@/data/learn/es-more5')]).then(([base, a1, a2, b1, m2, m3, m4, m5]) =>
+      merge(base.SPANISH_FULL, [a1.TOPICS, a2.TOPICS, b1.TOPICS, m2.TOPICS, m3.TOPICS, m4.TOPICS, m5.TOPICS]),
     ),
 };
 
