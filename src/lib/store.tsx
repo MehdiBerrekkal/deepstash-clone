@@ -187,6 +187,18 @@ export type LearnState = {
 export type LearnResult = { unit?: string; stars: number; xp: number; seconds: number; items: Record<string, boolean> };
 const EMPTY_LEARN: LearnState = { xp: 0, units: {}, items: {}, days: {} };
 
+/** Language progress from two devices, merged: best stars, most times played, the further review box, the most XP per day. */
+export function mergeLearn(a?: LearnState, b?: LearnState): LearnState | undefined {
+  if (!a || !b) return a ?? b;
+  const units = { ...a.units };
+  for (const [k, v] of Object.entries(b.units ?? {})) units[k] = units[k] ? { stars: Math.max(units[k].stars, v.stars), times: Math.max(units[k].times, v.times) } : v;
+  const items = { ...a.items };
+  for (const [k, v] of Object.entries(b.items ?? {})) if (!items[k] || v.level > items[k].level || (v.level === items[k].level && v.due > items[k].due)) items[k] = v;
+  const days = { ...a.days };
+  for (const [k, v] of Object.entries(b.days ?? {})) days[k] = Math.max(days[k] ?? 0, v);
+  return { course: a.course ?? b.course, xp: Math.max(a.xp, b.xp), units, items, days };
+}
+
 export type BrainTest = {
   date: string;
   mode: 'full' | 'quick';
@@ -311,7 +323,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
     if (acc) {
       const cloud = await loadCloud(acc.id).catch(() => null);
-      if (cloud && (!stored.savedAt || cloud.updatedAt > String(stored.savedAt))) stored = cloud.data;
+      if (cloud && (!stored.savedAt || cloud.updatedAt > String(stored.savedAt))) {
+        // The newer copy wins, but language progress made on either device is kept (best of both).
+        const learn = mergeLearn(cloud.data.learn as LearnState | undefined, stored.learn as LearnState | undefined);
+        stored = { ...cloud.data, ...(learn ? { learn } : {}) };
+      }
       else if (!cloud && !hadLocal) {
         // A brand-new account: bring this device's guest progress along only if the person asked for it at sign-up.
         const want = await AsyncStorage.getItem(IMPORT_KEY).catch(() => null);
