@@ -35,9 +35,13 @@ const pickOthers = <T,>(pool: T[], not: T, n: number) => {
   return shuffle(pool).filter((x) => !seen.has(label(x)) && !!seen.add(label(x))).slice(0, n);
 };
 
+/** A noun without its article (Spanish, French, Italian, Portuguese, German, Dutch): "la mesa" → "mesa", "l’école" → "école". */
+const ARTICLE = /^(el|la|los|las|un|una|le|les|des|du|une|il|lo|gli|os|as|um|uma|der|die|das|ein|eine|de|het|een)\s+|^(l[’'])/i;
+const bare = (w: string) => w.replace(ARTICLE, '');
+
 /** "Un café con leche" with "café" → "Un ___ con leche" (whole word, any case). */
 function blank(sentence: string, word: string) {
-  const core = word.replace(/^(el|la|los|las|un|una)\s+/i, '');
+  const core = bare(word);
   const re = new RegExp(`(^|[^\\p{L}])(${core.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})(?=[^\\p{L}]|$)`, 'iu');
   if (!re.test(sentence)) return null;
   return { text: sentence.replace(re, '$1___'), answer: sentence.match(re)![2] };
@@ -104,7 +108,7 @@ function contextSteps(items: LItem[], pool: LItem[]): FullStep[] {
   for (const it of shuffle(withEx).slice(0, 4)) steps.push({ type: 'listenq', item: it, options: shuffle([it, ...pickOthers(withEx.length >= 4 ? withEx : pool.filter((p) => p.ex), it, 2)]) });
   for (const it of shuffle(withEx).slice(0, 4)) {
     const b = blank(it.ex!, it.text);
-    if (b) steps.push({ type: 'gap', text: b.text, answer: b.answer, options: shuffle([b.answer, ...pickOthers(pool.map((p) => p.text.replace(/^(el|la|los|las)\s+/i, '')), b.answer, 2)]), en: it.exEn ?? '', fr: it.exFr ?? '', item: it });
+    if (b) steps.push({ type: 'gap', text: b.text, answer: b.answer, options: shuffle([b.answer, ...pickOthers(pool.map((p) => bare(p.text)), b.answer, 2)]), en: it.exEn ?? '', fr: it.exFr ?? '', item: it });
   }
   for (const it of shuffle(withEx).slice(0, 2)) {
     const tiles = it.ex!.replace(/[¿?¡!,.]/g, '').split(/\s+/).filter(Boolean);

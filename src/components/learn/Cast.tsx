@@ -8,29 +8,42 @@ import { colors } from '@/lib/theme';
 
 /** The recurring characters of a course: the same faces come back across role-plays and stories. */
 export type Person = { name: string; emoji: string; en: string; fr: string };
-const SPANISH: Record<string, Person> = {
-  lucia: { name: 'Lucía', emoji: '👩🏽', en: 'your friend in Valencia, a designer', fr: 'votre amie à Valence, designer' },
-  mateo: { name: 'Mateo', emoji: '🧔🏽', en: 'runs the café on the corner, loves a joke', fr: 'tient le café du coin, adore plaisanter' },
-  pepe: { name: 'Don Pepe', emoji: '👴🏼', en: 'Lucía’s neighbour, knows every street', fr: 'le voisin de Lucía, connaît chaque rue' },
-  sofia: { name: 'Sofía', emoji: '👩🏻‍💼', en: 'hotel receptionist, calm and precise', fr: 'réceptionniste d’hôtel, calme et précise' },
-  ruiz: { name: 'Dra. Ruiz', emoji: '👩🏽‍⚕️', en: 'the family doctor', fr: 'la médecin de famille' },
-  marcos: { name: 'Marcos', emoji: '🧑🏻', en: 'Lucía’s brother, always running late', fr: 'le frère de Lucía, toujours en retard' },
+type Cast = Record<'friend' | 'barista' | 'neighbour' | 'receptionist' | 'doctor' | 'brother', Person>;
+
+const CASTS: Record<string, Cast> = {
+  es: {
+    friend: { name: 'Lucía', emoji: '👩🏽', en: 'your friend in Valencia, a designer', fr: 'votre amie à Valence, designer' },
+    barista: { name: 'Mateo', emoji: '🧔🏽', en: 'runs the café on the corner, loves a joke', fr: 'tient le café du coin, adore plaisanter' },
+    neighbour: { name: 'Don Pepe', emoji: '👴🏼', en: 'Lucía’s neighbour, knows every street', fr: 'le voisin de Lucía, connaît chaque rue' },
+    receptionist: { name: 'Sofía', emoji: '👩🏻‍💼', en: 'hotel receptionist, calm and precise', fr: 'réceptionniste d’hôtel, calme et précise' },
+    doctor: { name: 'Dra. Ruiz', emoji: '👩🏽‍⚕️', en: 'the family doctor', fr: 'la médecin de famille' },
+    brother: { name: 'Marcos', emoji: '🧑🏻', en: 'Lucía’s brother, always running late', fr: 'le frère de Lucía, toujours en retard' },
+  },
+  fr: {
+    friend: { name: 'Camille', emoji: '👩🏻', en: 'your friend in Lyon, an architect', fr: 'votre amie à Lyon, architecte' },
+    barista: { name: 'Julien', emoji: '🧔🏻', en: 'owns the café on the square, knows everyone', fr: 'tient le café de la place, connaît tout le monde' },
+    neighbour: { name: 'Madame Petit', emoji: '👵🏻', en: 'Camille’s neighbour, has lived here sixty years', fr: 'la voisine de Camille, ici depuis soixante ans' },
+    receptionist: { name: 'Inès', emoji: '👩🏽‍💼', en: 'hotel receptionist, speaks four languages', fr: 'réceptionniste d’hôtel, parle quatre langues' },
+    doctor: { name: 'Dr Martin', emoji: '👨🏻‍⚕️', en: 'the local GP, gentle and thorough', fr: 'le médecin du quartier, doux et minutieux' },
+    brother: { name: 'Hugo', emoji: '🧑🏼', en: 'Camille’s brother, a cyclist who is never on time', fr: 'le frère de Camille, cycliste, jamais à l’heure' },
+  },
 };
-/** Who you meet in each scene (by the dialogue or story id's last part). */
-const ROLES: Record<string, string[]> = {
-  cafe: ['mateo'],
-  directions: ['pepe'],
-  hotel: ['sofia'],
-  doctor: ['ruiz'],
-  plans: ['lucia'],
-  market: ['lucia', 'mateo'],
-  train: ['marcos'],
-  garden: ['pepe', 'lucia'],
+/** Who you meet in each scene (by the last part of the dialogue or story id). */
+const ROLES: Record<string, (keyof Cast)[]> = {
+  cafe: ['barista'],
+  directions: ['neighbour'],
+  hotel: ['receptionist'],
+  doctor: ['doctor'],
+  plans: ['friend'],
+  market: ['friend', 'barista'],
+  train: ['brother'],
+  garden: ['neighbour', 'friend'],
 };
 export function castOf(course: Course, id: string): Person[] {
-  const cast = course.id === 'es' ? SPANISH : SPANISH;
+  const cast = CASTS[course.id];
+  if (!cast) return [];
   const key = id.split('-').pop() ?? '';
-  return (ROLES[key] ?? []).map((k) => cast[k]).filter(Boolean);
+  return (ROLES[key] ?? []).map((k) => cast[k]);
 }
 
 /** A drawn banner for a role-play or story: the place, and the people in it. */
