@@ -25,6 +25,7 @@ const LOADERS: Record<string, () => Promise<FullCourse>> = {
   ja: () => import('@/data/learn/ja-full').then((m) => m.JAPANESE_FULL),
   ko: () => import('@/data/learn/ko-full').then((m) => m.KOREAN_FULL),
   de: () => import('@/data/learn/de-full').then((m) => m.GERMAN_FULL),
+  zh: () => import('@/data/learn/zh-full').then((m) => m.CHINESE_FULL),
   es: () =>
     Promise.all([import('@/data/learn/es-full'), import('@/data/learn/es-a1-more'), import('@/data/learn/es-a2-more'), import('@/data/learn/es-b1-more'), import('@/data/learn/es-more2'), import('@/data/learn/es-more3'), import('@/data/learn/es-more4')]).then(([base, a1, a2, b1, m2, m3, m4]) =>
       merge(base.SPANISH_FULL, [a1.TOPICS, a2.TOPICS, b1.TOPICS, m2.TOPICS, m3.TOPICS, m4.TOPICS]),

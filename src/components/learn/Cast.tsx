@@ -51,6 +51,14 @@ const CASTS: Record<string, Cast> = {
     doctor: { name: 'Dr Schmidt', emoji: '👩🏼‍⚕️', en: 'the family doctor', fr: 'la médecin de famille' },
     brother: { name: 'Felix', emoji: '🧑🏼', en: 'Lena’s brother, a cyclist who is always late', fr: 'le frère de Lena, cycliste toujours en retard' },
   },
+  zh: {
+    friend: { name: 'Xiaomei', emoji: '👩🏻', en: 'your friend in Hangzhou, a tea-shop designer', fr: 'votre amie à Hangzhou, designer de boutiques de thé' },
+    barista: { name: 'Ah Ming', emoji: '🧑🏻‍🍳', en: 'runs a café by West Lake, loves puns', fr: 'tient un café près du lac de l’Ouest, adore les jeux de mots' },
+    neighbour: { name: 'Grandpa Wang', emoji: '👴🏻', en: 'Xiaomei’s neighbour, does tai chi at dawn', fr: 'le voisin de Xiaomei, fait du tai-chi à l’aube' },
+    receptionist: { name: 'Lin', emoji: '👩🏻‍💼', en: 'hotel receptionist, patient with beginners', fr: 'réceptionniste d’hôtel, patiente avec les débutants' },
+    doctor: { name: 'Dr Zhang', emoji: '👨🏻‍⚕️', en: 'the neighbourhood doctor', fr: 'le médecin du quartier' },
+    brother: { name: 'Xiaolong', emoji: '🧑🏻', en: 'Xiaomei’s brother, a student who oversleeps', fr: 'le frère de Xiaomei, étudiant qui dort trop' },
+  },
 };
 /** Who you meet in each scene (by the last part of the dialogue or story id). */
 const ROLES: Record<string, (keyof Cast)[]> = {
