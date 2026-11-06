@@ -2,6 +2,7 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { Pic } from '@/components/learn/Pic';
 import { courseById } from '@/data/learn/courses';
 import { useUiLang } from '@/lib/i18n';
 import { allWords } from '@/lib/learn/lessons';
@@ -72,7 +73,7 @@ export default function WordBankScreen() {
           const lv = items?.[w.key!]?.level;
           return (
             <Pressable accessibilityLabel={`Word ${w.text}`} onPress={() => say(w.text, course.voice)} style={styles.row}>
-              <Text style={styles.emoji}>{w.emoji ?? '•'}</Text>
+              <Pic emoji={w.emoji ?? '•'} size={36} />
               <View style={styles.flex}>
                 <Text style={styles.word}>{w.text}</Text>
                 <Text style={styles.muted} numberOfLines={1}>

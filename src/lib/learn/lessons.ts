@@ -13,7 +13,12 @@ export type FullStep =
   | { type: 'dictation'; item: LItem }
   | { type: 'dialogue'; dialogue: Dialogue; speakIt: boolean }
   | { type: 'story'; story: Story }
-  | { type: 'question'; prompt: { en: string; fr: string }; answer: string; options: string[] };
+  | { type: 'question'; prompt: { en: string; fr: string }; answer: string; options: string[] }
+  | { type: 'picture'; item: LItem; options: LItem[] }
+  | { type: 'pictureOf'; item: LItem; options: LItem[] }
+  | { type: 'memory'; items: LItem[] }
+  | { type: 'speed'; pool: LItem[] }
+  | { type: 'scene'; items: LItem[]; ask: LItem[]; topic: { id: string; icon: string; en: string; fr: string } };
 
 const shuffle = <T,>(xs: T[]) => {
   const a = [...xs];
@@ -38,15 +43,59 @@ function blank(sentence: string, word: string) {
   return { text: sentence.replace(re, '$1___'), answer: sentence.match(re)![2] };
 }
 
-function wordSteps(course: Course, items: LItem[], pool: LItem[]): FullStep[] {
-  const steps: FullStep[] = [];
-  for (const it of items) {
-    steps.push({ type: 'learn', item: it });
-    steps.push({ type: 'pick', item: it, ask: 'meaning', options: shuffle([it, ...pickOthers(pool, it, 3)]) });
+/** Symbols that don't picture a thing: no picture games for these words. */
+const ABSTRACT = new Set(['💬', '👍', '👎', '✅', '❌', '❓', '❗', '➡️', '⬅️', '⬆️', '⬇️', '🔁', '🔢', '➕', '➖', '✔️', '💯', '🆗', '🔤', '📝']);
+/** Words that make good picture games: a concrete picture, not shared with another word of the set. */
+export function pictured(items: LItem[]) {
+  const count = new Map<string, number>();
+  for (const it of items) if (it.emoji) count.set(it.emoji, (count.get(it.emoji) ?? 0) + 1);
+  return items.filter((it) => it.emoji && !ABSTRACT.has(it.emoji) && count.get(it.emoji) === 1);
+}
+
+/** The broad kind of an activity, for variety. */
+const family = (s: FullStep) => (s.type === 'pick' ? `pick-${s.ask}` : s.type);
+/** Never more than 3 activities of the same kind in a row: pull a different one forward when a run gets long. */
+export function vary(steps: FullStep[]): FullStep[] {
+  const out = [...steps];
+  for (let i = 3; i < out.length; i++) {
+    const f = family(out[i]);
+    if (family(out[i - 1]) === f && family(out[i - 2]) === f && family(out[i - 3]) === f) {
+      const j = out.findIndex((s, k) => k > i && family(s) !== f && s.type !== 'learn');
+      if (j > 0) [out[i], out[j]] = [out[j], out[i]];
+    }
   }
-  for (const it of shuffle(items)) steps.push({ type: 'pick', item: it, ask: 'listen', options: shuffle([it, ...pickOthers(pool, it, 3)]) });
-  if (items.length >= 4) steps.push({ type: 'match', items: shuffle(items).slice(0, 5) });
-  return steps;
+  return out;
+}
+
+function wordSteps(course: Course, items: LItem[], pool: LItem[], extra: 'memory' | 'speed'): FullStep[] {
+  const pics = new Set(pictured(pool).map((p) => p.key ?? p.text));
+  const picPool = pool.filter((p) => pics.has(p.key ?? p.text));
+  const intro: FullStep[] = [];
+  items.forEach((it, k) => {
+    intro.push({ type: 'learn', item: it });
+    // A quick check right after each new word: from its picture when it has one, else its meaning.
+    if (pics.has(it.key ?? it.text) && k % 2 === 0) intro.push({ type: 'picture', item: it, options: shuffle([it, ...pickOthers(pool, it, 2)]) });
+    else intro.push({ type: 'pick', item: it, ask: 'meaning', options: shuffle([it, ...pickOthers(pool, it, 3)]) });
+  });
+  // Practice: each word once more, cycling listening, word → picture and meaning.
+  const practice: FullStep[] = shuffle(items).map((it, k) => {
+    const kind = k % 3;
+    if (kind === 1 && pics.has(it.key ?? it.text) && picPool.length >= 4) return { type: 'pictureOf', item: it, options: shuffle([it, ...pickOthers(picPool, it, 3)]) };
+    if (kind === 2) return { type: 'pick', item: it, ask: 'meaning', options: shuffle([it, ...pickOthers(pool, it, 3)]) };
+    return { type: 'pick', item: it, ask: 'listen', options: shuffle([it, ...pickOthers(pool, it, 3)]) };
+  });
+  const own = items.filter((i) => pics.has(i.key ?? i.text));
+  const games: FullStep[] = [];
+  if (extra === 'memory' && own.length >= 3) games.push({ type: 'memory', items: shuffle(own).slice(0, 4) });
+  else if (items.length >= 4) games.push({ type: 'match', items: shuffle(items).slice(0, 5) });
+  if (extra === 'speed' && picPool.length >= 4) games.push({ type: 'speed', pool: picPool });
+  return [...intro, ...vary(practice), ...games];
+}
+
+/** "Tap the thing in the scene": the topic's objects laid out on a backdrop. */
+function sceneStep(items: LItem[], topic: { id: string; icon: string; en: string; fr: string }): FullStep | null {
+  const own = shuffle(pictured(items)).slice(0, 6);
+  return own.length >= 4 ? { type: 'scene', items: own, ask: shuffle(own).slice(0, 4), topic } : null;
 }
 
 function contextSteps(items: LItem[], pool: LItem[]): FullStep[] {
@@ -87,20 +136,30 @@ export function buildLesson(course: Course, full: FullCourse | null, sections: S
     const pool = levelWords.length >= 8 ? levelWords : items;
     switch (lesson.kind) {
       case 'words1':
-        return wordSteps(course, items.slice(0, half), pool);
+        return wordSteps(course, items.slice(0, half), pool, 'memory');
       case 'words2':
-        return wordSteps(course, items.slice(half), pool);
-      case 'context':
-        return contextSteps(items, pool);
+        return wordSteps(course, items.slice(half), pool, 'speed');
+      case 'context': {
+        const scene = sceneStep(items, topic);
+        return [...(scene ? [scene] : []), ...vary(shuffle(contextSteps(items, pool)))];
+      }
       case 'speak':
         return speakSteps(items);
-      default:
-        return [
-          ...shuffle(items).slice(0, 4).map((it): FullStep => ({ type: 'pick', item: it, ask: 'meaning', options: shuffle([it, ...pickOthers(pool, it, 3)]) })),
-          ...shuffle(items).slice(0, 3).map((it): FullStep => ({ type: 'pick', item: it, ask: 'listen', options: shuffle([it, ...pickOthers(items, it, 3)]) })),
-          { type: 'match', items: shuffle(items).slice(0, 5) },
-          ...contextSteps(items, pool).slice(0, 3),
-        ];
+      default: {
+        const pics = pictured(items);
+        const mixed = vary(
+          shuffle([
+            ...shuffle(items).slice(0, 3).map((it): FullStep => ({ type: 'pick', item: it, ask: 'meaning', options: shuffle([it, ...pickOthers(pool, it, 3)]) })),
+            ...shuffle(items).slice(0, 3).map((it): FullStep => ({ type: 'pick', item: it, ask: 'listen', options: shuffle([it, ...pickOthers(items, it, 3)]) })),
+            ...shuffle(pics).slice(0, 2).map((it): FullStep => ({ type: 'picture', item: it, options: shuffle([it, ...pickOthers(pool, it, 2)]) })),
+            ...shuffle(contextSteps(items, pool)).slice(0, 3),
+          ]),
+        );
+        const games: FullStep[] = pics.length >= 3 ? [{ type: 'memory', items: shuffle(pics).slice(0, 4) }] : [{ type: 'match', items: shuffle(items).slice(0, 5) }];
+        const picPool = pictured(pool);
+        if (picPool.length >= 4) games.push({ type: 'speed', pool: picPool });
+        return [...mixed.slice(0, 4), games[0], ...mixed.slice(4), ...games.slice(1)];
+      }
     }
   }
   if (unit.grammar) {
@@ -117,12 +176,13 @@ export function buildLesson(course: Course, full: FullCourse | null, sections: S
     // A dozen questions across the level: meanings, listening, gaps and grammar.
     const pool = levelWords;
     const grammar = (sections.find((s) => s.id === unit.section)?.units ?? []).flatMap((u) => (u.grammar ? u.grammar.drills : []));
-    return [
+    return vary(shuffle([
       ...shuffle(pool).slice(0, 5).map((it): FullStep => ({ type: 'pick', item: it, ask: 'meaning', options: shuffle([it, ...pickOthers(pool, it, 3)]) })),
       ...shuffle(pool).slice(0, 3).map((it): FullStep => ({ type: 'pick', item: it, ask: 'listen', options: shuffle([it, ...pickOthers(pool, it, 3)]) })),
       ...contextSteps(shuffle(pool).slice(0, 6), pool).filter((s) => s.type === 'gap').slice(0, 2),
       ...shuffle(grammar).slice(0, 3).map((d): FullStep => ({ type: 'gap', text: d.text, answer: d.answer, options: shuffle([d.answer, ...d.wrong]), en: d.en, fr: d.fr })),
-    ];
+      ...shuffle(pictured(pool)).slice(0, 2).map((it): FullStep => ({ type: 'pictureOf', item: it, options: shuffle([it, ...pickOthers(pictured(pool), it, 3)]) })),
+    ]));
   }
   return [];
 }

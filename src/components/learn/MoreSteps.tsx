@@ -2,6 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
+import { castOf, SceneBanner } from '@/components/learn/Cast';
+import { MemoryStep, PictureOfStep, PictureStep, SceneStep, SpeedStep } from '@/components/learn/Games';
+import { Pic } from '@/components/learn/Pic';
 import type { Course, LItem } from '@/data/learn/courses';
 import { sfx } from '@/lib/brain/sfx';
 import type { FullStep } from '@/lib/learn/lessons';
@@ -38,6 +41,16 @@ export function MoreStep({ step, course, lang, locked, onGrade, onNext }: Props)
       return <DialogueStep step={step} course={course} fr={fr} locked={locked} onGrade={onGrade} />;
     case 'story':
       return <StoryStep step={step} course={course} fr={fr} onNext={onNext} />;
+    case 'picture':
+      return <PictureStep step={step} course={course} fr={fr} locked={locked} onGrade={onGrade} />;
+    case 'pictureOf':
+      return <PictureOfStep step={step} course={course} fr={fr} locked={locked} onGrade={onGrade} />;
+    case 'memory':
+      return <MemoryStep step={step} course={course} fr={fr} locked={locked} onGrade={onGrade} />;
+    case 'speed':
+      return <SpeedStep step={step} course={course} fr={fr} locked={locked} onGrade={onGrade} />;
+    case 'scene':
+      return <SceneStep step={step} course={course} fr={fr} locked={locked} onGrade={onGrade} />;
     case 'question':
       return <Choice prompt={fr ? step.prompt.fr : step.prompt.en} options={step.options} answer={step.answer} course={course} locked={locked} onGrade={onGrade} />;
     default:
@@ -238,6 +251,7 @@ function DialogueStep({ step, course, fr, locked, onGrade }: { step: Extract<Ful
   const [mistakes, setMistakes] = useState(0);
   const [wrongPick, setWrongPick] = useState<string | null>(null);
   const line = lines[n];
+  const partner = castOf(course, step.dialogue.id)[0];
   const options = useMemo(() => (line && line.who === 'B' ? mix([line.text, ...(line.wrong ?? [])]) : []), [line]);
   // Partner lines are spoken, then the conversation moves on.
   useEffect(() => {
@@ -255,19 +269,32 @@ function DialogueStep({ step, course, fr, locked, onGrade }: { step: Extract<Ful
   }, [n]);
   return (
     <View style={styles.dialogue}>
-      <Text style={[styles.kicker, { color: course.color }]}>
-        {step.dialogue.icon} {fr ? step.dialogue.fr : step.dialogue.en}
-      </Text>
-      {lines.slice(0, n).map((l, i) => (
-        <Animated.View key={i} entering={FadeInDown.duration(220)} style={[styles.bubble, l.who === 'B' ? [styles.me, { backgroundColor: `${course.color}33` }] : styles.them]}>
-          <Text style={styles.bubbleText}>{l.text}</Text>
-          <Text style={styles.sub}>{fr ? l.fr : l.en}</Text>
-        </Animated.View>
-      ))}
+      <SceneBanner course={course} id={step.dialogue.id} icon={step.dialogue.icon} title={fr ? step.dialogue.fr : step.dialogue.en} fr={fr} />
+      {lines.slice(0, n).map((l, i) =>
+        l.who === 'B' ? (
+          <Animated.View key={i} entering={FadeInDown.duration(220)} style={[styles.bubble, styles.me, { backgroundColor: `${course.color}33` }]}>
+            <Text style={styles.bubbleText}>{l.text}</Text>
+            <Text style={styles.sub}>{fr ? l.fr : l.en}</Text>
+          </Animated.View>
+        ) : (
+          <Animated.View key={i} entering={FadeInDown.duration(220)} style={styles.themRow}>
+            <Pic emoji={partner?.emoji ?? '🙂'} size={34} />
+            <View style={[styles.bubble, styles.them]}>
+              {!!partner && <Text style={[styles.who, { color: course.color }]}>{partner.name}</Text>}
+              <Text style={styles.bubbleText}>{l.text}</Text>
+              <Text style={styles.sub}>{fr ? l.fr : l.en}</Text>
+            </View>
+          </Animated.View>
+        ),
+      )}
       {line && line.who === 'A' && (
-        <Animated.View entering={FadeIn} style={[styles.bubble, styles.them]}>
-          <Text style={styles.bubbleText}>{line.text}</Text>
-          <Text style={styles.sub}>{fr ? line.fr : line.en}</Text>
+        <Animated.View entering={FadeIn} style={styles.themRow}>
+          <Pic emoji={partner?.emoji ?? '🙂'} size={34} />
+          <View style={[styles.bubble, styles.them]}>
+            {!!partner && <Text style={[styles.who, { color: course.color }]}>{partner.name}</Text>}
+            <Text style={styles.bubbleText}>{line.text}</Text>
+            <Text style={styles.sub}>{fr ? line.fr : line.en}</Text>
+          </View>
         </Animated.View>
       )}
       {line && line.who === 'B' && (
@@ -313,9 +340,7 @@ function StoryStep({ step, course, fr, onNext }: { step: Extract<FullStep, { typ
   };
   return (
     <View style={styles.storyWrap}>
-      <Text style={[styles.kicker, { color: course.color }]}>
-        {s.icon} {fr ? s.fr : s.en}
-      </Text>
+      <SceneBanner course={course} id={s.id} icon={s.icon} title={fr ? s.fr : s.en} fr={fr} />
       {s.sentences.slice(0, n).map(([text, en, frx], i) => (
         <Animated.View key={i} entering={FadeInDown.duration(240)} style={styles.storyLine}>
           <Text style={styles.storyText}>
@@ -384,7 +409,9 @@ const styles = StyleSheet.create({
   input: { alignSelf: 'stretch', minHeight: 54, borderWidth: 2, borderRadius: 14, paddingHorizontal: 16, fontSize: 20, color: colors.text, backgroundColor: colors.surface },
   dialogue: { gap: 10, alignSelf: 'stretch' },
   bubble: { maxWidth: '86%', borderRadius: 18, padding: 12, gap: 2 },
-  them: { alignSelf: 'flex-start', backgroundColor: colors.surface },
+  them: { backgroundColor: colors.surface, flexShrink: 1 },
+  themRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-end', alignSelf: 'flex-start', maxWidth: '92%' },
+  who: { fontSize: 11, fontWeight: '900', letterSpacing: 0.5 },
   me: { alignSelf: 'flex-end' },
   bubbleText: { color: colors.text, fontSize: 17, fontWeight: '700' },
   storyWrap: { gap: 12, alignSelf: 'stretch' },

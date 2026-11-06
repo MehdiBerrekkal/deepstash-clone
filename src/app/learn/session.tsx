@@ -7,6 +7,7 @@ import Svg, { Path } from 'react-native-svg';
 
 import { HANGUL_STROKES } from '@/data/learn/hangul-strokes';
 import { courseById, type Course, type LItem } from '@/data/learn/courses';
+import { Pic, hasPic, prefetchPics } from '@/components/learn/Pic';
 import { StrokePad } from '@/components/learn/StrokePad';
 import { usePalette } from '@/lib/appearance';
 import { sfx } from '@/lib/brain/sfx';
@@ -85,6 +86,11 @@ function Runner({ course, full, unitId, lessonId }: { course: Course; full: Full
     started.current = now();
   }, []);
   const retried = useRef(new Set<FullStep>());
+  useEffect(() => {
+    prefetchPics(steps.flatMap((s) => ('item' in s && s.item ? [s.item.emoji] : 'items' in s ? s.items.map((x) => x.emoji) : 'pool' in s ? s.pool.map((x) => x.emoji) : [])));
+    // Once per lesson.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const step = steps[i];
   const keyOf = (item: LItem) => item.key ?? itemKey(course, pu?.basic ?? course.units.find((u) => u.items.includes(item)) ?? course.units[0], item);
@@ -124,7 +130,10 @@ function Runner({ course, full, unitId, lessonId }: { course: Course; full: Full
       const stars = graded.total ? (graded.right / graded.total >= 0.9 ? 3 : graded.right / graded.total >= 0.7 ? 2 : 1) : 3;
       recordLearn({ unit: doneKey, stars, xp: xp + 20, seconds: Math.round((now() - started.current) / 1000), items: results });
       sfx.levelUp();
-      if (stars === 3) celebrate({ emoji: '🌟', title: lang === 'fr' ? 'Parfait !' : 'Perfect!', subtitle: pu ? pu.can[lang] : '' });
+      const nextLevel = pu?.type === 'checkpoint' ? sections[sections.findIndex((s) => s.id === pu.section) + 1] : undefined;
+      if (pu?.type === 'checkpoint' && stars >= 2) celebrate({ emoji: '🏆', title: lang === 'fr' ? 'Niveau supérieur !' : 'Level up!', subtitle: nextLevel ? nextLevel.title[lang] : pu.can[lang] });
+      else if (stars === 3) celebrate({ emoji: '🌟', title: lang === 'fr' ? 'Parfait !' : 'Perfect!', subtitle: pu ? pu.can[lang] : '' });
+      else if (pu && pu.lessons.every((l) => l.id === lesson?.id || learn?.units[lessonKey(course, pu, l)])) celebrate({ emoji: pu.icon, title: lang === 'fr' ? 'Unité terminée !' : 'Unit complete!', subtitle: pu.can[lang] });
       setDone(true);
     } else setI(i + 1);
   };
@@ -248,13 +257,20 @@ function LearnStep({ item, course, lang, meaning, onNext }: { item: LItem; cours
           <StrokePad glyph={glyph} mode="watch" size={Math.min(260, width - 80)} ink={p.text} accent={course.color} faint={p.border} onDone={() => setWatched(true)} />
         </View>
       ) : (
-        <Text style={[styles.showText, item.text.length > 6 && { fontSize: 38 }]}>{item.text}</Text>
+        <>
+          {item.key && hasPic(item.emoji) && (
+            <Animated.View entering={ZoomIn.springify().damping(11)} style={[styles.newPic, { shadowColor: course.color }]}>
+              <Pic emoji={item.emoji} size={140} />
+            </Animated.View>
+          )}
+          <Text style={[styles.showText, item.text.length > 6 && { fontSize: 38 }]}>{item.text}</Text>
+        </>
       )}
       {glyph && <Text style={styles.showSmall}>{item.text}</Text>}
       {!!item.roman && <Text style={[styles.roman, { color: course.color }]}>{item.roman}</Text>}
       {isWord && (
         <Text style={styles.meaning}>
-          {item.emoji ? `${item.emoji}  ` : ''}
+          {item.emoji && !(item.key && hasPic(item.emoji)) ? `${item.emoji}  ` : ''}
           {meaning(item)}
         </Text>
       )}
@@ -590,9 +606,24 @@ function Finish({ course, sections, unit, lesson, xp, right, total, lang }: { co
   return (
     <ScrollView style={styles.container} contentContainerStyle={[styles.body, styles.center]}>
       <Stack.Screen options={{ title: course.name[lang] }} />
-      <Animated.Text entering={ZoomIn.springify().damping(9)} style={styles.big}>
-        {unit?.type === 'checkpoint' && !failedCheck ? '🏁' : course.flag}
-      </Animated.Text>
+      {unit?.type === 'checkpoint' && !failedCheck ? (
+        <View style={styles.levelUp}>
+          <Animated.View entering={ZoomIn.springify().damping(8)}>
+            <Pic emoji="🏆" size={120} />
+          </Animated.View>
+          <View style={styles.levelRow}>
+            <Text style={[styles.levelChip, { borderColor: course.color, color: course.color }]}>{unit.section}</Text>
+            <Text style={styles.levelArrow}>→</Text>
+            <Animated.Text entering={ZoomIn.delay(450).springify().damping(7)} style={[styles.levelChip, styles.levelNew, { backgroundColor: course.color }]}>
+              {sections[sections.findIndex((s) => s.id === unit.section) + 1]?.level ?? '★'}
+            </Animated.Text>
+          </View>
+        </View>
+      ) : (
+        <Animated.Text entering={ZoomIn.springify().damping(9)} style={styles.big}>
+          {course.flag}
+        </Animated.Text>
+      )}
       <Text style={styles.title}>{failedCheck ? (lang === 'fr' ? 'Presque !' : 'Almost there') : unit?.type === 'checkpoint' ? (lang === 'fr' ? 'Niveau validé' : 'Level passed') : lang === 'fr' ? 'Leçon terminée' : 'Lesson complete'}</Text>
       <Animated.Text entering={ZoomIn.delay(300).springify()} style={[styles.stars, { color: course.color }]}>
         {'★'.repeat(stars)}
@@ -635,6 +666,12 @@ function Finish({ course, sections, unit, lesson, xp, right, total, lang }: { co
 }
 
 const styles = StyleSheet.create({
+  levelUp: { alignItems: 'center', gap: 12 },
+  levelRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  levelChip: { fontSize: 22, fontWeight: '900', paddingHorizontal: 14, paddingVertical: 6, borderRadius: 12, borderWidth: 2, overflow: 'hidden' },
+  levelNew: { color: '#0B0D14', borderColor: 'transparent', fontSize: 28 },
+  levelArrow: { color: colors.muted, fontSize: 24, fontWeight: '900' },
+  newPic: { width: 170, height: 170, borderRadius: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface, shadowOpacity: 0.35, shadowRadius: 24, shadowOffset: { width: 0, height: 10 } },
   container: { flex: 1, backgroundColor: colors.background },
   body: { padding: 16, paddingBottom: 220, maxWidth: 560, width: '100%', alignSelf: 'center' },
   stepWrap: { gap: 14 },
