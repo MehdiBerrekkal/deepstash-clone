@@ -215,6 +215,15 @@ export default function ProfileScreen() {
         ))}
       </View>
 
+      <Pressable accessibilityLabel="Stashes" onPress={() => router.push('/stashes')} style={styles.card}>
+        <CardHeading icon="bookmark" title={t('Stashes')} link="Open" />
+        <Text style={styles.muted}>
+          {stashed
+            ? `${stashed} ${stashed === 1 ? 'idea' : 'ideas'} saved in ${stashes.length} ${stashes.length === 1 ? 'stash' : 'stashes'}.`
+            : 'Tap Stash on any card to save it here, in collections you name.'}
+        </Text>
+      </Pressable>
+
       <Pressable accessibilityLabel="Review" onPress={() => router.push('/review')} style={styles.card}>
         <CardHeading icon="brain" title={t('Smart review')} link={reviewQueue.length ? `${reviewQueue.length} due` : 'Open'} />
         <Text style={styles.muted}>

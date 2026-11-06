@@ -17,7 +17,8 @@ import { useT } from '@/lib/i18n';
 export default function FeedScreen() {
   const [kind, setKind] = useState<CardKind | null>(null);
   const feed = useFeed(kind);
-  const { streak, markRead, readingLog, minuteGoal, reviewQueue, setNotInterested } = useStore();
+  const { streak, markRead, readingLog, minuteGoal, reviewQueue, setNotInterested, stashes } = useStore();
+  const stashedCount = new Set(stashes.flatMap((s) => s.ideaIds)).size;
   const t = useT();
   const [undo, setUndo] = useState<string | null>(null);
   const continueBook = useContinueReading();
@@ -36,6 +37,15 @@ export default function FeedScreen() {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
+        <View style={styles.headerRow}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Your stashes, ${stashedCount} ideas`}
+          onPress={() => router.push('/stashes')}
+          hitSlop={8}
+          style={styles.headerStash}>
+          <Icon name={stashedCount ? 'bookmarkFull' : 'bookmark'} size={21} color={colors.accent} strokeWidth={2} />
+        </Pressable>
         <Pressable
           accessibilityLabel={`${minutes} of ${minuteGoal} minutes read today. Open your stats.`}
           onPress={() => router.push('/profile')}
@@ -47,9 +57,10 @@ export default function FeedScreen() {
             <Text style={styles.streak}>{streak.count}</Text>
           </View>
         </Pressable>
+        </View>
       ),
     });
-  }, [navigation, streak.count, minutes, minuteGoal, t]);
+  }, [navigation, streak.count, minutes, minuteGoal, t, stashedCount]);
 
   // FlatList doesn't allow this callback to change after mount; markRead is stable.
   const [onViewable] = useState(() => ({ viewableItems }: { viewableItems: ListViewToken[] }) => {
@@ -115,6 +126,8 @@ export default function FeedScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   list: { flex: 1 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  headerStash: { padding: 2 },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 12, marginRight: 16 },
   goal: { color: colors.muted, fontSize: 13, fontWeight: '600' },
   streakRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },

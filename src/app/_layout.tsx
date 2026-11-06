@@ -20,6 +20,7 @@ const SCREENS: { name: string; options: { title?: string; headerShown?: boolean;
   { name: 'welcome', options: { headerShown: false } },
   { name: 'onboarding', options: { headerShown: false } },
   { name: 'idea/[id]', options: { title: 'Card', presentation: 'modal' } },
+  { name: 'stashes', options: { title: 'Stashes' } },
   { name: 'stash/[id]', options: { title: 'Stash' } },
   { name: 'book/[id]', options: { title: '' } },
   { name: 'read/[id]', options: { title: 'Reading' } },

@@ -59,7 +59,6 @@ export default function TabsLayout() {
       <Tabs.Screen name="explore" options={{ title: t('Explore'), tabBarIcon: icon('explore', colors.accent) }} />
       <Tabs.Screen name="learn" options={{ title: t('Learn'), tabBarIcon: icon('learn', colors.accent) }} />
       <Tabs.Screen name="brain" options={{ title: t('Brain'), tabBarIcon: icon('brain', colors.accent) }} />
-      <Tabs.Screen name="stashes" options={{ title: t('Stashes'), tabBarIcon: icon('stashes', colors.accent) }} />
       <Tabs.Screen name="profile" options={{ title: t('You'), tabBarIcon: icon('you', colors.accent) }} />
     </Tabs>
   );
