@@ -6,6 +6,8 @@ import { MORE_COURSES } from '@/data/learn/courses2';
  */
 
 export type LItem = {
+  /** Progress key for words of full courses (course:topic:word). */
+  key?: string;
   /** What's shown: a letter, a character, a word or a phrase. */
   text: string;
   /** Romanization or pronunciation help. */
@@ -22,6 +24,10 @@ export type LItem = {
   tone?: number;
   /** Spelling games: plausible wrong spellings (otherwise they're made by moving accents). */
   wrong?: string[];
+  /** An example sentence using it, with translations. */
+  ex?: string;
+  exEn?: string;
+  exFr?: string;
 };
 
 export type UnitKind = 'script' | 'words' | 'phrases' | 'blocks' | 'tones' | 'accents';

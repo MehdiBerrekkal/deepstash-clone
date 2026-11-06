@@ -5,6 +5,8 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { COURSES, courseById } from '@/data/learn/courses';
 import { useUiLang } from '@/lib/i18n';
+import { lessonKey } from '@/lib/learn/plan';
+import { useCoursePath } from '@/lib/learn/useCourse';
 import { localDate, useStore } from '@/lib/store';
 import { colors, serif } from '@/lib/theme';
 
@@ -22,17 +24,17 @@ export default function LearnScreen() {
   const items = Object.entries(learn?.items ?? {}).filter(([k]) => k.startsWith(`${course.id}:`));
   const learned = items.filter(([, v]) => v.level >= 1).length;
   const due = items.filter(([, v]) => isDue(v.due)).length;
-  const nextUnit = course.units.find((u) => !units[u.id]) ?? course.units[course.units.length - 1];
-  // A unit opens once the one before it is done (the first two are always open).
-  const open = (i: number) => i < 2 || !!units[course.units[i - 1].id];
-  const start = (unitId?: string) => router.push({ pathname: '/learn/session', params: { course: course.id, ...(unitId ? { unit: unitId } : {}) } });
+  const path = useCoursePath(course);
+  const next = path.next ?? (path.flat[0] ? { unit: path.flat[0].unit, lesson: path.flat[0].lesson } : null);
+  const start = (unitId?: string, lessonId?: string) => router.push({ pathname: '/learn/session', params: { course: course.id, ...(unitId ? { unit: unitId } : {}), ...(lessonId ? { lesson: lessonId } : {}) } });
+  const openMap = () => router.push({ pathname: '/learn/course', params: { course: course.id } });
   const week = Array.from({ length: 7 }, (_, k) => {
     const d = daysAgo(6 - k);
     const key = localDate(d);
     return { label: d.toLocaleDateString(fr ? 'fr' : 'en', { weekday: 'narrow' }), xp: learn?.days?.[key] ?? 0 };
   });
   const maxXp = Math.max(30, ...week.map((d) => d.xp));
-  const cans = course.units.filter((u) => units[u.id]).map((u) => u.can[lang]);
+  const cans = path.sections.flatMap((s) => s.units).filter((u) => u.lessons.every((l) => units[lessonKey(course, u, l)])).map((u) => u.can[lang]).slice(-8);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
@@ -40,7 +42,10 @@ export default function LearnScreen() {
         <LinearGradient colors={[`${course.color}55`, '#141A3A', '#0B0E1C']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.hero}>
           <View style={styles.rowBetween}>
             <Text style={styles.heroKicker}>{fr ? 'APPRENDRE UNE LANGUE' : 'LEARN A LANGUAGE'}</Text>
-            <Text style={styles.heroMeta}>🔥 {streak.count}</Text>
+            <View style={styles.badges}>
+              {!!path.level && <Text style={[styles.level, { backgroundColor: course.color }]}>{path.level}</Text>}
+              <Text style={styles.heroMeta}>🔥 {streak.count}</Text>
+            </View>
           </View>
           <Text style={styles.heroFlag}>{course.flag}</Text>
           <Text style={styles.heroTitle}>
@@ -48,16 +53,29 @@ export default function LearnScreen() {
           </Text>
           <View style={styles.heroStats}>
             <Text style={styles.heroStat}>⭐ {learn?.xp ?? 0} XP</Text>
-            <Text style={styles.heroStat}>📚 {learned} {fr ? 'acquis' : 'learned'}</Text>
+            <Text style={styles.heroStat}>📚 {learned} {fr ? 'mots et signes acquis' : 'words & signs known'}</Text>
             <Text style={styles.heroStat}>
-              ✅ {course.units.filter((u) => units[u.id]).length}/{course.units.length} {fr ? 'unités' : 'units'}
+              ✅ {path.doneCount}/{path.flat.length} {fr ? 'leçons' : 'lessons'}
             </Text>
           </View>
-          <Pressable accessibilityLabel="Continue learning" onPress={() => start(nextUnit.id)} style={[styles.heroBtn, { backgroundColor: course.color }]}>
-            <Text style={styles.heroBtnText}>
-              {nextUnit.icon} {units[nextUnit.id] ? (fr ? 'Rejouer' : 'Play again') : fr ? 'Continuer' : 'Continue'} · {nextUnit.title[lang]}
-            </Text>
-          </Pressable>
+          {next && (
+            <Pressable accessibilityLabel="Continue learning" onPress={() => start(next.unit.id, next.lesson.id)} style={[styles.heroBtn, { backgroundColor: course.color }]}>
+              <Text style={styles.heroBtnText} numberOfLines={1}>
+                {next.unit.icon} {fr ? 'Continuer' : 'Continue'} · {next.unit.title[lang]}
+                {next.unit.lessons.length > 1 ? ` · ${next.lesson.title[lang]}` : ''}
+              </Text>
+            </Pressable>
+          )}
+          <View style={styles.heroLinks}>
+            <Pressable accessibilityLabel="Course map" onPress={openMap} style={styles.heroLink}>
+              <Text style={styles.heroLinkText}>🗺 {fr ? 'Plan du cours' : 'Course map'}</Text>
+            </Pressable>
+            {!!path.full && (
+              <Pressable accessibilityLabel="Word bank" onPress={() => router.push({ pathname: '/learn/words', params: { course: course.id } })} style={styles.heroLink}>
+                <Text style={styles.heroLinkText}>📒 {fr ? 'Mes mots' : 'Word bank'}</Text>
+              </Pressable>
+            )}
+          </View>
         </LinearGradient>
       </Animated.View>
 
@@ -90,27 +108,31 @@ export default function LearnScreen() {
 
       <Text style={styles.section}>{fr ? 'Votre parcours' : 'Your path'}</Text>
       <View style={styles.path}>
-        {course.units.map((u, i) => {
-          const res = units[u.id];
-          const unlocked = open(i);
+        {path.sections.map((sec, i) => {
+          const keys = sec.units.flatMap((u) => u.lessons.map((l) => lessonKey(course, u, l)));
+          const n = keys.filter((k) => units[k]).length;
+          const unlocked = path.open[i];
           return (
-            <Animated.View key={u.id} entering={FadeInDown.delay(i * 30).duration(300)}>
-              <Pressable accessibilityLabel={`Unit ${u.title.en}`} disabled={!unlocked} onPress={() => start(u.id)} style={[styles.unit, !unlocked && { opacity: 0.45 }, u.id === nextUnit.id && { borderColor: course.color }]}>
-                <View style={[styles.unitIcon, { backgroundColor: res ? course.color : colors.surfaceRaised }]}>
-                  <Text style={[styles.unitIconText, res && { color: '#0B0D14' }]}>{unlocked ? u.icon : '🔒'}</Text>
+            <Animated.View key={sec.id} entering={FadeInDown.delay(i * 40).duration(300)}>
+              <Pressable accessibilityLabel={`Section ${sec.title.en}`} onPress={openMap} style={[styles.unit, !unlocked && { opacity: 0.5 }, next?.unit.section === sec.id && { borderColor: course.color }]}>
+                <View style={[styles.unitIcon, { backgroundColor: n === keys.length && n > 0 ? course.color : colors.surfaceRaised }]}>
+                  <Text style={styles.unitIconText}>{unlocked ? (sec.level ?? '🔤') : '🔒'}</Text>
                 </View>
                 <View style={styles.flex}>
-                  <Text style={styles.unitTitle}>{u.title[lang]}</Text>
-                  <Text style={styles.muted} numberOfLines={1}>
-                    {u.kind === 'script' && u.script !== undefined ? '✍️ ' : u.kind === 'blocks' ? '🧱 ' : u.kind === 'tones' ? '🎵 ' : u.kind === 'phrases' ? '💬 ' : '🗂 '}
-                    {u.can[lang]}
+                  <Text style={styles.unitTitle}>{sec.title[lang]}</Text>
+                  <Text style={styles.muted}>
+                    {sec.units.length} {fr ? 'unités' : 'units'} · {n}/{keys.length} {fr ? 'leçons' : 'lessons'}
                   </Text>
+                  <View style={styles.miniTrack}>
+                    <View style={[styles.miniFill, { width: `${(n / Math.max(1, keys.length)) * 100}%`, backgroundColor: course.color }]} />
+                  </View>
                 </View>
-                <Text style={[styles.unitStars, { color: course.color }]}>{res ? '★'.repeat(res.stars) + '☆'.repeat(3 - res.stars) : ''}</Text>
+                <Text style={[styles.chev, { color: course.color }]}>›</Text>
               </Pressable>
             </Animated.View>
           );
         })}
+        {path.ready && !path.full && <Text style={styles.muted}>{fr ? 'Niveaux A1 → B1 bientôt disponibles pour ce cours.' : 'Levels A1 → B1 coming soon for this course.'}</Text>}
       </View>
 
       <View style={styles.card}>
@@ -158,6 +180,13 @@ const styles = StyleSheet.create({
   heroStat: { color: '#D5D9F0', fontWeight: '800', fontSize: 13 },
   heroBtn: { marginTop: 8, minHeight: 52, borderRadius: 16, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14 },
   heroBtnText: { color: '#0B0D14', fontWeight: '900', fontSize: 15 },
+  heroLinks: { flexDirection: 'row', gap: 8 },
+  heroLink: { flex: 1, minHeight: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.1)' },
+  heroLinkText: { color: '#F2F4FF', fontWeight: '800', fontSize: 14 },
+  badges: { flexDirection: 'row', gap: 10, alignItems: 'center' },
+  level: { color: '#0B0D14', fontWeight: '900', fontSize: 12, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, overflow: 'hidden' },
+  miniTrack: { height: 5, borderRadius: 3, backgroundColor: colors.surfaceRaised, overflow: 'hidden', marginTop: 4 },
+  miniFill: { height: 5, borderRadius: 3 },
   courses: { gap: 8, paddingVertical: 2 },
   courseChip: { width: 92, paddingVertical: 10, borderRadius: 16, borderWidth: 2, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center', gap: 2 },
   courseFlag: { fontSize: 26 },

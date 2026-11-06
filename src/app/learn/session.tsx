@@ -1,19 +1,24 @@
 import * as Speech from 'expo-speech';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Animated, { FadeIn, FadeInDown, ZoomIn } from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
 
 import { HANGUL_STROKES } from '@/data/learn/hangul-strokes';
-import { courseById, type Course, type LItem, type Unit } from '@/data/learn/courses';
+import { courseById, type Course, type LItem } from '@/data/learn/courses';
 import { StrokePad } from '@/components/learn/StrokePad';
 import { usePalette } from '@/lib/appearance';
 import { sfx } from '@/lib/brain/sfx';
 import { celebrate } from '@/lib/celebrate';
 import { haptic } from '@/lib/haptics';
 import { useUiLang } from '@/lib/i18n';
-import { buildReview, buildSession, itemKey, type Step } from '@/lib/learn/session';
+import type { FullCourse } from '@/data/learn/full';
+import { MoreStep } from '@/components/learn/MoreSteps';
+import { loadFull } from '@/lib/learn/fullCourses';
+import { buildFullReview, buildLesson, type FullStep } from '@/lib/learn/lessons';
+import { buildPlan, flatLessons, lessonKey, sectionOpen, type Lesson, type PlanUnit, type Section } from '@/lib/learn/plan';
+import { itemKey, type Step } from '@/lib/learn/session';
 import { loadGlyph, type Glyph } from '@/lib/learn/strokes';
 import { useStore } from '@/lib/store';
 import { colors } from '@/lib/theme';
@@ -30,21 +35,43 @@ const INITIALS = 'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ';
 const MEDIALS = 'ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ';
 const compose = (c: string, v: string) => String.fromCharCode(0xac00 + (INITIALS.indexOf(c) * 21 + MEDIALS.indexOf(v)) * 28);
 
-/** A short lesson: varied mini-games, instant feedback, mistakes come back at the end, then the results. */
+/** Loads the course's full content (if any), then runs the lesson. */
 export default function SessionScreen() {
-  const { course: courseId, unit: unitId } = useLocalSearchParams<{ course: string; unit?: string }>();
-  const course = courseById[courseId];
-  const unit = course?.units.find((u) => u.id === unitId);
+  const params = useLocalSearchParams<{ course: string; unit?: string; lesson?: string; t?: string }>();
+  const course = courseById[params.course];
+  const [full, setFull] = useState<FullCourse | null | undefined>(undefined);
+  useEffect(() => {
+    let live = true;
+    if (course) void loadFull(course.id).then((f) => live && setFull(f));
+    return () => {
+      live = false;
+    };
+  }, [course]);
+  if (!course) return null;
+  if (full === undefined)
+    return (
+      <View style={[styles.container, styles.center, { justifyContent: 'center' }]}>
+        <ActivityIndicator color={course.color} />
+      </View>
+    );
+  return <Runner key={`${params.unit}:${params.lesson}:${params.t}`} course={course} full={full} unitId={params.unit} lessonId={params.lesson} />;
+}
+
+/** A short lesson: varied activities, instant feedback, mistakes come back once at the end, then the results. */
+function Runner({ course, full, unitId, lessonId }: { course: Course; full: FullCourse | null; unitId?: string; lessonId?: string }) {
   const { learn, recordLearn } = useStore();
   const lang = useUiLang();
-  const [steps, setSteps] = useState<Step[]>(() => {
-    if (!course) return [];
-    if (unit) return buildSession(course, unit, (learn?.units[unit.id]?.stars ?? 0) > 0);
+  const sections = useMemo(() => buildPlan(course, full), [course, full]);
+  const pu = unitId ? sections.flatMap((s) => s.units).find((u) => u.id === unitId) : undefined;
+  const lesson = pu ? (pu.lessons.find((l) => l.id === lessonId) ?? pu.lessons[0]) : undefined;
+  const doneKey = pu && lesson ? lessonKey(course, pu, lesson) : undefined;
+  const [steps, setSteps] = useState<FullStep[]>(() => {
+    if (pu && lesson) return buildLesson(course, full, sections, pu, lesson, (learn?.units[lessonKey(course, pu, lesson)]?.stars ?? 0) > 0);
     const due = Object.entries(learn?.items ?? {})
       .filter(([k, v]) => k.startsWith(`${course.id}:`) && new Date(v.due).getTime() <= now())
       .sort((a, b) => a[1].level - b[1].level)
       .map(([k]) => k);
-    return buildReview(course, due);
+    return buildFullReview(course, full, due);
   });
   const [i, setI] = useState(0);
   const [answer, setAnswer] = useState<null | { ok: boolean; right: string }>(null);
@@ -57,12 +84,12 @@ export default function SessionScreen() {
   useEffect(() => {
     started.current = now();
   }, []);
-  const retried = useRef(new Set<Step>());
+  const retried = useRef(new Set<FullStep>());
 
-  if (!course) return null;
   const step = steps[i];
-  const unitOf = (item: LItem) => unit ?? course.units.find((u) => u.items.includes(item))!;
+  const keyOf = (item: LItem) => item.key ?? itemKey(course, pu?.basic ?? course.units.find((u) => u.items.includes(item)) ?? course.units[0], item);
   const meaning = (it: LItem) => (lang === 'fr' ? it.fr : it.en);
+  const title = pu ? (pu.lessons.length > 1 && lesson ? `${pu.title[lang]} · ${lesson.title[lang]}` : pu.title[lang]) : lang === 'fr' ? 'Révision' : 'Review';
 
   const grade = (ok: boolean, right: string) => {
     const item = 'item' in step ? step.item : null;
@@ -85,7 +112,7 @@ export default function SessionScreen() {
       }
     }
     if (item) {
-      const key = itemKey(course, unitOf(item), item);
+      const key = keyOf(item);
       setResults((r) => ({ ...r, [key]: (r[key] ?? true) && ok }));
     }
     setGraded((g) => ({ right: g.right + (ok ? 1 : 0), total: g.total + 1 }));
@@ -95,9 +122,9 @@ export default function SessionScreen() {
     setAnswer(null);
     if (i + 1 >= steps.length) {
       const stars = graded.total ? (graded.right / graded.total >= 0.9 ? 3 : graded.right / graded.total >= 0.7 ? 2 : 1) : 3;
-      recordLearn({ unit: unit?.id, stars, xp: xp + 20, seconds: Math.round((now() - started.current) / 1000), items: results });
+      recordLearn({ unit: doneKey, stars, xp: xp + 20, seconds: Math.round((now() - started.current) / 1000), items: results });
       sfx.levelUp();
-      if (stars === 3) celebrate({ emoji: '🌟', title: lang === 'fr' ? 'Parfait !' : 'Perfect!', subtitle: unit ? (lang === 'fr' ? unit.can.fr : unit.can.en) : '' });
+      if (stars === 3) celebrate({ emoji: '🌟', title: lang === 'fr' ? 'Parfait !' : 'Perfect!', subtitle: pu ? pu.can[lang] : '' });
       setDone(true);
     } else setI(i + 1);
   };
@@ -114,11 +141,11 @@ export default function SessionScreen() {
       </View>
     );
   }
-  if (done) return <Finish course={course} unit={unit} xp={xp + 20} right={graded.right} total={graded.total} lang={lang} />;
+  if (done) return <Finish course={course} sections={sections} unit={pu} lesson={lesson} xp={xp + 20} right={graded.right} total={graded.total} lang={lang} />;
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ title: unit ? unit.title[lang] : lang === 'fr' ? 'Révision' : 'Review' }} />
+      <Stack.Screen options={{ title }} />
       <View style={styles.hud}>
         <Pressable accessibilityLabel="Close lesson" onPress={() => router.back()} hitSlop={10}>
           <Text style={styles.close}>✕</Text>
@@ -150,7 +177,7 @@ export default function SessionScreen() {
   );
 }
 
-type StepProps = { step: Step; course: Course; lang: 'en' | 'fr'; meaning: (it: LItem) => string; locked: boolean; onGrade: (ok: boolean, right: string) => void; onNext: () => void };
+type StepProps = { step: FullStep; course: Course; lang: 'en' | 'fr'; meaning: (it: LItem) => string; locked: boolean; onGrade: (ok: boolean, right: string) => void; onNext: () => void };
 
 function StepView({ step, course, lang, meaning, locked, onGrade, onNext }: StepProps) {
   switch (step.type) {
@@ -170,6 +197,8 @@ function StepView({ step, course, lang, meaning, locked, onGrade, onNext }: Step
       return <ToneStep item={step.item} course={course} lang={lang} locked={locked} onGrade={onGrade} />;
     case 'spell':
       return <SpellStep item={step.item} options={step.options} course={course} lang={lang} meaning={meaning} locked={locked} onGrade={onGrade} />;
+    default:
+      return <MoreStep step={step} course={course} lang={lang} locked={locked} onGrade={onGrade} onNext={onNext} />;
   }
 }
 
@@ -230,6 +259,13 @@ function LearnStep({ item, course, lang, meaning, onNext }: { item: LItem; cours
         </Text>
       )}
       <SoundButton text={item.say ?? item.text} course={course} big />
+      {!!item.ex && (
+        <Pressable accessibilityLabel={`Example ${item.ex}`} onPress={() => say(item.ex!, course.voice, 0.85)} style={[styles.canDo, { borderColor: course.color }]}>
+          <Text style={[styles.kicker, { color: course.color }]}>{lang === 'fr' ? 'EN CONTEXTE  🔊' : 'IN CONTEXT  🔊'}</Text>
+          <Text style={styles.canDoText}>{item.ex}</Text>
+          <Text style={styles.feedbackText}>{lang === 'fr' ? item.exFr ?? item.exEn : item.exEn}</Text>
+        </Pressable>
+      )}
       <Pressable accessibilityLabel="Continue" disabled={!!glyph && !watched} onPress={onNext} style={[styles.primary, styles.wide, { backgroundColor: course.color }, glyph && !watched && { opacity: 0.4 }]}>
         <Text style={styles.primaryText}>{glyph ? (lang === 'fr' ? 'À vous d’écrire' : 'Now you write it') : lang === 'fr' ? 'Compris' : 'Got it'}</Text>
       </Pressable>
@@ -283,7 +319,7 @@ function PickStep({ step, course, lang, meaning, locked, onGrade }: { step: Extr
           {ask === 'meaning' && <SoundButton text={item.say ?? item.text} course={course} />}
         </>
       )}
-      <Options options={options} render={render} correct={item} locked={locked} onPick={(o) => onGrade(o === item, `${item.text} · ${item.roman ?? ''}${ask === 'meaning' ? ` · ${meaning(item)}` : ''}`)} columns={ask === 'meaning' ? 1 : 2} />
+      <Options options={options} render={render} correct={item} locked={locked} onPick={(o) => onGrade(o === item, [item.text, item.roman, ask === 'meaning' ? meaning(item) : ''].filter(Boolean).join(' · '))} columns={ask === 'meaning' ? 1 : 2} />
     </View>
   );
 }
@@ -539,17 +575,25 @@ function SpellStep({ item, options, course, lang, meaning, locked, onGrade }: { 
   );
 }
 
-function Finish({ course, unit, xp, right, total, lang }: { course: Course; unit?: Unit; xp: number; right: number; total: number; lang: 'en' | 'fr' }) {
+function Finish({ course, sections, unit, lesson, xp, right, total, lang }: { course: Course; sections: Section[]; unit?: PlanUnit; lesson?: Lesson; xp: number; right: number; total: number; lang: 'en' | 'fr' }) {
+  const { learn } = useStore();
   const acc = total ? right / total : 1;
   const stars = acc >= 0.9 ? 3 : acc >= 0.7 ? 2 : 1;
-  const nextUnit = unit ? course.units[course.units.indexOf(unit) + 1] : undefined;
+  const done = (k: string) => learn?.units[k]?.stars ?? 0;
+  // The next lesson along the path, if its level is open.
+  const flat = flatLessons(sections);
+  const at = unit && lesson ? flat.findIndex((x) => x.unit.id === unit.id && x.lesson.id === lesson.id) : -1;
+  const nxt = at >= 0 ? flat[at + 1] : undefined;
+  const nextOpen = !!nxt && sectionOpen(course, sections, nxt.si, done);
+  const failedCheck = unit?.type === 'checkpoint' && stars < 2;
+  const go = (u: PlanUnit, l: Lesson) => router.replace({ pathname: '/learn/session', params: { course: course.id, unit: u.id, lesson: l.id, t: String(now()) } });
   return (
     <ScrollView style={styles.container} contentContainerStyle={[styles.body, styles.center]}>
       <Stack.Screen options={{ title: course.name[lang] }} />
       <Animated.Text entering={ZoomIn.springify().damping(9)} style={styles.big}>
-        {course.flag}
+        {unit?.type === 'checkpoint' && !failedCheck ? '🏁' : course.flag}
       </Animated.Text>
-      <Text style={styles.title}>{lang === 'fr' ? 'Leçon terminée' : 'Lesson complete'}</Text>
+      <Text style={styles.title}>{failedCheck ? (lang === 'fr' ? 'Presque !' : 'Almost there') : unit?.type === 'checkpoint' ? (lang === 'fr' ? 'Niveau validé' : 'Level passed') : lang === 'fr' ? 'Leçon terminée' : 'Lesson complete'}</Text>
       <Animated.Text entering={ZoomIn.delay(300).springify()} style={[styles.stars, { color: course.color }]}>
         {'★'.repeat(stars)}
         <Text style={{ color: colors.border }}>{'★'.repeat(3 - stars)}</Text>
@@ -564,22 +608,23 @@ function Finish({ course, unit, xp, right, total, lang }: { course: Course; unit
           <Text style={styles.statLabel}>{lang === 'fr' ? 'Justesse' : 'Accuracy'}</Text>
         </View>
       </View>
-      {unit && (
+      {failedCheck && <Text style={styles.feedbackText}>{lang === 'fr' ? 'Il faut 2 étoiles (70 %) pour ouvrir le niveau suivant. Révisez puis réessayez.' : 'You need 2 stars (70%) to open the next level. Review, then try again.'}</Text>}
+      {unit && !failedCheck && (
         <View style={[styles.canDo, { borderColor: course.color }]}>
           <Text style={[styles.kicker, { color: course.color }]}>{lang === 'fr' ? 'VOUS SAVEZ MAINTENANT' : 'YOU CAN NOW'}</Text>
           <Text style={styles.canDoText}>✓ {unit.can[lang]}</Text>
         </View>
       )}
-      {nextUnit && (
-        <Pressable accessibilityLabel="Next unit" onPress={() => router.replace({ pathname: '/learn/session', params: { course: course.id, unit: nextUnit.id } })} style={[styles.primary, styles.wide, { backgroundColor: course.color }]}>
+      {nxt && nextOpen && (
+        <Pressable accessibilityLabel="Next lesson" onPress={() => go(nxt.unit, nxt.lesson)} style={[styles.primary, styles.wide, { backgroundColor: course.color }]}>
           <Text style={styles.primaryText}>
-            {lang === 'fr' ? 'Suivant :' : 'Next:'} {nextUnit.icon} {nextUnit.title[lang]}
+            {lang === 'fr' ? 'Suivant :' : 'Next:'} {nxt.unit.icon} {nxt.unit.id === unit?.id ? nxt.lesson.title[lang] : nxt.unit.title[lang]}
           </Text>
         </Pressable>
       )}
-      {unit && (
-        <Pressable accessibilityLabel="Again" onPress={() => router.replace({ pathname: '/learn/session', params: { course: course.id, unit: unit.id } })} style={[styles.secondary, styles.wide]}>
-          <Text style={styles.secondaryText}>{lang === 'fr' ? 'Refaire' : 'Play again'}</Text>
+      {unit && lesson && (
+        <Pressable accessibilityLabel="Again" onPress={() => go(unit, lesson)} style={[styles.secondary, styles.wide]}>
+          <Text style={styles.secondaryText}>{failedCheck ? (lang === 'fr' ? 'Réessayer' : 'Try again') : lang === 'fr' ? 'Refaire' : 'Play again'}</Text>
         </Pressable>
       )}
       <Pressable accessibilityLabel="Done" onPress={() => router.back()} style={[styles.secondary, styles.wide]}>

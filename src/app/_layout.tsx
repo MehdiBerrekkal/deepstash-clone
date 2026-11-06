@@ -39,6 +39,8 @@ const SCREENS: { name: string; options: { title?: string; headerShown?: boolean;
   { name: 'family', options: { title: 'Family library' } },
   { name: 'learn/session', options: { title: 'Lesson' } },
   { name: 'learn/credits', options: { title: 'Credits' } },
+  { name: 'learn/course', options: { title: 'Course' } },
+  { name: 'learn/words', options: { title: 'Word bank' } },
 ];
 
 export default function RootLayout() {
