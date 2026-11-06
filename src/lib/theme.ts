@@ -97,18 +97,37 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
 
 export const serif = Platform.select({ ios: 'Georgia', android: 'serif', default: 'Georgia, "Times New Roman", serif' });
 
+/** Spacing steps: every gap, padding and margin in the app comes from these. */
+export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 } as const;
+
+/** Corner radii: small chips, cards, big cards and sheets, fully round pills. */
+export const radius = { sm: 8, md: 12, lg: 18, xl: 28, pill: 999 } as const;
+
+/** The type scale. Spread one into a style and add the colour. */
+export const typo = {
+  display: { fontSize: 30, lineHeight: 36, fontWeight: '800' as const, letterSpacing: -0.4 },
+  title: { fontSize: 22, lineHeight: 28, fontWeight: '800' as const, letterSpacing: -0.2 },
+  section: { fontSize: 19, lineHeight: 24, fontWeight: '800' as const, letterSpacing: -0.2 },
+  body: { fontSize: 16, lineHeight: 23, fontWeight: '400' as const },
+  label: { fontSize: 15, lineHeight: 20, fontWeight: '700' as const },
+  caption: { fontSize: 13, lineHeight: 18, fontWeight: '500' as const },
+  kicker: { fontSize: 11, lineHeight: 14, fontWeight: '800' as const, letterSpacing: 1.4, textTransform: 'uppercase' as const },
+};
+
 export const sourceKindLabel = {
-  book: '📖 Book',
-  article: '📰 Article',
-  podcast: '🎧 Podcast',
-  video: '🎬 Video',
+  book: 'Book',
+  article: 'Article',
+  podcast: 'Podcast',
+  video: 'Video',
 } as const;
 
-export const cardKinds: { id: CardKind; label: string; plural: string; emoji: string }[] = [
-  { id: 'idea', label: 'Book idea', plural: 'Book ideas', emoji: '📖' },
-  { id: 'quote', label: 'Quote', plural: 'Quotes', emoji: '❝' },
-  { id: 'poem', label: 'Poem', plural: 'Poems', emoji: '🪶' },
-  { id: 'fact', label: 'Did you know?', plural: 'Knowledge', emoji: '💡' },
+export const sourceKindIcon = { book: 'book', article: 'article', podcast: 'podcast', video: 'video' } as const;
+
+export const cardKinds: { id: CardKind; label: string; plural: string; emoji: string; icon: 'book' | 'quote' | 'feather' | 'bulb' }[] = [
+  { id: 'idea', label: 'Book idea', plural: 'Book ideas', emoji: '📖', icon: 'book' },
+  { id: 'quote', label: 'Quote', plural: 'Quotes', emoji: '❝', icon: 'quote' },
+  { id: 'poem', label: 'Poem', plural: 'Poems', emoji: '🪶', icon: 'feather' },
+  { id: 'fact', label: 'Did you know?', plural: 'Knowledge', emoji: '💡', icon: 'bulb' },
 ];
 
 export const cardKindById = Object.fromEntries(cardKinds.map((k) => [k.id, k])) as Record<CardKind, (typeof cardKinds)[number]>;

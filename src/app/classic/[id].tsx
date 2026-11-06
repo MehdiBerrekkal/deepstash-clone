@@ -1,4 +1,4 @@
-import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -10,12 +10,14 @@ import { classicById, classicReaderId, formatYear, loadClassic, readMinutesForWo
 import { voiceForLanguage } from '@/lib/lang';
 import { hasNarration } from '@/lib/narration';
 import { prewarmNatural } from '@/lib/neuralVoice';
+import { usePushOrBack } from '@/lib/nav';
 import { useStore } from '@/lib/store';
 import { colors, onCardScope, serif } from '@/lib/theme';
 
 export default function ClassicScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { topicById, readerProgress, sourceById, downloadedBooks, markDownloaded, readerSettings } = useStore();
+  const pushOrBack = usePushOrBack();
   const classic = classicById[id];
   // You may be about to read or listen: get the natural voice ready in the background.
   const voice = voiceForLanguage(readerSettings, classic?.lang ?? 'en');
@@ -53,8 +55,8 @@ export default function ClassicScreen() {
   const linked = classic.sourceId ? sourceById[classic.sourceId] : undefined;
   const open = () =>
     classic.format === 'pdf'
-      ? router.push({ pathname: '/pdfbook/[id]', params: { id: classic.id, source: 'private' } })
-      : router.push({ pathname: '/reader/[id]', params: { id: classic.id, kind: 'classic' } });
+      ? pushOrBack({ pathname: '/pdfbook/[id]', params: { id: classic.id, source: 'private' } })
+      : pushOrBack({ pathname: '/reader/[id]', params: { id: classic.id, kind: 'classic' } });
 
   return (
     <>
@@ -99,7 +101,7 @@ export default function ClassicScreen() {
           <View style={styles.secondaryRow}>
             <FavoriteButton favoriteKey={classicReaderId(classic.id)} title={classic.title} size="large" />
             {linked && (
-              <Pressable onPress={() => router.push({ pathname: '/book/[id]', params: { id: linked.id } })} style={styles.secondary}>
+              <Pressable onPress={() => pushOrBack({ pathname: '/book/[id]', params: { id: linked.id } })} style={styles.secondary}>
                 <Text style={styles.secondaryText}>Key ideas</Text>
               </Pressable>
             )}

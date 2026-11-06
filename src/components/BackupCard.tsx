@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 
 import { makeBackup, pickBackup, restoreBooks, shareBackup, type Backup } from '@/lib/backup';
 import { useStore } from '@/lib/store';
+import { CardHeading } from '@/components/CardHeading';
 import { colors } from '@/lib/theme';
 import { useT } from '@/lib/i18n';
 
@@ -61,7 +62,7 @@ export function BackupCard() {
   return (
     <View style={styles.card}>
       <View style={styles.rowBetween}>
-        <Text style={styles.heading}>{t('💾 Backup & restore')}</Text>
+        <CardHeading icon="download" title={t('Backup & restore')} />
         <Text style={[styles.age, due && styles.due]}>{age === null ? t('never backed up') : age === 0 ? t('backed up today') : t('{n} days ago', { n: age })}</Text>
       </View>
       <Text style={styles.muted}>

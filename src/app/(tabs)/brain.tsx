@@ -7,6 +7,7 @@ import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { ProgressChart } from '@/components/brain/ProgressChart';
 import { SkillRadar } from '@/components/brain/SkillRadar';
 import { GoalRing } from '@/components/GoalRing';
+import { Icon } from '@/components/Icon';
 import { displayFont } from '@/lib/bookType';
 import { dailyGame, gameById, gameText, gamesFor, sessionGames } from '@/lib/brain/catalog';
 import { DOMAINS, rankFor, type Skill } from '@/lib/brain/core';
@@ -60,7 +61,10 @@ export default function BrainScreen() {
         <LinearGradient colors={['#2A2160', '#141A3A', '#0B0E1C']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.session}>
           <View style={styles.rowBetween}>
             <Text style={styles.heroKicker}>{t('TODAY’S SESSION')}</Text>
-            <Text style={styles.sessionMeta}>{streak.count > 0 ? `🔥 ${t('{n}-day streak', { n: streak.count })}` : t('about 6 min')}</Text>
+            <View style={styles.metaRow}>
+              <Icon name={streak.count > 0 ? 'flame' : 'clock'} size={13} color={streak.count > 0 ? '#FF8A4C' : 'rgba(244,241,234,0.7)'} strokeWidth={2.2} />
+              <Text style={styles.sessionMeta}>{streak.count > 0 ? t('{n}-day streak', { n: streak.count }) : t('about 6 min')}</Text>
+            </View>
           </View>
           <Text style={styles.sessionTitle}>{sessionDone >= 3 ? t('Session complete') : sessionDone ? t('{n} of 3 done', { n: sessionDone }) : t('Three games, picked for you')}</Text>
           <View style={styles.sessionGames}>
@@ -70,8 +74,8 @@ export default function BrainScreen() {
               const r = session?.done[g];
               return (
                 <View key={g} style={[styles.sessionGame, { borderColor: r ? '#3DDC97' : `${dm.color}66` }, g === nextGame && { borderColor: dm.color, backgroundColor: `${dm.color}1A` }]}>
-                  <Text style={[styles.sessionGlyph, { color: r ? '#3DDC97' : dm.color }]}>{r ? '✓' : `${i + 1}`}</Text>
-                  <Text style={styles.sessionName} numberOfLines={2}>
+                  {r ? <Icon name="checkCircle" size={24} color="#3DDC97" strokeWidth={2.2} /> : <Text style={[styles.sessionGlyph, { color: dm.color }]}>{i + 1}</Text>}
+                  <Text style={[styles.sessionName, longestWord(gameText(gd, lang).name) > 10 && styles.sessionNameLong]} numberOfLines={2}>
                     {gameText(gd, lang).name}
                   </Text>
                   <Text style={[styles.sessionArea, { color: dm.color }]}>{r ? `${r.points} pts` : t(dm.name)}</Text>
@@ -101,7 +105,7 @@ export default function BrainScreen() {
                 Question {run.n + 1} of {gameById[run.id].items} · Level {run.d} · {run.points} pts
               </Text>
             </View>
-            <Text style={styles.chev}>›</Text>
+            <Icon name="chevronRight" size={20} color={colors.accent} strokeWidth={2.4} />
           </Pressable>
         </Animated.View>
       )}
@@ -159,15 +163,15 @@ export default function BrainScreen() {
       <Animated.View entering={FadeInDown.delay(120).duration(400)} style={styles.card}>
         <View style={styles.rowBetween}>
           <Text style={styles.cardTitle}>{t('Daily challenge')}</Text>
-          <Text style={styles.accent}>{daily.game && daily.quiz ? 'Complete ✓' : `${Number(daily.game) + Number(daily.quiz)}/2`}</Text>
+          <Text style={styles.accent}>{daily.game && daily.quiz ? 'Complete' : `${Number(daily.game) + Number(daily.quiz)}/2`}</Text>
         </View>
         <View style={styles.row}>
           <Pressable accessibilityLabel="Daily game" onPress={() => open(dg.id, { daily: '1' })} style={[styles.step, daily.game && styles.done]}>
-            <Text style={[styles.stepGlyph, { color: DOMAINS.find((d) => d.id === dg.skill)!.color }]}>{daily.game ? '✓' : DOMAINS.find((d) => d.id === dg.skill)!.glyph}</Text>
+            {daily.game ? <Icon name="checkCircle" size={22} color="#3DDC97" strokeWidth={2.2} /> : <Text style={[styles.stepGlyph, { color: DOMAINS.find((d) => d.id === dg.skill)!.color }]}>{DOMAINS.find((d) => d.id === dg.skill)!.glyph}</Text>}
             <Text style={styles.stepText}>{dg.name}</Text>
           </Pressable>
           <Pressable accessibilityLabel="Daily questions" onPress={() => router.push({ pathname: '/brain/quiz', params: { category: 'daily' } })} style={[styles.step, daily.quiz && styles.done]}>
-            <Text style={[styles.stepGlyph, { color: '#FF6FB5' }]}>{daily.quiz ? '✓' : '?'}</Text>
+            {daily.quiz ? <Icon name="checkCircle" size={22} color="#3DDC97" strokeWidth={2.2} /> : <Text style={[styles.stepGlyph, { color: '#FF6FB5' }]}>?</Text>}
             <Text style={styles.stepText}>{t('3 hard questions')}</Text>
           </Pressable>
         </View>
@@ -250,7 +254,7 @@ export default function BrainScreen() {
                   {c.blurb} · {QUIZ.filter((q) => q.category === c.id).length} questions
                 </Text>
               </View>
-              <Text style={styles.accent}>{brain.best[`quiz-${c.id}`] ? `${brain.best[`quiz-${c.id}`] / 10}/10` : '›'}</Text>
+              {brain.best[`quiz-${c.id}`] ? <Text style={styles.accent}>{`${brain.best[`quiz-${c.id}`] / 10}/10`}</Text> : <Icon name="chevronRight" size={18} color={colors.accent} strokeWidth={2.4} />}
             </Pressable>
           ))}
         </Animated.View>
@@ -276,7 +280,10 @@ export default function BrainScreen() {
   );
 }
 
+const longestWord = (s: string) => Math.max(...s.split(/\s+/).map((w) => w.length));
+
 const styles = StyleSheet.create({
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   container: { flex: 1, backgroundColor: colors.background },
   content: { padding: 16, gap: 14, paddingBottom: 40, maxWidth: 760, width: '100%', alignSelf: 'center' },
   flex: { flex: 1 },
@@ -343,6 +350,8 @@ const styles = StyleSheet.create({
   sessionGame: { flex: 1, minHeight: 96, borderRadius: 16, borderWidth: 1, padding: 10, gap: 4, backgroundColor: 'rgba(255,255,255,0.03)' },
   sessionGlyph: { fontWeight: '900', fontSize: 16 },
   sessionName: { color: '#F2F4FF', fontWeight: '800', fontSize: 13, lineHeight: 17 },
+  // A long word ("Quantitative") doesn't fit the tile at full size and would be cut in two.
+  sessionNameLong: { fontSize: 11, lineHeight: 15 },
   sessionArea: { fontSize: 11, fontWeight: '800', marginTop: 'auto' },
   sessionBtn: { alignItems: 'center', paddingVertical: 15, borderRadius: 16, backgroundColor: '#B78CFF', minHeight: 50 },
   sessionBtnText: { color: '#0B0D14', fontWeight: '900', fontSize: 16 },
