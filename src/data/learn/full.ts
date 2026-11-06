@@ -5,7 +5,7 @@
  */
 
 export type Level = 'A1' | 'A2' | 'B1';
-export type Word = { text: string; en: string; fr: string; emoji: string; ex?: string; exEn?: string; exFr?: string };
+export type Word = { text: string; roman?: string; en: string; fr: string; emoji: string; ex?: string; exEn?: string; exFr?: string };
 export type Topic = { id: string; level: Level; icon: string; en: string; fr: string; words: Word[] };
 
 /** A grammar point: cards to tap through, then drills (fill the gap). */

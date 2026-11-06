@@ -32,7 +32,7 @@ export default function WordBankScreen() {
       const lv = items?.[w.key!]?.level;
       const state: Filter = lv === undefined ? 'new' : lv >= 2 ? 'known' : 'learning';
       if (filter !== 'all' && state !== filter) return false;
-      return !needle || plain(w.text).includes(needle) || plain(fr ? w.fr : w.en).includes(needle);
+      return !needle || plain(w.text).includes(needle) || plain(w.roman ?? '').replace(/[^a-z ]/g, '').includes(needle) || plain(fr ? w.fr : w.en).includes(needle);
     });
   }, [words, items, q, filter, fr]);
   const count = (f: Filter) => words.filter((w) => {
@@ -75,7 +75,10 @@ export default function WordBankScreen() {
             <Pressable accessibilityLabel={`Word ${w.text}`} onPress={() => say(w.text, course.voice)} style={styles.row}>
               <Pic emoji={w.emoji ?? '•'} size={36} />
               <View style={styles.flex}>
-                <Text style={styles.word}>{w.text}</Text>
+                <Text style={styles.word}>
+                  {w.text}
+                  {!!w.roman && <Text style={styles.muted}>  {w.roman}</Text>}
+                </Text>
                 <Text style={styles.muted} numberOfLines={1}>
                   {fr ? w.fr : w.en} · {w.topic.level} · {fr ? w.topic.fr : w.topic.en}
                 </Text>

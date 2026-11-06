@@ -40,8 +40,12 @@ const ARTICLE = /^(el|la|los|las|un|una|le|les|des|du|une|il|lo|gli|os|as|um|uma
 const bare = (w: string) => w.replace(ARTICLE, '');
 
 /** "Un café con leche" with "café" → "Un ___ con leche" (whole word, any case). */
+/** Japanese, Chinese and Korean: no spaces between words, or no Latin letters to type. */
+const CJK = /[぀-ヿ㐀-鿿가-힯]/;
+
 function blank(sentence: string, word: string) {
   const core = bare(word);
+  if (CJK.test(core)) return sentence.includes(core) ? { text: sentence.replace(core, '___'), answer: core } : null;
   const re = new RegExp(`(^|[^\\p{L}])(${core.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})(?=[^\\p{L}]|$)`, 'iu');
   if (!re.test(sentence)) return null;
   return { text: sentence.replace(re, '$1___'), answer: sentence.match(re)![2] };
@@ -120,8 +124,9 @@ function contextSteps(items: LItem[], pool: LItem[]): FullStep[] {
 function speakSteps(items: LItem[]): FullStep[] {
   const steps: FullStep[] = [];
   for (const it of shuffle(items).slice(0, 3)) steps.push({ type: 'speak', item: it, phrase: it.text });
-  for (const it of shuffle(items.filter((i) => i.ex && i.ex.split(' ').length <= 7)).slice(0, 2)) steps.push({ type: 'speak', item: it, phrase: it.ex! });
-  for (const it of shuffle(items).slice(0, 3)) steps.push({ type: 'dictation', item: it });
+  for (const it of shuffle(items.filter((i) => i.ex && (CJK.test(i.ex) ? i.ex.length <= 16 : i.ex.split(' ').length <= 7))).slice(0, 2)) steps.push({ type: 'speak', item: it, phrase: it.ex! });
+  // Typing kana or hanzi on a phone is a chore: those courses listen and pick instead.
+  for (const it of shuffle(items).slice(0, 3)) steps.push(CJK.test(it.text) ? { type: 'pick', item: it, ask: 'listen', options: shuffle([it, ...pickOthers(items, it, 3)]) } : { type: 'dictation', item: it });
   return steps;
 }
 

@@ -37,7 +37,7 @@ export const wordChunks = (n: number) => Math.max(1, Math.ceil(n / 7));
 const wordLessons = (n: number) => Array.from({ length: wordChunks(n) }, (_, k) => L(`w${k + 1}`, k % 2 ? 'words2' : 'words1', `New words ${k + 1}`, `Nouveaux mots ${k + 1}`));
 
 export function wordItem(w: Word, key?: string): LItem {
-  return { key, text: w.text, roman: '', en: w.en, fr: w.fr, emoji: w.emoji, ex: w.ex, exEn: w.exEn, exFr: w.exFr };
+  return { key, text: w.text, roman: w.roman ?? '', en: w.en, fr: w.fr, emoji: w.emoji, ex: w.ex, exEn: w.exEn, exFr: w.exFr };
 }
 
 export function buildPlan(course: Course, full: FullCourse | null): Section[] {

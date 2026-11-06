@@ -27,6 +27,14 @@ const CASTS: Record<string, Cast> = {
     doctor: { name: 'Dr Martin', emoji: '👨🏻‍⚕️', en: 'the local GP, gentle and thorough', fr: 'le médecin du quartier, doux et minutieux' },
     brother: { name: 'Hugo', emoji: '🧑🏼', en: 'Camille’s brother, a cyclist who is never on time', fr: 'le frère de Camille, cycliste, jamais à l’heure' },
   },
+  ja: {
+    friend: { name: 'Yui', emoji: '👩🏻', en: 'your friend in Kyoto, a potter', fr: 'votre amie à Kyoto, céramiste' },
+    barista: { name: 'Kenji', emoji: '👨🏻‍🍳', en: 'runs a tiny café near the river, bakes every cake himself', fr: 'tient un petit café près de la rivière, fait tous ses gâteaux' },
+    neighbour: { name: 'Satō-san', emoji: '👴🏻', en: 'Yui’s neighbour, gardener and walking map', fr: 'le voisin de Yui, jardinier et plan vivant' },
+    receptionist: { name: 'Aiko', emoji: '👩🏻‍💼', en: 'hotel receptionist, unfailingly polite', fr: 'réceptionniste d’hôtel, d’une politesse parfaite' },
+    doctor: { name: 'Dr Tanaka', emoji: '👨🏻‍⚕️', en: 'the neighbourhood doctor', fr: 'le médecin du quartier' },
+    brother: { name: 'Ren', emoji: '🧑🏻', en: 'Yui’s younger brother, a student who oversleeps', fr: 'le petit frère de Yui, étudiant qui dort trop' },
+  },
 };
 /** Who you meet in each scene (by the last part of the dialogue or story id). */
 const ROLES: Record<string, (keyof Cast)[]> = {
