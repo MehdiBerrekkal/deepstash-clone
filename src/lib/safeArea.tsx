@@ -90,6 +90,14 @@ export function paintScreen() {
   document.documentElement.style.background = color;
   document.body.style.background = color;
   document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', color));
+  // iOS 26+ blurs the top of a home-screen web app (its "scroll edge effect") unless what sits at the top edge is
+  // inside a fixed, viewport-sized container with a solid background. The app's root is made that container.
+  const root = document.getElementById('root');
+  if (root) {
+    root.style.position = 'fixed';
+    root.style.inset = '0';
+    root.style.backgroundColor = color;
+  }
 }
 
 /**
