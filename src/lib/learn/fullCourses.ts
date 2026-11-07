@@ -28,7 +28,7 @@ const LOADERS: Record<string, () => Promise<FullCourse>> = {
   zh: () => Promise.all([import('@/data/learn/zh-full'), import('@/data/learn/zh-more1')]).then(([base, m1]) => merge(base.CHINESE_FULL, [m1.TOPICS])),
   it: () => Promise.all([import('@/data/learn/it-full'), import('@/data/learn/it-more1')]).then(([base, m1]) => merge(base.ITALIAN_FULL, [m1.TOPICS])),
   pt: () => Promise.all([import('@/data/learn/pt-full'), import('@/data/learn/pt-more1')]).then(([base, m1]) => merge(base.PORTUGUESE_FULL, [m1.TOPICS])),
-  en: () => Promise.all([import('@/data/learn/en-full'), import('@/data/learn/en-more1')]).then(([base, m1]) => merge(base.ENGLISH_FULL, [m1.TOPICS])),
+  en: () => Promise.all([import('@/data/learn/en-full'), import('@/data/learn/en-more1'), import('@/data/learn/en-more2')]).then(([base, m1, m2]) => merge(base.ENGLISH_FULL, [m1.TOPICS, m2.TOPICS])),
   ru: () => Promise.all([import('@/data/learn/ru-full'), import('@/data/learn/ru-more1')]).then(([base, m1]) => merge(base.RUSSIAN_FULL, [m1.TOPICS])),
   ar: () => Promise.all([import('@/data/learn/ar-full'), import('@/data/learn/ar-more1')]).then(([base, m1]) => merge(base.ARABIC_FULL, [m1.TOPICS])),
   tr: () => Promise.all([import('@/data/learn/tr-full'), import('@/data/learn/tr-more1')]).then(([base, m1]) => merge(base.TURKISH_FULL, [m1.TOPICS])),
