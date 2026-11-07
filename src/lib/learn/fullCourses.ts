@@ -29,7 +29,7 @@ const LOADERS: Record<string, () => Promise<FullCourse>> = {
   it: () => Promise.all([import('@/data/learn/it-full'), import('@/data/learn/it-more1')]).then(([base, m1]) => merge(base.ITALIAN_FULL, [m1.TOPICS])),
   pt: () => Promise.all([import('@/data/learn/pt-full'), import('@/data/learn/pt-more1')]).then(([base, m1]) => merge(base.PORTUGUESE_FULL, [m1.TOPICS])),
   en: () => Promise.all([import('@/data/learn/en-full'), import('@/data/learn/en-more1')]).then(([base, m1]) => merge(base.ENGLISH_FULL, [m1.TOPICS])),
-  ru: () => import('@/data/learn/ru-full').then((m) => m.RUSSIAN_FULL),
+  ru: () => Promise.all([import('@/data/learn/ru-full'), import('@/data/learn/ru-more1')]).then(([base, m1]) => merge(base.RUSSIAN_FULL, [m1.TOPICS])),
   ar: () => import('@/data/learn/ar-full').then((m) => m.ARABIC_FULL),
   tr: () => import('@/data/learn/tr-full').then((m) => m.TURKISH_FULL),
   hi: () => import('@/data/learn/hi-full').then((m) => m.HINDI_FULL),
