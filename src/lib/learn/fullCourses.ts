@@ -25,7 +25,7 @@ const LOADERS: Record<string, () => Promise<FullCourse>> = {
   ja: () => Promise.all([import('@/data/learn/ja-full'), import('@/data/learn/ja-more1')]).then(([base, m1]) => merge(base.JAPANESE_FULL, [m1.TOPICS])),
   ko: () => Promise.all([import('@/data/learn/ko-full'), import('@/data/learn/ko-more1')]).then(([base, m1]) => merge(base.KOREAN_FULL, [m1.TOPICS])),
   de: () => Promise.all([import('@/data/learn/de-full'), import('@/data/learn/de-more1')]).then(([base, m1]) => merge(base.GERMAN_FULL, [m1.TOPICS])),
-  zh: () => import('@/data/learn/zh-full').then((m) => m.CHINESE_FULL),
+  zh: () => Promise.all([import('@/data/learn/zh-full'), import('@/data/learn/zh-more1')]).then(([base, m1]) => merge(base.CHINESE_FULL, [m1.TOPICS])),
   it: () => Promise.all([import('@/data/learn/it-full'), import('@/data/learn/it-more1')]).then(([base, m1]) => merge(base.ITALIAN_FULL, [m1.TOPICS])),
   pt: () => import('@/data/learn/pt-full').then((m) => m.PORTUGUESE_FULL),
   en: () => Promise.all([import('@/data/learn/en-full'), import('@/data/learn/en-more1')]).then(([base, m1]) => merge(base.ENGLISH_FULL, [m1.TOPICS])),
