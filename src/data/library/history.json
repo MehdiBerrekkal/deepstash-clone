@@ -1,0 +1,55 @@
+{
+  "topic": { "id": "history", "name": "History", "emoji": "📜", "color": "#6E4C2B" },
+  "books": [
+    {
+      "id": "guns-germs-and-steel", "title": "Guns, Germs, and Steel", "author": "Jared Diamond", "kind": "book", "year": 1997,
+      "description": "Why some societies came to dominate others, explained through geography rather than biology.",
+      "ideas": [
+        ["Geography shaped history", "Why did some societies end up conquering others? Jared Diamond rejects the idea that it had anything to do with innate superiority. Instead, he points to geography: which plants and animals happened to be available for domestication, how easily crops and ideas could spread, and how dense populations became. Luck of location, not ability, shaped history's winners. Today: think of one advantage you have that came from where or when you were born, and how it has shaped your opportunities."],
+        ["The east-west axis", "Eurasia stretches mostly east to west, Diamond observes, so crops, animals and inventions could spread across regions with similar climates and day lengths. The Americas and Africa run mostly north to south, crossing deserts, jungles and climate zones that made spreading much harder. A simple fact about the shape of continents changed the pace of history. Today: look at a world map and notice the direction each continent stretches. Small details can have huge consequences."],
+        ["Germs were decisive", "Societies that lived closely with herds of livestock developed many infectious diseases, and over centuries some immunity to them. When Europeans reached the Americas, Diamond explains, those germs spread to people with no immunity and killed far more than weapons did. Disease shaped the conquest of continents. Today: think about how invisible factors, not just obvious ones, can decide the outcome of big events in history, health and even business."],
+        ["Food surpluses created specialists", "Farming produced more food than farmers needed, Diamond points out, and that surplus could feed people who didn't farm: soldiers, priests, scribes, craftspeople and rulers. Specialists developed writing, metalwork, armies and governments, which gave farming societies enormous advantages. The surplus was the seed of civilisation. Today: think about the people whose work you depend on but never see, and how specialisation shapes your daily life."]
+      ]
+    },
+    {
+      "id": "the-histories", "title": "The Histories", "author": "Herodotus", "kind": "book", "year": -430,
+      "description": "The first great work of history in the Western tradition, covering the Greek-Persian wars.",
+      "ideas": [
+        ["The father of history", "Herodotus, writing in the fifth century BC, set out to record great deeds so they wouldn't be forgotten, and to explain why Greeks and Persians went to war. He travelled widely, collected stories and tried to weigh different accounts. Asking why things happened, not just what happened, became the heart of the discipline we call history. Today: think about a family story or local event and ask not only what happened, but why."],
+        ["Call no one happy until they die", "In one of Herodotus' most famous stories, the wealthy King Croesus asks the Athenian sage Solon who is the happiest man in the world, expecting to hear his own name. Solon refuses to name him: fortune can change at any moment, he says, so a life can only be judged as a whole. Later Croesus loses everything and remembers the warning. Today: when things go very well, enjoy it, but hold your success lightly."],
+        ["Customs differ", "Herodotus described how different peoples each considered their own customs best. In one story, a Persian king asks Greeks what it would take for them to eat their dead fathers, which horrifies them, and then asks people who did eat their dead what it would take for them to burn them, which horrifies them equally. Recognising this was an early lesson in cultural humility. Today: think of one custom you consider obviously right, and imagine how it might look to someone from a different culture."],
+        ["Thermopylae", "At Thermopylae, a narrow coastal pass, a small Greek force led by three hundred Spartans held back a vast Persian army for several days. They were eventually defeated, but their stand bought time and became a lasting symbol of courage and sacrifice. Herodotus' account turned a military defeat into a moral victory remembered for millennia. Today: think of a time when standing firm mattered more than winning."]
+      ]
+    },
+    {
+      "id": "the-wright-brothers", "title": "The Wright Brothers", "author": "David McCullough", "kind": "book", "year": 2015,
+      "description": "How two bicycle makers from Ohio taught the world to fly.",
+      "ideas": [
+        ["Outsiders solved it", "Wilbur and Orville Wright ran a bicycle shop in Dayton, Ohio. They had no college degrees, no government funding and no famous connections. Yet they beat well-funded experts in the race to build the first powered, controlled aeroplane. David McCullough shows how curiosity, careful study and relentless testing outperformed resources and prestige. Today: if you feel like an outsider in a field, remember that fresh eyes and hard work can sometimes see what experts miss."],
+        ["Control was the key", "Many inventors of the time focused on powerful engines and big wings. The Wright brothers realised the real problem was control: how to balance and steer a machine in the air. Watching birds, they invented a way to twist the wings to turn, a breakthrough that made flight practical. They solved the right problem first. Today: when you're stuck, ask whether you're working on the real problem or just the most obvious one."],
+        ["Build your own data", "When the brothers discovered that the existing tables for calculating wing lift were wrong, they didn't give up. They built their own small wind tunnel and tested hundreds of wing shapes, collecting their own data. That careful work gave them an edge no one else had. Today: if the information you're relying on doesn't match reality, consider gathering your own evidence, even in a simple, homemade way."],
+        ["Persistence through failure", "The Wright brothers crashed gliders, faced public mockery and endured years of setbacks. On 17 December 1903, at Kitty Hawk in North Carolina, their machine finally made the first powered, controlled flights, the longest lasting under a minute. Decades of aviation history began with those few seconds. Today: think of a goal where you've faced setbacks, and take one more small step toward it."]
+      ]
+    },
+    {
+      "id": "team-of-rivals", "title": "Team of Rivals", "author": "Doris Kearns Goodwin", "kind": "book", "year": 2005,
+      "description": "How Abraham Lincoln brought his political opponents into his cabinet and led the nation through civil war.",
+      "ideas": [
+        ["Hire your rivals", "After winning the 1860 election, Abraham Lincoln did something remarkable: he appointed his main political rivals, the men who had competed against him for the nomination, to key cabinet positions. Doris Kearns Goodwin shows how Lincoln valued their talent more than his ego, and how he gradually won their respect. Today: think of someone who disagrees with you but is very capable, and consider how you might work together rather than against each other."],
+        ["Emotional intelligence in leadership", "Lincoln was famous for sharing credit, taking blame and staying calm under pressure. When angry, he sometimes wrote fierce letters to people who'd frustrated him, then set them aside unsent. Goodwin describes this emotional intelligence as one of his greatest strengths as a leader. Today: if someone has upset you, try writing them a letter you won't send. Let the feelings out on paper before deciding what, if anything, to say."],
+        ["Learn from defeat", "Before becoming president, Lincoln lost several elections and faced many personal tragedies. Rather than becoming bitter, he learned from each defeat, deepening his understanding of people, politics and himself. Goodwin shows how setbacks shaped the wisdom he later needed. Today: think of a past failure and write down one thing it taught you that you still use today."],
+        ["Timing matters", "Lincoln waited for the right moment to issue the Emancipation Proclamation, until public opinion and the military situation could support it. Some criticised him for moving too slowly, but he believed that timing could determine whether a bold step succeeded or backfired. Goodwin shows how patience and conviction can work together. Today: think of a bold move you want to make, and ask whether the timing is right or whether a little more preparation would help."]
+      ]
+    },
+    {
+      "id": "the-silk-roads", "title": "The Silk Roads", "author": "Peter Frankopan", "kind": "book", "year": 2015,
+      "description": "World history retold from the centre: the networks linking East and West.",
+      "ideas": [
+        ["The world's crossroads", "Most history books put Europe at the centre of the story. Peter Frankopan shifts the view to the vast region between Europe and China, the lands of Persia, Central Asia and the Middle East, where the trade routes known as the Silk Roads met. For most of history, he argues, this was the true crossroads of the world. Today: look at a map centred on Central Asia rather than Europe, and notice how different the world looks."],
+        ["More than silk", "The Silk Roads carried far more than silk. Spices, horses, paper, glass, technologies and slaves moved along them, and so did diseases like the plague that devastated Europe in the fourteenth century. These networks connected distant peoples for better and worse, much as global trade does today. Today: check the labels on a few objects around you and notice how far they've travelled."],
+        ["Ideas travelled too", "Ideas travelled along the trade routes too. Buddhism spread from India into China; Christianity and Islam moved east and west; mathematics, astronomy and medicine passed between scholars in different cities. Frankopan shows how exchange, not isolation, drove progress. Today: learn about one idea or invention you use that originally came from a different part of the world."],
+        ["The pivot returns", "Frankopan argues that power and influence are shifting back toward the regions along the old Silk Roads, as new railways, pipelines and trade agreements reconnect them. Understanding their long history, he suggests, is essential for understanding the present and future. Today: read one news story about Central Asia or the Middle East with this longer history in mind, and see whether it changes your view."]
+      ]
+    }
+  ]
+}

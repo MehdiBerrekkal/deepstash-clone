@@ -1,6 +1,7 @@
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { FlatList, Pressable, StyleSheet, Text } from 'react-native';
 
+import { EmptyState } from '@/components/EmptyState';
 import { IdeaRow } from '@/components/IdeaRow';
 import { useStore } from '@/lib/store';
 import { colors } from '@/lib/theme';
@@ -38,7 +39,9 @@ export default function StashScreen() {
         keyExtractor={(idea) => idea.id}
         renderItem={({ item }) => <IdeaRow idea={item} />}
         contentContainerStyle={styles.list}
-        ListEmptyComponent={<Text style={styles.empty}>Nothing here yet. Tap ☆ Stash on any idea to save it.</Text>}
+        ListEmptyComponent={
+          <EmptyState art="books" title="Nothing here yet" text="Tap ☆ Stash on any idea, or long-press a passage in a full book, to save it here." />
+        }
       />
     </>
   );

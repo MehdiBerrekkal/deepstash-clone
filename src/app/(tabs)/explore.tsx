@@ -1,71 +1,271 @@
+import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { FlatList, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { BookCover } from '@/components/BookCover';
+import { EmptyState } from '@/components/EmptyState';
+import { Icon } from '@/components/Icon';
+import { SearchField } from '@/components/SearchField';
+import { SectionHeader } from '@/components/SectionHeader';
 import { IdeaRow } from '@/components/IdeaRow';
-import { TopicChip } from '@/components/TopicChip';
+import { KindFilter } from '@/components/KindFilter';
+import { HIGHLIGHT_COLORS } from '@/lib/bookType';
+import { classicAsSource } from '@/lib/classicSource';
+import { classics } from '@/lib/fullbook';
+import { KID_CLASSICS } from '@/lib/audience';
+import { matchesAll } from '@/lib/search';
 import { useStore } from '@/lib/store';
-import { colors } from '@/lib/theme';
+import { colors, onCardScope } from '@/lib/theme';
+import type { CardKind, Highlight, Idea, Source } from '@/lib/types';
+import { useT } from '@/lib/i18n';
 
+const PAGE = 60;
+
+type Scope = CardKind | 'books' | 'highlights' | null;
+type BookResult = { key: string; book: Source; full: boolean; onPress?: () => void };
+type Row = { type: 'idea'; idea: Idea } | { type: 'book'; item: BookResult } | { type: 'highlight'; h: Highlight };
+
+const openHighlight = (h: Highlight) => {
+  const i = h.readerId.indexOf(':');
+  router.push({ pathname: '/reader/[id]', params: { id: h.readerId.slice(i + 1), kind: h.readerId.slice(0, i), at: `${h.chapter}.${h.para}.${h.char}` } });
+};
+
+/** Search everything: card text, library books, full books (bundled and downloadable) and your highlights. */
 export default function ExploreScreen() {
-  const { ideas, topics, sourceById } = useStore();
+  const { ideas, topics, sources, sourceById, highlights, audience } = useStore();
+  const kid = audience === 'kid';
+  const t = useT();
   const [query, setQuery] = useState('');
-  const [topicId, setTopicId] = useState<string | null>(null);
+  const [scope, setScope] = useState<Scope>(null);
+  const [limit, setLimit] = useState(PAGE);
+  const q = query.trim();
+  const cardKind = scope && scope !== 'books' && scope !== 'highlights' ? scope : null;
 
-  const results = useMemo(() => {
-    const q = query.trim().toLowerCase();
+  const cards = useMemo(() => {
+    if (scope === 'books' || scope === 'highlights') return [];
     return ideas.filter((idea) => {
-      if (topicId && idea.topicId !== topicId) return false;
+      if (cardKind && idea.kind !== cardKind) return false;
       if (!q) return true;
-      const source = sourceById[idea.sourceId];
-      return [idea.title, idea.body, source?.title, source?.author].some((s) => s?.toLowerCase().includes(q));
+      const source = idea.sourceId ? sourceById[idea.sourceId] : undefined;
+      return matchesAll([idea.title, idea.body, idea.author, source?.title, source?.author].join(' '), q);
     });
-  }, [ideas, query, topicId, sourceById]);
+  }, [ideas, q, scope, cardKind, sourceById]);
+
+  // Full books come first: you can read them cover to cover.
+  const books = useMemo((): BookResult[] => {
+    if (scope !== 'books' && (scope !== null || !q)) return [];
+    const full = classics
+      .filter((c) => !kid || KID_CLASSICS.has(c.id) || c.origin === 'private')
+      .filter((c) => !q || matchesAll(`${c.title} ${c.author} ${c.translator ?? ''}`, q))
+      .map((c) => ({
+        key: `classic:${c.id}`,
+        book: classicAsSource(c),
+        full: true,
+        onPress: () => router.push({ pathname: '/classic/[id]', params: { id: c.id } }),
+      }));
+    const summaries = sources
+      .filter((s) => !q || matchesAll(`${s.title} ${s.author}`, q))
+      .map((s) => ({ key: `book:${s.id}`, book: s, full: false }));
+    return [...full, ...summaries];
+  }, [sources, q, scope, kid]);
+
+  const marks = useMemo(
+    () =>
+      (scope === 'highlights' || (scope === null && q)) && highlights.length
+        ? highlights.filter((h) => !q || matchesAll(`${h.text} ${h.note ?? ''} ${h.bookTitle} ${h.author}`, q))
+        : [],
+    [highlights, q, scope],
+  );
+
+  const rows: Row[] = useMemo(() => {
+    if (scope === 'books') return books.map((item) => ({ type: 'book', item }));
+    if (scope === 'highlights') return marks.map((h) => ({ type: 'highlight', h }));
+    return cards.map((idea) => ({ type: 'idea', idea }));
+  }, [scope, books, marks, cards]);
+  const total = rows.length;
+
+  const header = () => {
+    if (!q && scope === null) {
+      return (
+        <View style={styles.section}>
+          <SectionHeader flush title="Topics" icon="compass" />
+          <View style={styles.topics}>
+            {topics.map((topic) => (
+              <Pressable
+                key={topic.id}
+                onPress={() => router.push({ pathname: '/topic/[id]', params: { id: topic.id } })}
+                style={({ pressed }) => [styles.topic, onCardScope, { backgroundColor: topic.color }, pressed && styles.pressed]}>
+                <View style={styles.topicEmojiWrap}>
+                  <Text style={styles.topicEmoji}>{topic.emoji}</Text>
+                </View>
+                <Text style={styles.topicName} numberOfLines={1}>
+                  {topic.name}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+          <SectionHeader flush title="Everything" icon="sparkle" subtitle={`${total} cards to browse`} />
+        </View>
+      );
+    }
+    if (scope !== null) return <Text style={styles.count}>{countLabel(total, scope)}</Text>;
+    return (
+      <View style={styles.section}>
+        {books.length > 0 && (
+          <>
+            <SectionHeader flush title="Books" icon="books" subtitle={`${books.length} found`} />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.books}>
+              {books.slice(0, 30).map((b) => (
+                <BookCover key={b.key} book={b.book} width={92} caption favoriteKey={b.key} onPress={b.onPress} badge={b.full ? 'FULL' : undefined} />
+              ))}
+            </ScrollView>
+          </>
+        )}
+        {marks.length > 0 && (
+          <>
+            <SectionHeader flush title="Your highlights" icon="pencil" subtitle={`${marks.length} found`} />
+            {marks.slice(0, 3).map((h) => (
+              <HighlightRow key={h.id} h={h} />
+            ))}
+            {marks.length > 3 && (
+              <Pressable onPress={() => setScope('highlights')}>
+                <Text style={styles.more}>See all {marks.length} highlights</Text>
+              </Pressable>
+            )}
+          </>
+        )}
+        <SectionHeader flush title="Cards" icon="bulb" subtitle={`${cards.length} found`} />
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
-      <TextInput
+      <SearchField
+        accessibilityLabel="Search"
+        containerStyle={styles.search}
         value={query}
-        onChangeText={setQuery}
-        placeholder="Search ideas, books, authors"
-        placeholderTextColor={colors.muted}
-        style={styles.search}
+        onChangeText={(t) => {
+          setQuery(t);
+          setLimit(PAGE);
+        }}
+        placeholder={t('Search books, ideas, quotes, poems, highlights')}
       />
-      <View>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-          {topics.map((topic) => (
-            <TopicChip
-              key={topic.id}
-              topic={topic}
-              selected={topicId === topic.id}
-              onPress={() => setTopicId(topicId === topic.id ? null : topic.id)}
-            />
-          ))}
-        </ScrollView>
-      </View>
+      {!!q && (
+        <Pressable accessibilityLabel="Search free libraries" onPress={() => router.push({ pathname: '/find', params: { q } })} style={styles.findLink}>
+          <Icon name="globe" size={18} color={colors.accent} strokeWidth={2} />
+          <Text style={styles.findLinkText} numberOfLines={2}>
+            Find “{q}” in free libraries (Gutenberg, Standard Ebooks)
+          </Text>
+          <Icon name="chevronRight" size={16} color={colors.accent} strokeWidth={2.4} />
+        </Pressable>
+      )}
+      <KindFilter
+        value={scope}
+        onChange={(k) => {
+          setScope(k);
+          setLimit(PAGE);
+        }}
+        extras={[
+          { id: 'books', label: 'Books', icon: 'books' },
+          { id: 'highlights', label: 'Highlights', icon: 'pencil' },
+        ]}
+      />
       <FlatList
-        data={results}
-        keyExtractor={(idea) => idea.id}
-        renderItem={({ item }) => <IdeaRow idea={item} />}
+        data={rows.slice(0, limit)}
+        keyExtractor={(r) => (r.type === 'idea' ? r.idea.id : r.type === 'book' ? r.item.key : r.h.id)}
+        renderItem={({ item: r }) =>
+          r.type === 'idea' ? <IdeaRow idea={r.idea} /> : r.type === 'book' ? <BookRow item={r.item} /> : <HighlightRow h={r.h} />
+        }
         contentContainerStyle={styles.list}
-        ListEmptyComponent={<Text style={styles.empty}>No ideas match that search.</Text>}
+        onEndReached={() => setLimit((l) => l + PAGE)}
+        keyboardShouldPersistTaps="handled"
+        ListHeaderComponent={header()}
+        ListEmptyComponent={
+          <EmptyState
+            art={scope === 'highlights' ? 'pen' : 'search'}
+            title={scope === 'highlights' && !highlights.length ? 'No highlights yet' : 'No matches'}
+            text={
+              scope === 'highlights' && !highlights.length
+                ? 'Long-press a paragraph in any full book to make one.'
+                : books.length || marks.length
+                  ? 'No cards match, but see the results above.'
+                  : 'Nothing matches that search. Try fewer or different words.'
+            }
+          />
+        }
       />
     </View>
   );
 }
 
+function countLabel(n: number, scope: Scope) {
+  const noun = scope === 'books' ? 'book' : scope === 'highlights' ? 'highlight' : 'card';
+  return `${n} ${noun}${n === 1 ? '' : 's'}`;
+}
+
+function BookRow({ item }: { item: BookResult }) {
+  const open = item.onPress ?? (() => router.push({ pathname: '/book/[id]', params: { id: item.book.id } }));
+  return (
+    <View style={styles.row}>
+      <BookCover book={item.book} width={52} favoriteKey={null} onPress={open} />
+      <Pressable onPress={open} style={styles.rowText}>
+        <Text style={styles.rowTitle} numberOfLines={2}>
+          {item.book.title}
+        </Text>
+        <Text style={styles.rowSub} numberOfLines={1}>
+          {item.book.author}
+        </Text>
+        <Text style={[styles.tag, item.full && styles.tagFull]}>{item.full ? 'Full book' : 'Key ideas'}</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+function HighlightRow({ h }: { h: Highlight }) {
+  return (
+    <Pressable onPress={() => openHighlight(h)} style={styles.row}>
+      <View style={[styles.bar, { backgroundColor: HIGHLIGHT_COLORS[h.color].solid }]} />
+      <View style={styles.rowText}>
+        <Text style={styles.quote} numberOfLines={3}>
+          “{h.text}”
+        </Text>
+        {!!h.note && (
+          <Text style={styles.note} numberOfLines={2}>
+            {h.note}
+          </Text>
+        )}
+        <Text style={styles.rowSub} numberOfLines={1}>
+          {h.bookTitle} · {h.chapterTitle}
+        </Text>
+      </View>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
+  findLink: { flexDirection: 'row', alignItems: 'center', gap: 10, marginHorizontal: 16, marginTop: 10, paddingVertical: 10, paddingHorizontal: 14, borderRadius: 14, backgroundColor: colors.surface, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
+  findLinkText: { flex: 1, color: colors.accent, fontWeight: '700', fontSize: 13 },
+  pressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
   container: { flex: 1, backgroundColor: colors.background },
-  search: {
-    margin: 16,
-    marginBottom: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 14,
-    backgroundColor: colors.surface,
-    color: colors.text,
-    fontSize: 16,
-  },
-  chips: { gap: 8, paddingHorizontal: 16, paddingVertical: 8 },
-  list: { gap: 10, padding: 16 },
-  empty: { color: colors.muted, textAlign: 'center', marginTop: 32 },
+  search: { margin: 16, marginBottom: 0 },
+  list: { gap: 10, padding: 16, paddingTop: 4 },
+  section: { gap: 12, marginBottom: 4 },
+  count: { color: colors.muted, marginBottom: 4 },
+  more: { color: colors.accent, fontWeight: '700' },
+  books: { gap: 12 },
+  topics: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  topic: { flexGrow: 1, flexBasis: '45%', flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, paddingHorizontal: 12, borderRadius: 16 },
+  topicEmojiWrap: { width: 34, height: 34, borderRadius: 11, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.18)' },
+  topicEmoji: { fontSize: 17 },
+  topicName: { color: colors.text, fontWeight: '700', fontSize: 15 },
+  row: { flexDirection: 'row', gap: 12, padding: 12, borderRadius: 16, backgroundColor: colors.surface, overflow: 'hidden', borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
+  rowText: { flex: 1, gap: 4, justifyContent: 'center' },
+  rowTitle: { color: colors.text, fontWeight: '700', fontSize: 16 },
+  rowSub: { color: colors.muted, fontSize: 13 },
+  tag: { alignSelf: 'flex-start', color: colors.muted, fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1 },
+  tagFull: { color: colors.accent },
+  bar: { width: 4, borderRadius: 2, marginVertical: -12, marginLeft: -12 },
+  quote: { color: colors.text, fontFamily: 'Literata_400Regular_Italic', fontSize: 15, lineHeight: 22 },
+  note: { color: colors.accent, fontSize: 13 },
 });

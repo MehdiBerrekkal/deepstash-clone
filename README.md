@@ -6,14 +6,25 @@ Built with Expo (React Native + Expo Router), so the same code runs on iOS, Andr
 
 ## What works today
 
-- **Onboarding:** pick at least 3 topics; they decide the order of your feed.
-- **For you feed:** full-screen cards that snap one per swipe, each showing its topic and source (book, article, podcast, video).
-- **Stashes:** save any idea into "Saved" or your own stashes, create and delete stashes.
-- **Explore:** search ideas, sources and authors, filter by topic.
-- **Daily streak:** counts consecutive days you open the app.
-- **Share:** share an idea through the system share sheet.
+- **Onboarding:** pick at least 3 of 15 topics; they decide the order of your feed.
+- **For you feed:** full-screen cards that snap one per swipe, shuffled daily, with unread cards first. Filter by card type: book ideas, quotes, poems or "Did you know?" knowledge cards.
+- **Library:** 82 books and articles on shelves by topic, with real covers from Open Library, search, "Continue reading", "Want to read" and "Finished".
+- **Book pages and reader:** each book has a description, its key ideas and a read time. The reader swipes through the ideas with a progress bar, remembers where you stopped and ends with a finish page.
+- **Topic pages:** every book and card in a topic, with follow and unfollow.
+- **Stashes:** save any card into "Saved" or your own stashes, create and delete stashes.
+- **Explore:** search everything (ideas, quotes, poems, books, authors), filter by type, browse topics.
+- **You:** daily reading goal, streak, cards read, books finished, likes and stashes.
+- **Like and share** any card.
+- **Full-book reader:** 28 complete books to read in the app. Pages turn like paper (drag to turn, tap the edges or use the arrow keys), and turning the phone sideways shows two pages like an open book with a fold down the middle. It also has pinch-to-zoom and text size, light, sepia and dark themes, a table of contents, bookmarks, and resume where you stopped. Long-press a paragraph to save it to a stash.
+  - **Free classics:** 94 complete public-domain books on themed shelves (wisdom and philosophy, lives and self-improvement, great novels, big ideas and science, poetry and plays, and 13 French classics in French). They come from Standard Ebooks and Project Gutenberg, all in public-domain translations by translators who died more than 70 years ago.
+  - **More to download:** 42 longer classics, such as The Wealth of Nations, Plato's Dialogues, Crime and Punishment, Les Misérables and Don Quixote. Each downloads on demand from Standard Ebooks and is then kept on the device (IndexedDB on the web).
+  - **Free from the author:** two Cory Doctorow novels he released under Creative Commons, bundled with their license. Eight more free books (The Almanack of Naval Ravikant, Pro Git, Shape Up, OpenStax textbooks and others) link to their official pages, because their licenses don't allow copying them into the app.
+- **Your own books:** open a DRM-free EPUB or PDF from your device, or drop them in the private `my-books/` folder. EPUBs flow into the typeset reader. PDFs keep their original pages, rendered with pdf.js and shown in the same page-turning book view, with the two-page spread, zoom, progress and resume. Files stay on the device and are never uploaded.
+- **Modern books** link to Open Library to find or borrow the full book.
 
-Followed topics, stashes and the streak are stored on the device. The ideas come from Supabase when it's configured, otherwise from the bundled `src/data/seed.json`.
+Content: about 370 book and article ideas, 90 quotes, 32 full poems and 66 knowledge cards. Every idea and knowledge card is an original summary. Quotes are short and attributed. All the poems were published before 1929 and are in the public domain.
+
+Followed topics, stashes, likes and reading progress are stored on the device. The book ideas come from Supabase when it's configured, otherwise from the bundled files in `src/data/`.
 
 ## Run it
 
@@ -29,19 +40,32 @@ npx expo start        # press w for web, or scan the QR code with Expo Go
 3. Copy `.env.example` to `.env.local` and fill in your project URL and anon key.
 4. Restart `npx expo start`.
 
-To add or edit ideas, change `src/data/seed.json` and run `npm run seed:sql` to regenerate `supabase/seed.sql`.
+To add or edit books, change `src/data/library/<topic>.json` and run `npm run seed:sql` to regenerate `supabase/seed.sql`. Run `node scripts/fetch-covers.js` to look up covers for new books. Quotes, poems and knowledge cards live in `src/data/quotes.json`, `poems.json` and `facts.json`.
+
+Full books live in `src/data/classics/`. Each one is a `.txt` asset that holds the chapters as JSON and loads only when it's opened. `metro.config.js` registers the `.txt` extension. To add or rebuild books, edit the lists in `scripts/build-classics.js` (Gutenberg text) or `scripts/build-library.js` (Standard Ebooks and Gutenberg EPUBs, plus the download catalog), then run the script. Only add books that are public domain or under a license that allows redistribution, and include that license.
+
+To add a free-to-share EPUB (public domain or Creative Commons), put it in `books/` with a small JSON file next to it and run `npm run books`. See [books/README.md](books/README.md).
+
+For books you own (for example DRM-free EPUBs you bought), use the private `my-books/` folder instead. `npm run books` adds them to a **My books** shelf, and Git ignores the folder and everything generated from it, so nothing is committed. Any build of the app made while books are in that folder includes them, so such builds are for personal use only. See [my-books/README.md](my-books/README.md).
 
 ## Project layout
 
 ```
 src/app/            screens (Expo Router: each file is a route)
-  (tabs)/           For you feed, Explore, Stashes
+  (tabs)/           For you, Library, Explore, Stashes, You
   onboarding.tsx    topic picker
-  idea/[id].tsx     idea detail + add to stash
-  stash/[id].tsx    ideas in one stash
-src/components/     IdeaCard, IdeaRow, TopicChip
-src/lib/            store (state + persistence), Supabase client, types, theme
-src/data/seed.json  starter topics, sources and ideas
+  book/[id].tsx     book page: description, key ideas, start/continue
+  read/[id].tsx     swipeable book reader with progress
+  reader/[id].tsx   full-book reader (classics and your own EPUBs)
+  classic/[id].tsx  full classic: details, contents, license
+  pdf/[id].tsx      web PDF viewer for your own files
+  topic/[id].tsx    books and cards in one topic
+  idea/[id].tsx     card detail + add to stash
+  stash/[id].tsx    cards in one stash
+src/components/     PageFlip (page-turn animation and open-book spread), IdeaCard, CardBody, BookCover, Shelf, BookGrid, KindFilter, IdeaRow, TopicChip
+src/lib/            store, pagination, EPUB parser, own-file storage, full-book loader, Supabase client, types, theme
+src/data/           library/ (books by topic), classics/ (full books), quotes, poems, facts, covers, content.ts (loader)
+scripts/            seed SQL generator, Open Library cover lookup
 supabase/           database schema and seed
 ```
 

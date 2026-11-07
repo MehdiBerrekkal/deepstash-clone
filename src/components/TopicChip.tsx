@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text } from 'react-native';
 
-import { colors } from '@/lib/theme';
+import { colors, onCardScope } from '@/lib/theme';
 import type { Topic } from '@/lib/types';
 
 type Props = {
@@ -15,7 +15,7 @@ export function TopicChip({ topic, selected, onPress }: Props) {
       accessibilityRole="checkbox"
       accessibilityState={{ checked: selected }}
       onPress={onPress}
-      style={[styles.chip, selected && { backgroundColor: topic.color, borderColor: topic.color }]}>
+      style={[styles.chip, selected && onCardScope, selected && { backgroundColor: topic.color, borderColor: topic.color }]}>
       <Text style={styles.label}>
         {topic.emoji} {topic.name}
       </Text>
