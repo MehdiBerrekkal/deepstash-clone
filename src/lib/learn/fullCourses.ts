@@ -32,7 +32,7 @@ const LOADERS: Record<string, () => Promise<FullCourse>> = {
   ru: () => Promise.all([import('@/data/learn/ru-full'), import('@/data/learn/ru-more1')]).then(([base, m1]) => merge(base.RUSSIAN_FULL, [m1.TOPICS])),
   ar: () => Promise.all([import('@/data/learn/ar-full'), import('@/data/learn/ar-more1')]).then(([base, m1]) => merge(base.ARABIC_FULL, [m1.TOPICS])),
   tr: () => Promise.all([import('@/data/learn/tr-full'), import('@/data/learn/tr-more1')]).then(([base, m1]) => merge(base.TURKISH_FULL, [m1.TOPICS])),
-  hi: () => import('@/data/learn/hi-full').then((m) => m.HINDI_FULL),
+  hi: () => Promise.all([import('@/data/learn/hi-full'), import('@/data/learn/hi-more1')]).then(([base, m1]) => merge(base.HINDI_FULL, [m1.TOPICS])),
   nl: () => import('@/data/learn/nl-full').then((m) => m.DUTCH_FULL),
   es: () =>
     Promise.all([import('@/data/learn/es-full'), import('@/data/learn/es-a1-more'), import('@/data/learn/es-a2-more'), import('@/data/learn/es-b1-more'), import('@/data/learn/es-more2'), import('@/data/learn/es-more3'), import('@/data/learn/es-more4'), import('@/data/learn/es-more5')]).then(([base, a1, a2, b1, m2, m3, m4, m5]) =>
