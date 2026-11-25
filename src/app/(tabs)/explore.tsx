@@ -9,6 +9,7 @@ import { SearchField } from '@/components/SearchField';
 import { SectionHeader } from '@/components/SectionHeader';
 import { IdeaRow } from '@/components/IdeaRow';
 import { KindFilter } from '@/components/KindFilter';
+import { localBookMatches } from '@/lib/bookCatalog';
 import { HIGHLIGHT_COLORS } from '@/lib/bookType';
 import { classicAsSource } from '@/lib/classicSource';
 import { classics } from '@/lib/fullbook';
@@ -66,7 +67,13 @@ export default function ExploreScreen() {
     const summaries = sources
       .filter((s) => !q || matchesAll(`${s.title} ${s.author}`, q))
       .map((s) => ({ key: `book:${s.id}`, book: s, full: false }));
-    return [...full, ...summaries];
+    const catalog = kid ? [] : localBookMatches(q, 'all').map((b): BookResult => ({
+      key: `catalog:${b.id}`,
+      full: false,
+      book: { id: b.id, title: b.title, author: b.author, coverUrl: b.cover, kind: 'book', topicId: '', description: b.recap || '' },
+      onPress: () => router.push({ pathname: '/find', params: { q, book: b.id } }),
+    }));
+    return [...full, ...catalog, ...summaries];
   }, [sources, q, scope, kid]);
 
   const marks = useMemo(

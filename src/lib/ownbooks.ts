@@ -182,6 +182,43 @@ export async function exportOwnFile(book: OwnBook): Promise<{ data: ArrayBuffer 
   return { data: new Blob([JSON.stringify(full)], { type: 'application/json' }), contentType: 'application/json', ext: 'json' };
 }
 
+/** Downloads an HTTPS PDF and saves it before adding a Library entry. */
+export async function downloadOwnPdf(url: string, meta: { title: string; author: string; sourceUrl: string; description?: string }): Promise<OwnBook> {
+  if (new URL(url).protocol !== 'https:') throw new Error('This download must use HTTPS.');
+  const assertPdf = (prefix: Uint8Array) => {
+    if (String.fromCharCode(...prefix) !== '%PDF-') throw new Error('The source did not return a PDF.');
+  };
+  const id = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+  if (Platform.OS === 'web') {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 90000);
+    try {
+      const response = await fetch(url, { signal: controller.signal });
+      if (!response.ok) throw new Error(`Download failed (HTTP ${response.status}).`);
+      const bytes = await response.arrayBuffer();
+      assertPdf(new Uint8Array(bytes, 0, Math.min(bytes.byteLength, 5)));
+      if (!(await webStore.set(PDF_KEY(id), bytes))) throw new Error('The browser could not save this PDF.');
+      return { ...meta, id, kind: 'pdf', fileName: `${meta.title}.pdf`, addedAt: new Date().toISOString() };
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+  const file = new File(folder(), `${id}.pdf`);
+  try {
+    await File.downloadFileAsync(url, file);
+    const handle = file.open();
+    try {
+      assertPdf(await handle.readBytes(5));
+    } finally {
+      handle.close();
+    }
+    return { ...meta, id, kind: 'pdf', fileName: `${meta.title}.pdf`, uri: file.uri, addedAt: new Date().toISOString() };
+  } catch (error) {
+    if (file.exists) file.delete();
+    throw error;
+  }
+}
+
 /** Keeps a book received from the family library on this device and returns it, ready for the Library. */
 export async function importOwnFile(meta: Omit<OwnBook, 'id' | 'addedAt' | 'fileName' | 'uri'>, data: Blob): Promise<OwnBook> {
   const id = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;

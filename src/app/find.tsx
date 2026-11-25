@@ -1,11 +1,12 @@
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Image, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { bookRecap, kotterPdf, sameBook, searchBookCatalog, type CatalogBook } from '@/lib/bookCatalog';
+import { openOwnBook } from '@/components/BookActions';
+import { bookRecap, kotterPdf, localBookMatches, sameBook, searchBookCatalog, type CatalogBook } from '@/lib/bookCatalog';
 import { usePalette } from '@/lib/appearance';
 import { confirmFound, downloadFound, findBooks, publicDomainEU, withDeathYears, type FoundBook, type Lang } from '@/lib/findBooks';
-import { pickOwnBook, saveBook } from '@/lib/ownbooks';
+import { downloadOwnPdf, pickOwnBook, saveBook } from '@/lib/ownbooks';
 import { useStore } from '@/lib/store';
 import { colors, serif } from '@/lib/theme';
 
@@ -43,7 +44,7 @@ export default function FindScreen() {
     setErrors([]);
     setCandidates(null);
     setChecked({});
-    setCatalog([]);
+    setCatalog(localBookMatches(text, l));
     setCatalogPending(true);
     setCatalogError(false);
     catalogRequest.current?.abort();
@@ -81,11 +82,13 @@ export default function FindScreen() {
   };
 
   // Arriving from Explore with a search already typed.
-  const { q: initial } = useLocalSearchParams<{ q?: string }>();
+  const { q: initial, book: initialBook } = useLocalSearchParams<{ q?: string; book?: string }>();
   useEffect(() => {
     if (!initial) return;
     const t = setTimeout(() => {
       setQuery(initial);
+      const match = localBookMatches(initial, 'all').find((book) => book.id === initialBook);
+      if (match) setOpenCatalog(match);
       search(initial, 'all');
     }, 0);
     return () => clearTimeout(t);
@@ -102,7 +105,7 @@ export default function FindScreen() {
 
   const downloaded = (b: FoundBook) => ownBooks.find((o) => o.sourceUrl === b.pageUrl);
   const matchingDownload = openCatalog
-    ? results?.find((book) => sameBook(openCatalog, book.title, book.authors))
+    ? results?.find((book) => !openCatalog.pdf && sameBook(openCatalog, book.title, book.authors))
     : undefined;
   const activeBook = open || matchingDownload;
   const closeBook = () => { setOpen(null); setOpenCatalog(null); };
@@ -197,12 +200,13 @@ export default function FindScreen() {
         {catalogPending && <Text accessibilityLiveRegion="polite" style={styles.label}>Searching the book catalog…</Text>}
         {catalogError && <Text style={styles.label}>The book catalog couldn’t load. Search again to retry.</Text>}
         {catalog.length > 0 && <Text style={styles.label}>Book catalog</Text>}
-        {catalog.filter((b) => !results?.some((item) => sameBook(b, item.title, item.authors))).map((b) => (
+        {catalog.filter((b) => b.pdf || !results?.some((item) => sameBook(b, item.title, item.authors))).map((b) => (
           <Pressable key={b.id} accessibilityLabel={`Book ${b.title} by ${b.author}`} onPress={() => setOpenCatalog(b)} style={styles.row}>
             <BookCover uri={b.cover} />
             <View style={styles.flex}>
               <Text style={styles.title} numberOfLines={2}>{b.title}</Text>
               <Text style={styles.author} numberOfLines={2}>{b.author}</Text>
+              {b.pdf && <Text style={styles.source}>Download PDF · {b.pdf.source}</Text>}
             </View>
           </Pressable>
         ))}
@@ -357,9 +361,27 @@ function BookCover({ uri, large = false }: { uri?: string; large?: boolean }) {
 function CatalogSheet({ book, onClose, onImport }: { book: CatalogBook; onClose: () => void; onImport: ReturnType<typeof useStore>['addOwnBook'] }) {
   const palette = usePalette();
   const recap = useRecap(book);
-  const pdf = kotterPdf(book);
+  const pdf = book.pdf?.url ?? kotterPdf(book);
   const [error, setError] = useState<string>();
   const [busy, setBusy] = useState(false);
+  const { ownBooks } = useStore();
+  const saved = ownBooks.find((item) => item.kind === 'pdf' && item.sourceUrl === book.page);
+  const canDownload = !!pdf && (Platform.OS !== 'web' || book.pdf?.web === true);
+  const savePdf = async () => {
+    if (!pdf || busy) return;
+    setBusy(true);
+    setError(undefined);
+    try {
+      const result = await downloadOwnPdf(pdf, { title: book.title, author: book.author, sourceUrl: book.page, description: recap });
+      onImport(result);
+      onClose();
+      openOwnBook(result);
+    } catch {
+      setError('The PDF could not be saved. Check your connection and try again.');
+    } finally {
+      setBusy(false);
+    }
+  };
   const openLink = (url: string) => Linking.openURL(url).catch(() => setError('Could not open this link.'));
   const importFile = async () => {
     setBusy(true);
@@ -388,17 +410,28 @@ function CatalogSheet({ book, onClose, onImport }: { book: CatalogBook; onClose:
               </View>
             </View>
             <Text style={styles.desc}>{recap || 'A recap is unavailable for this edition.'}</Text>
-            {pdf && (
+            {saved ? (
+              <Pressable accessibilityRole="button" onPress={() => {
+                onClose();
+                openOwnBook(saved);
+              }} style={styles.primary}>
+                <Text style={styles.primaryText}>Read now · in your Library</Text>
+              </Pressable>
+            ) : canDownload ? (
+              <Pressable accessibilityRole="button" disabled={busy} onPress={savePdf} style={styles.primary}>
+                <Text style={styles.primaryText}>{busy ? 'Downloading…' : 'Download & read'}</Text>
+              </Pressable>
+            ) : pdf ? (
               <Pressable accessibilityRole="link" onPress={() => openLink(pdf)} style={styles.primary}>
                 <Text style={styles.primaryText}>Open PDF in browser ↗</Text>
               </Pressable>
-            )}
-            <Text style={styles.note}>{pdf ? 'Save the PDF from your browser, then import the file into your Library.' : 'No direct download was found for this edition. Check Open Library for reading or borrowing options.'}</Text>
+            ) : null}
+            {!saved && !canDownload && <Text style={styles.note}>{pdf ? 'Save the PDF from your browser, then import the file into your Library.' : 'No direct file is available in the app for this edition. Check the source for reading or borrowing options.'}</Text>}
             <Pressable onPress={importFile} disabled={busy} style={styles.secondary}>
               <Text style={styles.secondaryText}>{busy ? 'Importing…' : 'Import downloaded file'}</Text>
             </Pressable>
             <Pressable accessibilityRole="link" onPress={() => openLink(book.page)} style={styles.secondary}>
-              <Text style={styles.secondaryText}>Open on Open Library ↗</Text>
+              <Text style={styles.secondaryText}>{book.accessLabel || (book.pdf ? 'Open source page' : 'Open on Open Library')} ↗</Text>
             </Pressable>
             {!!error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
           </ScrollView>
