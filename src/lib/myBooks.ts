@@ -1,5 +1,10 @@
 import type { Classic } from '@/lib/fullbook';
 
+type MetroContext = { (key: string): unknown; keys(): string[] };
+declare const require: NodeRequire & {
+  context(path: string, recursive: boolean, pattern: RegExp): MetroContext;
+};
+
 /**
  * Books imported from the private my-books/ folder by `npm run books`. Their files live in src/data/my-books/,
  * which Git ignores, so on a fresh checkout these lists are empty. require.context picks up whatever is there.

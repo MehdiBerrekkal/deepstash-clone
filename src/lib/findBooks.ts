@@ -294,7 +294,16 @@ export function deathYear(name: string): Promise<number | undefined> {
 // ---------- shared ----------
 
 async function fetchWithProgress(url: string, onProgress: (f: number) => void): Promise<ArrayBuffer> {
-  const res = await fetch(url);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 90_000);
+  try {
+    return await readDownload(await fetch(url, { signal: controller.signal }), onProgress);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function readDownload(res: Response, onProgress: (f: number) => void): Promise<ArrayBuffer> {
   if (!res.ok) throw new Error(`Download failed (${res.status}).`);
   const total = Number(res.headers.get('content-length') ?? 0);
   if (!res.body || !total) return res.arrayBuffer();
@@ -358,7 +367,20 @@ export async function confirmFound(b: FoundBook): Promise<FoundBook | null> {
   }
 }
 
-export function downloadFound(b: FoundBook, onProgress: (f: number) => void): Promise<FullBook> {
+export async function downloadFound(b: FoundBook, onProgress: (f: number) => void): Promise<FullBook> {
   if (!publicDomainEU(b.people)) throw new Error('This book may still be under copyright in Europe, so it can only be read on its source site.');
-  return b.source === 'standard' ? downloadStandard(b, onProgress) : downloadGutenberg(b, onProgress);
+  if (b.source === 'standard') {
+    try {
+      return await downloadStandard(b, onProgress);
+    } catch {
+      onProgress(0);
+      return downloadStandard(b, onProgress);
+    }
+  }
+  try {
+    return await downloadGutenberg({ ...b, file: undefined }, onProgress);
+  } catch {
+    onProgress(0);
+    return downloadGutenberg({ ...b, file: undefined }, onProgress);
+  }
 }

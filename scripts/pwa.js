@@ -114,6 +114,12 @@ function walk(dir) {
     `<div id="boot"><b>${NAME}</b><i></i><span>Opening your library…</span></div>`;
   html = html.replace(/<div id="root">/, `<div id="root">${splash}`);
   fs.writeFileSync(path.join(dist, 'index.html'), html);
+  // GitHub Pages needs a real index for public entry routes. Unknown or parameterized routes still use 404.html.
+  for (const route of ['auth', 'onboarding', 'explore', 'find', 'library']) {
+    const folder = path.join(dist, route);
+    fs.mkdirSync(folder, { recursive: true });
+    fs.writeFileSync(path.join(folder, 'index.html'), html);
+  }
   // GitHub Pages serves 404.html for unknown paths, so deep links like /reader/... load the app too.
   fs.writeFileSync(path.join(dist, '404.html'), html);
   fs.writeFileSync(path.join(dist, '.nojekyll'), '');

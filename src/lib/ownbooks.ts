@@ -62,7 +62,7 @@ async function readBytes(asset: DocumentPicker.DocumentPickerAsset): Promise<Arr
 }
 
 /** Shows the system file picker. Resolves to null if the user cancels. */
-export async function pickOwnBook(): Promise<OwnBook | null> {
+export async function pickOwnBook({ requirePersistence = false } = {}): Promise<OwnBook | null> {
   const result = await DocumentPicker.getDocumentAsync({
     type: ['application/epub+zip', 'application/pdf', '.epub', '.pdf'],
     copyToCacheDirectory: true,
@@ -80,9 +80,10 @@ export async function pickOwnBook(): Promise<OwnBook | null> {
   if (isPdf) {
     const title = name.replace(/\.pdf$/i, '');
     if (Platform.OS === 'web') {
-      webPdfUrls.set(id, asset.file ? URL.createObjectURL(asset.file) : asset.uri);
       // Keep the bytes in IndexedDB so the PDF is still there after the tab is closed.
-      await webStore.set(PDF_KEY(id), await readBytes(asset).then((b) => (b instanceof Uint8Array ? b.slice().buffer : b)));
+      const saved = await webStore.set(PDF_KEY(id), await readBytes(asset).then((b) => (b instanceof Uint8Array ? b.slice().buffer : b)));
+      if (!saved && requirePersistence) throw new Error('This browser could not store the PDF.');
+      webPdfUrls.set(id, asset.file ? URL.createObjectURL(asset.file) : asset.uri);
       return { id, kind: 'pdf', fileName: name, title, author: 'PDF', addedAt };
     }
     const dest = new File(folder(), `${id}.pdf`);
@@ -91,20 +92,21 @@ export async function pickOwnBook(): Promise<OwnBook | null> {
   }
 
   const book = await parseEpub(await readBytes(asset), name);
-  await saveBook(id, book);
+  await saveBook(id, book, { requirePersistence });
   return { id, kind: 'epub', fileName: name, title: book.title, author: book.author, addedAt };
 }
 
 /** Keeps a parsed book on the device: in the app's documents folder on iOS and Android, browser storage on the web. */
-export async function saveBook(id: string, book: FullBook): Promise<void> {
-  memory.set(id, book);
+export async function saveBook(id: string, book: FullBook, { requirePersistence = false } = {}): Promise<void> {
   const json = JSON.stringify(book);
   if (Platform.OS === 'web') {
     // IndexedDB holds whole books; if the browser blocks it, the book stays readable until the page is closed.
-    await webStore.set(WEB_KEY(id), json);
+    const saved = await webStore.set(WEB_KEY(id), json);
+    if (!saved && requirePersistence) throw new Error('This browser could not store the book. Free up space or allow site storage and try again.');
   } else {
     await new File(folder(), `${id}.json`).write(json);
   }
+  memory.set(id, book);
 }
 
 export async function loadSavedBook(id: string): Promise<FullBook | null> {

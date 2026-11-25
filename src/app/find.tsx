@@ -2,16 +2,16 @@ import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Linking, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { bookRecap, kotterPdf, sameBook, searchBookCatalog, type CatalogBook } from '@/lib/bookCatalog';
 import { usePalette } from '@/lib/appearance';
 import { confirmFound, downloadFound, findBooks, publicDomainEU, withDeathYears, type FoundBook, type Lang } from '@/lib/findBooks';
-import { saveBook } from '@/lib/ownbooks';
+import { pickOwnBook, saveBook } from '@/lib/ownbooks';
 import { useStore } from '@/lib/store';
 import { colors, serif } from '@/lib/theme';
 
 const SUGGESTIONS = ['Victor Hugo', 'Dostoevsky', 'Seneca', 'Jane Austen', 'Proust', 'Marcus Aurelius', 'Maupassant', 'Tolstoy'];
 const SOURCE_NAME = { gutenberg: 'Project Gutenberg', standard: 'Standard Ebooks' } as const;
 const FLAG = { en: '🇬🇧', fr: '🇫🇷', other: '🌐' } as const;
-const year = () => new Date().getFullYear();
 
 /** Find a book: search free public-domain libraries and download a book into the Library in one tap. */
 export default function FindScreen() {
@@ -24,7 +24,16 @@ export default function FindScreen() {
   const [errors, setErrors] = useState<string[]>([]);
   const [searching, setSearching] = useState(false);
   const [open, setOpen] = useState<FoundBook | null>(null);
+  const [catalog, setCatalog] = useState<CatalogBook[]>([]);
+  const [catalogPending, setCatalogPending] = useState(false);
+  const [catalogError, setCatalogError] = useState(false);
+  const [openCatalog, setOpenCatalog] = useState<CatalogBook | null>(null);
+  const catalogRequest = useRef<AbortController | null>(null);
   const searchId = useRef(0);
+  useEffect(() => () => {
+    searchId.current++;
+    catalogRequest.current?.abort();
+  }, []);
 
   const search = async (q = query, l = lang) => {
     const text = q.trim();
@@ -32,6 +41,22 @@ export default function FindScreen() {
     const mine = ++searchId.current;
     setSearching(true);
     setErrors([]);
+    setCandidates(null);
+    setChecked({});
+    setCatalog([]);
+    setCatalogPending(true);
+    setCatalogError(false);
+    catalogRequest.current?.abort();
+    const controller = new AbortController();
+    catalogRequest.current = controller;
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    void searchBookCatalog(text, l, controller.signal)
+      .then((books) => { if (mine === searchId.current) setCatalog(books); })
+      .catch(() => { if (mine === searchId.current) setCatalogError(true); })
+      .finally(() => {
+        clearTimeout(timeout);
+        if (mine === searchId.current) setCatalogPending(false);
+      });
     try {
       const { books, errors: errs } = await findBooks(text, l);
       if (mine !== searchId.current) return;
@@ -76,12 +101,17 @@ export default function FindScreen() {
   const pending = candidates ? candidates.filter((b) => !(b.key in checked)).length : 0;
 
   const downloaded = (b: FoundBook) => ownBooks.find((o) => o.sourceUrl === b.pageUrl);
+  const matchingDownload = openCatalog
+    ? results?.find((book) => sameBook(openCatalog, book.title, book.authors))
+    : undefined;
+  const activeBook = open || matchingDownload;
+  const closeBook = () => { setOpen(null); setOpenCatalog(null); };
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ title: 'Find a free book' }} />
+      <Stack.Screen options={{ title: 'Find a book' }} />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text style={styles.intro}>Search thousands of free classics in English and French. Books that are public domain in Europe download straight into your Library.</Text>
+        <Text style={styles.intro}>Search by title or author. Open a result for a short recap and save eligible editions directly to your Library.</Text>
         <View style={styles.searchRow}>
           <TextInput
             value={query}
@@ -91,7 +121,7 @@ export default function FindScreen() {
             placeholder="Title or author, e.g. Victor Hugo"
             placeholderTextColor={colors.muted}
             style={styles.search}
-            accessibilityLabel="Search free books"
+            accessibilityLabel="Search books"
           />
           <Pressable accessibilityLabel="Search" onPress={() => search()} style={styles.searchBtn}>
             <Text style={styles.searchBtnText}>Search</Text>
@@ -148,7 +178,7 @@ export default function FindScreen() {
         {results?.map((b) => {
             return (
               <Pressable key={b.key} accessibilityLabel={`Book ${b.title}`} onPress={() => setOpen(b)} style={styles.row}>
-                <Image source={{ uri: b.cover }} style={styles.cover} resizeMode="cover" />
+                <BookCover uri={b.cover} />
                 <View style={styles.flex}>
                   <Text style={styles.title} numberOfLines={2}>
                     {b.title}
@@ -164,17 +194,33 @@ export default function FindScreen() {
               </Pressable>
             );
           })}
+        {catalogPending && <Text accessibilityLiveRegion="polite" style={styles.label}>Searching the book catalog…</Text>}
+        {catalogError && <Text style={styles.label}>The book catalog couldn’t load. Search again to retry.</Text>}
+        {catalog.length > 0 && <Text style={styles.label}>Book catalog</Text>}
+        {catalog.filter((b) => !results?.some((item) => sameBook(b, item.title, item.authors))).map((b) => (
+          <Pressable key={b.id} accessibilityLabel={`Book ${b.title} by ${b.author}`} onPress={() => setOpenCatalog(b)} style={styles.row}>
+            <BookCover uri={b.cover} />
+            <View style={styles.flex}>
+              <Text style={styles.title} numberOfLines={2}>{b.title}</Text>
+              <Text style={styles.author} numberOfLines={2}>{b.author}</Text>
+            </View>
+          </Pressable>
+        ))}
         <Text style={styles.foot}>
-          Sources: Project Gutenberg (via the Internet Archive) and Standard Ebooks. A book downloads only when everyone who wrote or translated it died before {year() - 70}, so it’s public domain in Europe; books that can’t be downloaded here aren’t listed.
+          Open Library supplies catalog details. Downloads from Project Gutenberg and Standard Ebooks are checked for public-domain eligibility.
         </Text>
       </ScrollView>
-      {open && (
+      {openCatalog && !matchingDownload && (
+        <CatalogSheet book={openCatalog} onClose={() => setOpenCatalog(null)} onImport={addOwnBook} />
+      )}
+      {activeBook && (
         <BookSheet
-          book={open}
-          inLibrary={downloaded(open)?.id}
-          onClose={() => setOpen(null)}
+          book={activeBook}
+          catalogBook={openCatalog || catalog.find((book) => sameBook(book, activeBook.title, activeBook.authors))}
+          inLibrary={downloaded(activeBook)?.id}
+          onClose={closeBook}
           onDone={(id) => {
-            setOpen(null);
+            closeBook();
             router.push({ pathname: '/reader/[id]', params: { id, kind: 'own' } });
           }}
           onAdd={addOwnBook}
@@ -184,10 +230,12 @@ export default function FindScreen() {
   );
 }
 
-function BookSheet({ book: initial, inLibrary, onClose, onDone, onAdd }: { book: FoundBook; inLibrary?: string; onClose: () => void; onDone: (id: string) => void; onAdd: ReturnType<typeof useStore>['addOwnBook'] }) {
+function BookSheet({ book: initial, catalogBook, inLibrary, onClose, onDone, onAdd }: { book: FoundBook; catalogBook?: CatalogBook; inLibrary?: string; onClose: () => void; onDone: (id: string) => void; onAdd: ReturnType<typeof useStore>['addOwnBook'] }) {
   // Modals render outside the app's colour scope on the web, so paint the sheet with real colours.
   const palette = usePalette();
   const [book, setBook] = useState(initial);
+  const recap = useRecap(catalogBook);
+  const downloading = useRef(false);
   const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
@@ -201,12 +249,14 @@ function BookSheet({ book: initial, inLibrary, onClose, onDone, onAdd }: { book:
   const unknown = book.people.some((p) => p.died === undefined);
 
   const download = async () => {
+    if (downloading.current) return;
+    downloading.current = true;
     setError(null);
     setProgress(0);
     try {
       const full = await downloadFound(book, setProgress);
       const id = `find-${Date.now().toString(36)}`;
-      await saveBook(id, full);
+      await saveBook(id, full, { requirePersistence: true });
       onAdd({
         id,
         kind: 'epub',
@@ -217,11 +267,14 @@ function BookSheet({ book: initial, inLibrary, onClose, onDone, onAdd }: { book:
         lang: book.lang === 'fr' ? 'fr' : 'en',
         source: SOURCE_NAME[book.source],
         sourceUrl: book.pageUrl,
+        description: recap || book.description,
       });
       onDone(id);
     } catch (e) {
       setError((e as Error).message || 'The download failed. Check your connection and try again.');
       setProgress(null);
+    } finally {
+      downloading.current = false;
     }
   };
 
@@ -231,7 +284,7 @@ function BookSheet({ book: initial, inLibrary, onClose, onDone, onAdd }: { book:
         <Pressable style={[styles.sheet, { backgroundColor: palette.background }]} onPress={() => {}}>
           <ScrollView contentContainerStyle={styles.sheetBody}>
             <View style={styles.sheetTop}>
-              <Image source={{ uri: book.cover }} style={styles.bigCover} resizeMode="cover" />
+              <BookCover uri={catalogBook?.cover || book.cover} large />
               <View style={styles.flex}>
                 <Text style={styles.sheetTitle}>{book.title}</Text>
                 <Text style={styles.author}>{book.authors.join(', ')}</Text>
@@ -241,7 +294,7 @@ function BookSheet({ book: initial, inLibrary, onClose, onDone, onAdd }: { book:
                 </Text>
               </View>
             </View>
-            {!!book.description && <Text style={styles.desc}>{book.description}</Text>}
+            <Text style={styles.desc}>{recap || book.description || 'A recap is unavailable for this edition.'}</Text>
             <View style={styles.people}>
               {book.people.map((p) => (
                 <Text key={`${p.name}${p.role}`} style={styles.person}>
@@ -275,6 +328,79 @@ function BookSheet({ book: initial, inLibrary, onClose, onDone, onAdd }: { book:
               <Text style={styles.secondaryText}>Open on {SOURCE_NAME[book.source]} ↗</Text>
             </Pressable>
             {pd && <Text style={styles.pdNote}>Public domain in Europe and the US. Free to read, keep and share.</Text>}
+          </ScrollView>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+}
+
+function useRecap(book?: CatalogBook) {
+  const [recap, setRecap] = useState<string>();
+  useEffect(() => {
+    if (!book) return;
+    const controller = new AbortController();
+    bookRecap(book, controller.signal).then(setRecap).catch(() => {});
+    return () => controller.abort();
+  }, [book]);
+  return recap;
+}
+
+function BookCover({ uri, large = false }: { uri?: string; large?: boolean }) {
+  const [failedUri, setFailedUri] = useState<string>();
+  const style = large ? styles.bigCover : styles.cover;
+  return uri && uri !== failedUri
+    ? <Image source={{ uri }} style={style} resizeMode="cover" onError={() => setFailedUri(uri)} />
+    : <View style={style} />;
+}
+
+function CatalogSheet({ book, onClose, onImport }: { book: CatalogBook; onClose: () => void; onImport: ReturnType<typeof useStore>['addOwnBook'] }) {
+  const palette = usePalette();
+  const recap = useRecap(book);
+  const pdf = kotterPdf(book);
+  const [error, setError] = useState<string>();
+  const [busy, setBusy] = useState(false);
+  const openLink = (url: string) => Linking.openURL(url).catch(() => setError('Could not open this link.'));
+  const importFile = async () => {
+    setBusy(true);
+    setError(undefined);
+    try {
+      const local = await pickOwnBook({ requirePersistence: true });
+      if (!local) return;
+      onImport({ ...local, title: book.title, author: book.author, description: recap, sourceUrl: book.page });
+      onClose();
+    } catch {
+      setError('The file could not be saved. Choose a readable EPUB or PDF.');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Modal transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable style={styles.backdrop} onPress={onClose}>
+        <Pressable style={[styles.sheet, { backgroundColor: palette.background }]} onPress={() => {}}>
+          <ScrollView contentContainerStyle={styles.sheetBody}>
+            <View style={styles.sheetTop}>
+              <BookCover uri={book.cover} large />
+              <View style={styles.flex}>
+                <Text style={styles.sheetTitle}>{book.title}</Text>
+                <Text style={styles.author}>{book.author}</Text>
+              </View>
+            </View>
+            <Text style={styles.desc}>{recap || 'A recap is unavailable for this edition.'}</Text>
+            {pdf && (
+              <Pressable accessibilityRole="link" onPress={() => openLink(pdf)} style={styles.primary}>
+                <Text style={styles.primaryText}>Open PDF in browser ↗</Text>
+              </Pressable>
+            )}
+            <Text style={styles.note}>{pdf ? 'Save the PDF from your browser, then import the file into your Library.' : 'No direct download was found for this edition. Check Open Library for reading or borrowing options.'}</Text>
+            <Pressable onPress={importFile} disabled={busy} style={styles.secondary}>
+              <Text style={styles.secondaryText}>{busy ? 'Importing…' : 'Import downloaded file'}</Text>
+            </Pressable>
+            <Pressable accessibilityRole="link" onPress={() => openLink(book.page)} style={styles.secondary}>
+              <Text style={styles.secondaryText}>Open on Open Library ↗</Text>
+            </Pressable>
+            {!!error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
           </ScrollView>
         </Pressable>
       </Pressable>

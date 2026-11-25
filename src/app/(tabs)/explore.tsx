@@ -152,10 +152,10 @@ export default function ExploreScreen() {
         placeholder={t('Search books, ideas, quotes, poems, highlights')}
       />
       {!!q && (
-        <Pressable accessibilityLabel="Search free libraries" onPress={() => router.push({ pathname: '/find', params: { q } })} style={styles.findLink}>
+        <Pressable accessibilityLabel="Search book catalog" onPress={() => router.push({ pathname: '/find', params: { q } })} style={styles.findLink}>
           <Icon name="globe" size={18} color={colors.accent} strokeWidth={2} />
           <Text style={styles.findLinkText} numberOfLines={2}>
-            Find “{q}” in free libraries (Gutenberg, Standard Ebooks)
+            Find “{q}” in the book catalog
           </Text>
           <Icon name="chevronRight" size={16} color={colors.accent} strokeWidth={2.4} />
         </Pressable>
@@ -269,3 +269,4 @@ const styles = StyleSheet.create({
   quote: { color: colors.text, fontFamily: 'Literata_400Regular_Italic', fontSize: 15, lineHeight: 22 },
   note: { color: colors.accent, fontSize: 13 },
 });
+
